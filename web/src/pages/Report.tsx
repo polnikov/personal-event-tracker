@@ -162,9 +162,10 @@ export function ReportPage() {
         {
           name: "Часы",
           type: "pie" as const,
-          radius: isMobile ? ["44%", "66%"] : ["52%", "78%"],
-          center: isMobile ? ["50%", "40%"] : ["32%", "50%"],
+          radius: isMobile ? ["38%", "54%"] : ["44%", "64%"],
+          center: isMobile ? ["50%", "40%"] : ["30%", "50%"],
           padAngle: 3,
+          avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
@@ -173,14 +174,16 @@ export function ReportPage() {
             fontSize: 11,
             fontWeight: 600,
             lineHeight: 14,
+            edgeDistance: "12%",
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
-              if (it.percent < 3) return "";
+              if (it.percent < 4) return "";
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
               return `${hours} ч\n${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 6, length2: 4, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: { show: true, length: 12, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLayout: { hideOverlap: true },
           emphasis: {
             scale: true,
             scaleSize: 6,
@@ -234,9 +237,10 @@ export function ReportPage() {
         {
           name: "Чистый доход",
           type: "pie" as const,
-          radius: isMobile ? ["44%", "66%"] : ["52%", "78%"],
-          center: isMobile ? ["50%", "40%"] : ["32%", "50%"],
+          radius: isMobile ? ["38%", "54%"] : ["44%", "64%"],
+          center: isMobile ? ["50%", "40%"] : ["30%", "50%"],
           padAngle: 3,
+          avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
@@ -245,15 +249,17 @@ export function ReportPage() {
             fontSize: 11,
             fontWeight: 600,
             lineHeight: 14,
+            edgeDistance: "12%",
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
-              if (it.percent < 3) return "";
+              if (it.percent < 4) return "";
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
               return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 6, length2: 4, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: { show: true, length: 12, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLayout: { hideOverlap: true },
           emphasis: {
             scale: true,
             scaleSize: 6,
