@@ -569,6 +569,7 @@ export function EventTableRow({
   showDate = true,
   notesInsteadOfClient = false,
   costOverride,
+  dateLabel,
 }: {
   ev: EventItem;
   onClick?: () => void;
@@ -576,11 +577,17 @@ export function EventTableRow({
   showDate?: boolean;
   notesInsteadOfClient?: boolean;
   costOverride?: number | string;
+  /** Override the formatted date in the when-cell (e.g. "12 пн"). */
+  dateLabel?: React.ReactNode;
 }) {
   return (
     <div className="event-trow" onClick={onClick}>
       <div className="event-trow-when">
-        {showDate && <div className="event-trow-date">{fmt.date(ev.start_at)}</div>}
+        {showDate && (
+          <div className="event-trow-date">
+            {dateLabel ?? fmt.date(ev.start_at)}
+          </div>
+        )}
         <div className="event-trow-time">{fmt.time(ev.start_at)}</div>
       </div>
       <div className="event-trow-cat">

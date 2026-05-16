@@ -67,6 +67,11 @@ export function ClientFormModal({
       }
     >
       <form className="form" onSubmit={form.handleSubmit((v) => save.mutate(v))}>
+        {save.isError && (
+          <div className="login-error">
+            {(save.error as Error).message || "Не удалось сохранить"}
+          </div>
+        )}
         <div className="form-grid-2">
           <Field label="Имя" error={form.formState.errors.first_name?.message}>
             <Input placeholder="Анна" {...form.register("first_name")} />

@@ -1106,11 +1106,14 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background 0.12s, color 0.12s;
 }
 .tab-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
+  /* Inline-positioned (not absolute) so it stays inside the button bounds.
+     A neighbouring `.on` tab's dark background can therefore never paint
+     over it, regardless of DOM order. */
+  display: inline-grid;
+  place-items: center;
   min-width: 18px;
   height: 18px;
+  margin-left: 8px;
   padding: 0 5px;
   border-radius: 999px;
   background: var(--accent);
@@ -1118,17 +1121,9 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 10.5px;
   font-weight: 600;
   font-feature-settings: 'tnum';
-  display: inline-grid;
-  place-items: center;
   line-height: 1;
-  box-shadow: 0 0 0 2px var(--surface);
-  z-index: 2;
+  vertical-align: middle;
 }
-/* Lift any tab that carries a badge above adjacent tabs so the badge
-   (which extends -4px past the button) is never covered by a neighbour's
-   `.on` background. Requires :has() — supported in all evergreen browsers. */
-.view-switcher { isolation: isolate; }
-.view-switch-btn:has(.tab-badge) { z-index: 1; }
 
 /* ClientDetail tabs row — main tabs on the left, optional year filter on
    the right. On mobile they stack: main tabs span full width, year tabs

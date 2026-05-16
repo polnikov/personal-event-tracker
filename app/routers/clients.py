@@ -23,6 +23,44 @@ router = APIRouter(
 )
 
 
+def _normalize_phone(phone: str | None) -> str | None:
+    p = (phone or "").strip()
+    return p or None
+
+
+def _find_duplicate(
+    db: Session,
+    first_name: str,
+    last_name: str,
+    phone: str | None,
+    exclude_id: int | None = None,
+) -> Client | None:
+    """Look up a client with the same (first_name, last_name, phone) tuple.
+    Comparison is case-insensitive for names; phone is matched exactly after
+    normalisation (None matches NULL or empty)."""
+    fn = first_name.strip().lower()
+    ln = last_name.strip().lower()
+    ph = _normalize_phone(phone)
+    stmt = select(Client).where(
+        func.lower(Client.first_name) == fn,
+        func.lower(Client.last_name) == ln,
+    )
+    if ph is None:
+        stmt = stmt.where((Client.phone.is_(None)) | (Client.phone == ""))
+    else:
+        stmt = stmt.where(func.lower(Client.phone) == ph.lower())
+    if exclude_id is not None:
+        stmt = stmt.where(Client.id != exclude_id)
+    return db.execute(stmt).scalars().first()
+
+
+def _duplicate_message(c: Client) -> str:
+    parts = [f"{c.first_name} {c.last_name}".strip()]
+    if c.phone:
+        parts.append(c.phone)
+    return f"Клиент уже существует: {' · '.join(parts)}"
+
+
 def _aggregate_client_stats(db: Session) -> dict[int, tuple[int, Decimal]]:
     rows = db.execute(
         select(
@@ -69,10 +107,13 @@ def list_clients(q: str = "", db: Session = Depends(get_db)):
 
 @router.post("", response_model=ClientRead, status_code=201)
 def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
+    dup = _find_duplicate(db, payload.first_name, payload.last_name, payload.phone)
+    if dup is not None:
+        raise HTTPException(status_code=409, detail=_duplicate_message(dup))
     c = Client(
         first_name=payload.first_name.strip(),
         last_name=payload.last_name.strip(),
-        phone=(payload.phone or "").strip() or None,
+        phone=_normalize_phone(payload.phone),
         telegram=(payload.telegram or "").strip().lstrip("@") or None,
         notes=(payload.notes or "").strip() or None,
     )
@@ -174,9 +215,14 @@ def update_client(client_id: int, payload: ClientUpdate, db: Session = Depends(g
     c = db.get(Client, client_id)
     if not c:
         raise HTTPException(404)
+    dup = _find_duplicate(
+        db, payload.first_name, payload.last_name, payload.phone, exclude_id=client_id,
+    )
+    if dup is not None:
+        raise HTTPException(status_code=409, detail=_duplicate_message(dup))
     c.first_name = payload.first_name.strip()
     c.last_name = payload.last_name.strip()
-    c.phone = (payload.phone or "").strip() or None
+    c.phone = _normalize_phone(payload.phone)
     c.telegram = (payload.telegram or "").strip().lstrip("@") or None
     c.notes = (payload.notes or "").strip() or None
     db.commit()

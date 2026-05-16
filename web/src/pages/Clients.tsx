@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, Plus, Search, Send, Trash2 } from "lucide-react";
@@ -38,6 +38,13 @@ export function ClientsPage() {
     });
   }, [list.data]);
 
+  const PAGE = 10;
+  const [limit, setLimit] = useState(PAGE);
+  // Reset visible page when the filtered list shrinks/grows underneath us
+  useEffect(() => setLimit(PAGE), [q]);
+  const visible = sorted.slice(0, limit);
+  const hasMore = limit < sorted.length;
+
   return (
     <div className="page">
       <div className="page-head">
@@ -56,12 +63,12 @@ export function ClientsPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onClear={() => setQ("")}
-          placeholder="Поиск по имени, телефону, телеграму, примечанию…"
+          placeholder="…"
         />
       </Card>
 
       <div className="grid grid-3 gap-md">
-        {sorted.map((c) => (
+        {visible.map((c) => (
           <Card key={c.id} interactive onClick={() => nav(`/clients/${c.id}`)}>
             <div className="client-card-top">
               <Avatar name={c.full_name} size={44} />
@@ -109,6 +116,14 @@ export function ClientsPage() {
           </Card>
         ))}
       </div>
+
+      {hasMore && (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Button variant="secondary" onClick={() => setLimit((l) => l + PAGE)}>
+            Загрузить ещё ({sorted.length - limit})
+          </Button>
+        </div>
+      )}
 
       {list.isFetched && (list.data?.length ?? 0) === 0 && (
         <Card>

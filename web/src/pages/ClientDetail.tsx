@@ -21,6 +21,7 @@ import { fmt } from "@/lib/format";
 type TabKey = "future" | "past" | "analytics";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
+const PAGE_SIZE = 10;
 
 function netOf(e: EventItem): number {
   const gross = parseFloat(e.total_cost) || 0;
@@ -33,27 +34,32 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-interface DayGroup {
-  key: string;
-  date: Date;
+interface MonthGroup {
+  key: string;       // YYYY-MM
+  date: Date;        // first day of month, local
   events: EventItem[];
   net: number;
 }
 
-function groupByDay(events: EventItem[], orderDesc = true): DayGroup[] {
+function groupByMonth(events: EventItem[], orderDesc = true): MonthGroup[] {
   const map = new Map<string, EventItem[]>();
   for (const e of events) {
-    const key = e.start_at.slice(0, 10);
+    const key = e.start_at.slice(0, 7); // YYYY-MM
     const list = map.get(key) ?? [];
     list.push(e);
     map.set(key, list);
   }
-  const groups: DayGroup[] = [];
+  const groups: MonthGroup[] = [];
   for (const [key, evs] of map.entries()) {
-    evs.sort((a, b) => a.start_at.localeCompare(b.start_at));
+    // Within a month: events sorted by start_at according to view direction.
+    evs.sort((a, b) =>
+      orderDesc
+        ? b.start_at.localeCompare(a.start_at)
+        : a.start_at.localeCompare(b.start_at),
+    );
     groups.push({
       key,
-      date: parseISO(`${key}T00:00:00`),
+      date: parseISO(`${key}-01T00:00:00`),
       events: evs,
       net: evs.reduce((s, e) => s + netOf(e), 0),
     });
@@ -64,7 +70,7 @@ function groupByDay(events: EventItem[], orderDesc = true): DayGroup[] {
   return groups;
 }
 
-function DayGroupedEvents({
+function MonthGroupedEvents({
   events,
   emptyTitle,
   onEventClick,
@@ -75,45 +81,66 @@ function DayGroupedEvents({
   onEventClick: (id: number) => void;
   orderDesc?: boolean;
 }) {
-  const groups = groupByDay(events, orderDesc);
+  const groups = useMemo(() => groupByMonth(events, orderDesc), [events, orderDesc]);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  useEffect(() => setLimit(PAGE_SIZE), [events, orderDesc]);
+
   if (groups.length === 0) {
     return (
       <Card><Empty title={emptyTitle} /></Card>
     );
   }
+
+  // Trim events across month widgets so the total displayed events <= limit.
+  const totalEvents = groups.reduce((s, g) => s + g.events.length, 0);
+  const visibleGroups: MonthGroup[] = [];
+  let remaining = limit;
+  for (const g of groups) {
+    if (remaining <= 0) break;
+    if (g.events.length <= remaining) {
+      visibleGroups.push(g);
+      remaining -= g.events.length;
+    } else {
+      visibleGroups.push({ ...g, events: g.events.slice(0, remaining) });
+      remaining = 0;
+    }
+  }
+
   return (
     <div className="stack-md">
-      {groups.map((g) => (
-        <div key={g.key} className="day-group">
-          <div className="day-group-head">
-            <div>
-              <span className="day-group-weekday">
-                {capitalize(format(g.date, "EEEE", { locale: ru }))}
-              </span>
-              <span className="day-group-date muted">
-                {" · "}
-                {format(g.date, "d MMMM", { locale: ru })}
-              </span>
+      {visibleGroups.map((g) => (
+        <Card key={g.key}>
+          <div className="card-head" style={{ marginBottom: 12 }}>
+            <div className="card-title" style={{ textTransform: "capitalize" }}>
+              {format(g.date, "LLLL yyyy", { locale: ru })}
             </div>
-            {g.events.length >= 2 && (
-              <div className="day-group-net mono">{RUB(g.net)}</div>
-            )}
+            <div className="day-group-net mono">{RUB(g.net)}</div>
           </div>
-          <Card padding="p-0">
-            <div className="event-table">
-              {g.events.map((e) => (
+          <div className="event-table">
+            {g.events.map((e) => {
+              const d = parseISO(e.start_at);
+              const label = `${format(d, "d")} ${format(d, "EEEEEE", { locale: ru })}`;
+              return (
                 <EventTableRow
                   key={e.id}
                   ev={e}
-                  showDate={false}
+                  showDate
+                  dateLabel={label}
                   notesInsteadOfClient
                   onClick={() => onEventClick(e.id)}
                 />
-              ))}
-            </div>
-          </Card>
-        </div>
+              );
+            })}
+          </div>
+        </Card>
       ))}
+      {limit < totalEvents && (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Button variant="secondary" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
+            Загрузить ещё ({totalEvents - limit})
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -340,7 +367,7 @@ export function ClientDetailPage() {
           </div>
 
           {tab === "future" && (
-            <DayGroupedEvents
+            <MonthGroupedEvents
               events={future_events}
               emptyTitle="Будущих событий нет"
               orderDesc
@@ -349,7 +376,7 @@ export function ClientDetailPage() {
           )}
 
           {tab === "past" && (
-            <DayGroupedEvents
+            <MonthGroupedEvents
               events={past_events}
               emptyTitle="Завершённых событий нет"
               orderDesc

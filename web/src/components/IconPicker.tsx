@@ -24,7 +24,7 @@ export function IconPicker({
         <span className="input-icon"><Search size={14} /></span>
         <input
           className="input"
-          placeholder="Поиск иконки…"
+          placeholder="…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

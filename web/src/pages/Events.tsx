@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,10 +10,14 @@ import {
   EventTableRow,
   Input,
   Select,
+  Tabs,
 } from "@/components/design";
 import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
+
+type TabKey = "today" | "future" | "past";
+const PAGE_SIZE = 10;
 
 function netOf(e: EventItem): number {
   const gross = parseFloat(e.total_cost) || 0;
@@ -34,7 +38,7 @@ interface DayGroup {
   isPast: boolean;
 }
 
-function buildDayGroups(events: EventItem[], todayKey: string): DayGroup[] {
+function buildDayGroups(events: EventItem[], todayKey: string, orderDesc = true): DayGroup[] {
   const map = new Map<string, EventItem[]>();
   for (const e of events) {
     const k = dayKey(e.start_at);
@@ -54,6 +58,9 @@ function buildDayGroups(events: EventItem[], todayKey: string): DayGroup[] {
       isPast: k < todayKey,
     });
   }
+  groups.sort((a, b) =>
+    orderDesc ? b.key.localeCompare(a.key) : a.key.localeCompare(b.key),
+  );
   return groups;
 }
 
@@ -61,11 +68,32 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/** Trim a list of day groups so that at most `limit` events total are shown. */
+function paginateGroups(groups: DayGroup[], limit: number): { groups: DayGroup[]; total: number } {
+  const total = groups.reduce((s, g) => s + g.events.length, 0);
+  if (limit >= total) return { groups, total };
+  const out: DayGroup[] = [];
+  let remaining = limit;
+  for (const g of groups) {
+    if (remaining <= 0) break;
+    if (g.events.length <= remaining) {
+      out.push(g);
+      remaining -= g.events.length;
+    } else {
+      out.push({ ...g, events: g.events.slice(0, remaining) });
+      remaining = 0;
+    }
+  }
+  return { groups: out, total };
+}
+
 export function EventsPage() {
   const nav = useNavigate();
+  const [tab, setTab] = useState<TabKey>("today");
   const [catFilter, setCatFilter] = useState("");
   const [clientFilter, setClientFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [limit, setLimit] = useState(PAGE_SIZE);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
@@ -78,6 +106,11 @@ export function EventsPage() {
         client_id: clientFilter ? Number(clientFilter) : undefined,
       }),
   });
+
+  // Reset pagination when the visible slice changes underneath us.
+  useEffect(() => setLimit(PAGE_SIZE), [tab, catFilter, clientFilter, search]);
+
+  const todayKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
   const all = useMemo(
     () => [...(list.data?.future ?? []), ...(list.data?.past ?? [])],
@@ -108,14 +141,36 @@ export function EventsPage() {
     });
   }, [all, q]);
 
-  const groups = useMemo(() => {
-    const today = new Date();
-    const todayKey = format(today, "yyyy-MM-dd");
-    const all = buildDayGroups(filtered, todayKey);
-    // All days descending (newest first); within each day events are already sorted by time ASC.
-    const ordered = all.sort((a, b) => b.key.localeCompare(a.key));
-    return { ordered, todayKey };
-  }, [filtered]);
+  const counts = useMemo(() => {
+    let today = 0, future = 0, past = 0;
+    for (const e of filtered) {
+      const k = dayKey(e.start_at);
+      if (k === todayKey) today++;
+      else if (k > todayKey) future++;
+      else past++;
+    }
+    return { today, future, past };
+  }, [filtered, todayKey]);
+
+  const slice = useMemo(() => {
+    return filtered.filter((e) => {
+      const k = dayKey(e.start_at);
+      if (tab === "today") return k === todayKey;
+      if (tab === "future") return k > todayKey;
+      return k < todayKey;
+    });
+  }, [filtered, tab, todayKey]);
+
+  // Today → ascending (morning first), past/future → newest first
+  const groups = useMemo(
+    () => buildDayGroups(slice, todayKey, tab !== "today"),
+    [slice, todayKey, tab],
+  );
+
+  const paginated = useMemo(
+    () => (tab === "today" ? { groups, total: slice.length } : paginateGroups(groups, limit)),
+    [groups, limit, tab, slice.length],
+  );
 
   return (
     <div className="page">
@@ -130,6 +185,40 @@ export function EventsPage() {
           Новое событие
         </Button>
       </div>
+
+      <Tabs<TabKey>
+        value={tab}
+        onChange={setTab}
+        options={[
+          {
+            value: "today",
+            label: (
+              <>
+                Сегодня
+                {counts.today > 0 && <span className="tab-badge">{counts.today}</span>}
+              </>
+            ),
+          },
+          {
+            value: "future",
+            label: (
+              <>
+                Будущие
+                {counts.future > 0 && <span className="tab-badge">{counts.future}</span>}
+              </>
+            ),
+          },
+          {
+            value: "past",
+            label: (
+              <>
+                Прошедшие
+                {counts.past > 0 && <span className="tab-badge">{counts.past}</span>}
+              </>
+            ),
+          },
+        ]}
+      />
 
       <Card padding="p-4">
         <div className="filter-row">
@@ -147,7 +236,7 @@ export function EventsPage() {
           />
           <Input
             icon={<Search size={16} />}
-            placeholder="Поиск: подкат., клиент, заметка, дата (15, мая, 2026, пн)…"
+            placeholder="…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClear={() => setSearch("")}
@@ -155,7 +244,7 @@ export function EventsPage() {
         </div>
       </Card>
 
-      {groups.ordered.map((g) => (
+      {paginated.groups.map((g) => (
         <div key={g.key} className="day-group">
           <div className="day-group-head">
             <div>
@@ -165,10 +254,10 @@ export function EventsPage() {
               <span className="day-group-date muted">
                 {" · "}
                 {format(g.date, "d MMMM", { locale: ru })}
-                {g.key === groups.todayKey ? " · сегодня" : ""}
+                {g.key === todayKey ? " · сегодня" : ""}
               </span>
             </div>
-            {g.events.length >= 2 && (
+            {(tab === "today" || g.events.length >= 2) && (
               <div className="day-group-net mono">{fmt.money(g.net)} ₽</div>
             )}
           </div>
@@ -188,10 +277,24 @@ export function EventsPage() {
         </div>
       ))}
 
-      {groups.ordered.length === 0 && list.isFetched && (
+      {tab !== "today" && paginated.total > limit && (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Button variant="secondary" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
+            Загрузить ещё ({paginated.total - limit})
+          </Button>
+        </div>
+      )}
+
+      {paginated.groups.length === 0 && list.isFetched && (
         <Card>
           <div className="empty">
-            <div className="empty-title">Событий не найдено</div>
+            <div className="empty-title">
+              {tab === "today"
+                ? "Сегодня событий нет"
+                : tab === "future"
+                  ? "Будущих событий нет"
+                  : "Прошедших событий нет"}
+            </div>
             <div className="empty-hint">Попробуйте сбросить фильтры или создать новое</div>
           </div>
         </Card>
