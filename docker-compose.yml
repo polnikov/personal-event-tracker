@@ -1,0 +1,40 @@
+# Reference compose file used both as the source of truth in the repo and on
+# the Pi (copied to /opt/event-tracker/docker-compose.yml at first setup).
+#
+# Required environment variables (`.env` in /opt/event-tracker/.env on the Pi):
+#   IMAGE_TAG          — tag to deploy; defaults to "latest"
+#   APP_SECRET_KEY     — long random string (>= 32 chars)
+#   APP_USERNAME       — login
+#   APP_PASSWORD_HASH  — argon2 hash from `python -m app.cli hash-password`
+#   COOKIE_SECURE      — true in production (HTTPS terminated by `tailscale serve`)
+#   TIMEZONE           — e.g. Europe/Moscow
+#   GITHUB_REPOSITORY  — owner/repo, defaults to polnikov/personal-event-tracker
+#
+# Access:
+#   Tailscale runs on the Pi host (NOT in this compose), and `tailscale serve`
+#   exposes https://<pi-hostname>.<tailnet>.ts.net → http://127.0.0.1:8000.
+#   That's why the app port is bound to localhost only — only the host's
+#   Tailscale daemon can reach it.
+
+services:
+  app:
+    image: ghcr.io/${GITHUB_REPOSITORY:-polnikov/personal-event-tracker}:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      APP_SECRET_KEY: ${APP_SECRET_KEY}
+      APP_USERNAME: ${APP_USERNAME}
+      APP_PASSWORD_HASH: ${APP_PASSWORD_HASH}
+      DATABASE_URL: sqlite:///./data/events.db
+      TIMEZONE: ${TIMEZONE:-Europe/Moscow}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      DEBUG: "false"
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Build image"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (defaults to "latest")'
+        required: false
+        default: 'latest'
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Auto-deploy only on a successful build; manual dispatch always runs.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, linux, ARM64]
+    steps:
+      - name: Show context
+        run: |
+          echo "Trigger: ${{ github.event_name }}"
+          echo "Tag: ${{ github.event.inputs.image_tag || 'latest' }}"
+          docker --version
+          docker compose version
+
+      - name: Pull latest image
+        working-directory: /opt/event-tracker
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || 'latest' }}
+        run: docker compose pull
+
+      - name: Recreate containers
+        working-directory: /opt/event-tracker
+        env:
+          IMAGE_TAG: ${{ github.event.inputs.image_tag || 'latest' }}
+        run: docker compose up -d --remove-orphans
+
+      - name: Prune dangling images
+        run: docker image prune -f
+
+      - name: Health check
+        working-directory: /opt/event-tracker
+        run: |
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if docker compose exec -T app python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"; then
+              echo "App is healthy"
+              exit 0
+            fi
+            echo "Waiting for app... ($i/10)"
+            sleep 3
+          done
+          echo "App did not become healthy in time"
+          docker compose logs --tail=80 app
+          exit 1

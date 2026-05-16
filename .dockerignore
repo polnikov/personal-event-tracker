@@ -1,0 +1,29 @@
+.git
+.gitignore
+.github
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+
+.env
+.env.*
+!.env.example
+
+data
+backups
+*.db
+*.db-journal
+
+# Local frontend artifacts (rebuilt inside the image)
+web/node_modules
+web/dist
+
+.DS_Store
+.idea
+.vscode
+
+# Plans / docs not needed in the image
+*.md
+!README.md
