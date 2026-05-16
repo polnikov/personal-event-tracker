@@ -215,19 +215,21 @@ export function ClientDetailPage() {
     };
   }, [monthly.data]);
 
+  // Earliest event across past + future, used as "первое событие" subtitle.
+  // MUST be declared before any early return so the hook order is stable.
+  const firstEventDate = useMemo(() => {
+    if (!data) return null;
+    let earliest: string | null = null;
+    for (const e of [...data.past_events, ...data.future_events]) {
+      if (earliest === null || e.start_at < earliest) earliest = e.start_at;
+    }
+    return earliest;
+  }, [data]);
+
   if (isLoading) return <div className="muted small">Загрузка…</div>;
   if (!data) return <Card>Клиент не найден</Card>;
 
   const { client, future_events, past_events } = data;
-
-  // Earliest event across past + future, used as "первое событие" subtitle.
-  const firstEventDate = useMemo(() => {
-    let earliest: string | null = null;
-    for (const e of [...past_events, ...future_events]) {
-      if (earliest === null || e.start_at < earliest) earliest = e.start_at;
-    }
-    return earliest;
-  }, [past_events, future_events]);
 
   return (
     <div className="page">
