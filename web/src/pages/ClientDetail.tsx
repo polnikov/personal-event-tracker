@@ -242,8 +242,8 @@ export function ClientDetailPage() {
               <div className="ds-lab muted small">событий</div>
             </div>
             <div>
-              <div className="ds-num mono">{fmt.money(client.total_spent)}</div>
-              <div className="ds-lab muted small">₽ всего</div>
+              <div className="ds-num mono">{fmt.money(client.total_spent)} ₽</div>
+              <div className="ds-lab muted small">всего</div>
             </div>
           </div>
 
@@ -292,8 +292,28 @@ export function ClientDetailPage() {
               value={tab}
               onChange={setTab}
               options={[
-                { value: "future", label: `Будущие${future_events.length ? ` · ${future_events.length}` : ""}` },
-                { value: "past", label: `Прошедшие${past_events.length ? ` · ${past_events.length}` : ""}` },
+                {
+                  value: "future",
+                  label: (
+                    <>
+                      Будущие
+                      {future_events.length > 0 && (
+                        <span className="tab-badge">{future_events.length}</span>
+                      )}
+                    </>
+                  ),
+                },
+                {
+                  value: "past",
+                  label: (
+                    <>
+                      Прошедшие
+                      {past_events.length > 0 && (
+                        <span className="tab-badge">{past_events.length}</span>
+                      )}
+                    </>
+                  ),
+                },
                 { value: "analytics", label: "Аналитика" },
               ]}
             />

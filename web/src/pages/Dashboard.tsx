@@ -392,7 +392,7 @@ export function DashboardPage() {
             <Card>
               <div className="card-head">
                 <div>
-                  <div className="card-title">По категориям</div>
+                  <div className="card-title">Доход по категориям</div>
                   <div className="muted small" style={{ textTransform: "capitalize" }}>{monthLabel}</div>
                 </div>
               </div>
