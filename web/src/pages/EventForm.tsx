@@ -404,7 +404,7 @@ export function EventFormPage() {
           )}
 
           <div className="form-actions">
-            <Button type="button" variant="danger" onClick={() => nav("/events")}>
+            <Button type="button" variant="danger" onClick={() => nav(-1)}>
               Отмена
             </Button>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

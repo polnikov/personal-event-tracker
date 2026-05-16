@@ -335,7 +335,7 @@ export function DashboardPage() {
         <>
           {/* Row 1: upcoming (3-day window) */}
           <div className="section">
-            <div className="section-head section-head-left">
+            <div className="section-head">
               <div className="card-title">Ближайшие события</div>
               <Link className="link small" to="/events">Все →</Link>
             </div>

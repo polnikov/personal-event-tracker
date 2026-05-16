@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, Plus, Search, Send, Trash2 } from "lucide-react";
@@ -29,6 +29,15 @@ export function ClientsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
   });
 
+  // Sort by event count desc; ties broken by name for a stable order.
+  const sorted = useMemo(() => {
+    if (!list.data) return [];
+    return [...list.data].sort((a, b) => {
+      if (b.events_count !== a.events_count) return b.events_count - a.events_count;
+      return a.full_name.localeCompare(b.full_name, "ru");
+    });
+  }, [list.data]);
+
   return (
     <div className="page">
       <div className="page-head">
@@ -52,7 +61,7 @@ export function ClientsPage() {
       </Card>
 
       <div className="grid grid-3 gap-md">
-        {list.data?.map((c) => (
+        {sorted.map((c) => (
           <Card key={c.id} interactive onClick={() => nav(`/clients/${c.id}`)}>
             <div className="client-card-top">
               <Avatar name={c.full_name} size={44} />

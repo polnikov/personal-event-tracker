@@ -220,6 +220,15 @@ export function ClientDetailPage() {
 
   const { client, future_events, past_events } = data;
 
+  // Earliest event across past + future, used as "первое событие" subtitle.
+  const firstEventDate = useMemo(() => {
+    let earliest: string | null = null;
+    for (const e of [...past_events, ...future_events]) {
+      if (earliest === null || e.start_at < earliest) earliest = e.start_at;
+    }
+    return earliest;
+  }, [past_events, future_events]);
+
   return (
     <div className="page">
       <div className="back-link" onClick={() => nav("/clients")}>← Клиенты</div>
@@ -231,7 +240,9 @@ export function ClientDetailPage() {
             <div>
               <div className="h2">{client.full_name}</div>
               <div className="muted small">
-                Клиент с {fmt.fullDate(client.created_at)}
+                {firstEventDate
+                  ? `Первое событие: ${fmt.fullDate(firstEventDate)}`
+                  : "Событий пока нет"}
               </div>
             </div>
           </div>

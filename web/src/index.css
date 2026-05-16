@@ -288,12 +288,6 @@
   justify-content: space-between;
   padding: 0 4px;
 }
-/* Left-aligned section head (title flush left, secondary link inline) */
-.section-head-left {
-  justify-content: flex-start;
-  gap: 14px;
-  padding: 0;
-}
 .section-title {
   font-size: 13px;
   font-weight: 600;
