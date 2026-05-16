@@ -1122,6 +1122,23 @@ input[type="number"] { -moz-appearance: textfield; }
   place-items: center;
   line-height: 1;
   box-shadow: 0 0 0 2px var(--surface);
+  z-index: 2;
+}
+/* Lift any tab that carries a badge above adjacent tabs so the badge
+   (which extends -4px past the button) is never covered by a neighbour's
+   `.on` background. Requires :has() — supported in all evergreen browsers. */
+.view-switcher { isolation: isolate; }
+.view-switch-btn:has(.tab-badge) { z-index: 1; }
+
+/* ClientDetail tabs row — main tabs on the left, optional year filter on
+   the right. On mobile they stack: main tabs span full width, year tabs
+   drop to row 2, left-aligned. */
+.client-detail-tabs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .view-switch-btn:hover { color: var(--ink); }
 .view-switch-btn.on {
@@ -1652,17 +1669,33 @@ input[type="number"] { -moz-appearance: textfield; }
   .modal-close-floating { top: 16px; right: 16px; }
   .modal-body-cal-detail .form { margin-top: 20px; }
 
-  /* Event table rows fit phone width */
+  /* Event table rows fit phone width. Client/notes drop to row 2 under
+     the subcategory badge instead of getting hidden. */
   .event-trow {
     grid-template-columns: 64px 1fr auto;
-    gap: 10px;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "time  cat    cost"
+      "time  client client";
+    column-gap: 10px;
+    row-gap: 2px;
     padding: 12px 14px;
   }
-  .event-trow-client,
+  .event-trow-when { grid-area: time; align-self: start; padding-top: 2px; }
+  .event-trow-cat { grid-area: cat; }
+  .event-trow-cost { grid-area: cost; align-self: start; padding-top: 2px; font-size: 12.5px; }
+  .event-trow-client {
+    grid-area: client;
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .event-trow-dur { display: none; }
   .event-trow-date { font-size: 12.5px; }
   .event-trow-time { font-size: 11.5px; }
-  .event-trow-cost { font-size: 12.5px; }
   .cat-badge { flex-wrap: wrap; row-gap: 2px; font-size: 12.5px; }
   .cat-name { font-size: 12.5px; }
   .cat-sub { font-size: 12px; }
@@ -1713,12 +1746,47 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Calendar list view */
   .list-cal-day { grid-template-columns: 56px 1fr; gap: 10px; padding: 12px 14px; }
 
-  /* Calendar header controls — wrap nicely */
-  .page-head-actions { gap: 6px; }
-  .cal-nav { width: 100%; justify-content: space-between; }
-  .cal-month { min-width: 0; flex: 1; font-size: 12.5px; }
-  .view-switcher { flex: 1; }
+  /* Page header — stack title and actions, full width */
+  .page-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .page-head-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+  .page-head-actions > * { width: 100%; }
+  /* Inside the page-head-actions column, sub-flex containers fill the row */
+  .page-head-actions .view-switcher,
+  .page-head-actions .cal-nav {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
   .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
+  .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
+
+  /* ClientDetail tabs row: main tabs full-width, year filter on its own
+     row, left-aligned. Bug fix: container previously kept everything on
+     one line so the year switcher's background partly hid the badge. */
+  .client-detail-tabs-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .client-detail-tabs-row > .view-switcher:first-child {
+    display: flex;
+    width: 100%;
+  }
+  .client-detail-tabs-row > .view-switcher:not(:first-child) {
+    align-self: flex-start;
+    width: auto;
+  }
+  .client-detail-tabs-row > .view-switcher:not(:first-child) .view-switch-btn {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+  }
+
+  /* Calendar month grid — rounded all four corners (was only top via Card) */
+  .cal-grid {
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
 
   /* Form actions — keep cancel + actions on one row */
   .form-actions { flex-wrap: nowrap; gap: 6px; padding-top: 6px; }

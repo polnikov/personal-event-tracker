@@ -88,11 +88,21 @@ export function EventsPage() {
   const filtered = useMemo(() => {
     if (!q) return all;
     return all.filter((e) => {
+      const d = parseISO(e.start_at);
+      const dateHaystack = [
+        format(d, "d MMMM yyyy", { locale: ru }),  // 15 мая 2026
+        format(d, "EEEE", { locale: ru }),          // понедельник
+        format(d, "EEE", { locale: ru }),           // пн
+        format(d, "MMM yyyy", { locale: ru }),      // май 2026
+        format(d, "dd.MM.yyyy"),                     // 15.05.2026
+        format(d, "yyyy-MM-dd"),                     // 2026-05-15
+      ].join(" ");
       const haystacks = [
         e.subcategory.name,
         e.subcategory.category_name,
         e.client?.full_name || "",
         e.notes || "",
+        dateHaystack,
       ];
       return haystacks.some((h) => h.toLowerCase().includes(q));
     });
@@ -137,7 +147,7 @@ export function EventsPage() {
           />
           <Input
             icon={<Search size={16} />}
-            placeholder="Поиск по событиям…"
+            placeholder="Поиск: подкат., клиент, заметка, дата (15, мая, 2026, пн)…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClear={() => setSearch("")}

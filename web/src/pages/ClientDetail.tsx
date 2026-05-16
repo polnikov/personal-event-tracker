@@ -287,7 +287,7 @@ export function ClientDetailPage() {
         )}
 
         <div className="stack-md">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div className="client-detail-tabs-row">
             <Tabs<TabKey>
               value={tab}
               onChange={setTab}

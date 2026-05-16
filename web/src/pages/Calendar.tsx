@@ -411,19 +411,28 @@ function ListView({
     );
   }
 
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
   return (
-    <Card padding="p-0">
-      <div className="list-cal">
-        {daysWithEvents.map((d) => {
-          const evs = eventsByDay.get(d.toDateString()) || [];
-          const isToday = d.toDateString() === todayKey;
-          return (
-            <div key={d.toISOString()} className="list-cal-day">
-              <div className="list-cal-date">
-                <div className={cn("list-cal-day-num", isToday && "today")}>{d.getDate()}</div>
-                <div className="list-cal-day-mon">{format(d, "MMM", { locale: ru })}</div>
-                <div className="list-cal-dow muted small">{format(d, "EEEEEE", { locale: ru })}</div>
+    <div className="stack-md">
+      {daysWithEvents.map((d) => {
+        const evs = eventsByDay.get(d.toDateString()) || [];
+        const isToday = d.toDateString() === todayKey;
+        return (
+          <div key={d.toISOString()} className="day-group">
+            <div className="day-group-head">
+              <div>
+                <span className="day-group-weekday">
+                  {capitalize(format(d, "EEEE", { locale: ru }))}
+                </span>
+                <span className="day-group-date muted">
+                  {" · "}
+                  {format(d, "d MMMM", { locale: ru })}
+                  {isToday ? " · сегодня" : ""}
+                </span>
               </div>
+            </div>
+            <Card padding="p-4">
               <div className="list-cal-evs">
                 {evs.map((e) => (
                   <div
@@ -453,11 +462,11 @@ function ListView({
                   </div>
                 ))}
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </Card>
+            </Card>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
