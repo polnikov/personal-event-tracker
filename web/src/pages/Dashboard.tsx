@@ -205,28 +205,29 @@ export function DashboardPage() {
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["38%", "56%"] : ["44%", "64%"],
-          center: isMobile ? ["50%", "42%"] : ["30%", "50%"],
+          radius: isMobile ? ["46%", "64%"] : ["50%", "70%"],
+          center: isMobile ? ["50%", "44%"] : ["30%", "50%"],
           padAngle: 3,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
-            position: "outside",
+            position: "outer",
+            alignTo: "edge",
+            edgeDistance: 10,
             color: "#2A2A2E",
             fontSize: 11,
             fontWeight: 600,
             lineHeight: 14,
-            edgeDistance: "12%",
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
-              if (it.percent < 4) return "";
+              if (it.percent < 3) return "";
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
               return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 12, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: { show: true, length: 14, length2: 16, smooth: true, lineStyle: { color: "#DFDCD3" } },
           labelLayout: { hideOverlap: true },
           emphasis: {
             scale: true,
@@ -334,7 +335,7 @@ export function DashboardPage() {
         <>
           {/* Row 1: upcoming (3-day window) */}
           <div className="section">
-            <div className="section-head">
+            <div className="section-head section-head-left">
               <div className="card-title">Ближайшие события</div>
               <Link className="link small" to="/events">Все →</Link>
             </div>
@@ -400,7 +401,7 @@ export function DashboardPage() {
                 </div>
               </div>
               {pieOption ? (
-                <Echart option={pieOption} height={280} />
+                <Echart option={pieOption} height={320} />
               ) : (
                 <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
               )}
