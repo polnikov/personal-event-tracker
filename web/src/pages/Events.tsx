@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
   Button,
   Card,
-  EventTableRow,
+  Input,
   Select,
   Tabs,
 } from "@/components/design";
-import { events as eventsApi } from "@/lib/api";
+import { AppIcon } from "@/components/phosphor";
+import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
 
@@ -86,20 +87,91 @@ function paginateGroups(groups: DayGroup[], limit: number): { groups: DayGroup[]
   return { groups: out, total };
 }
 
+interface IconMaps {
+  catIcons: Map<number, string | null>;
+  catColors: Map<number, string>;
+  subcatIcons: Map<number, string | null>;
+}
+
+function EventsRow({
+  ev,
+  icons,
+  onClick,
+  onClient,
+}: {
+  ev: EventItem;
+  icons: IconMaps;
+  onClick: () => void;
+  onClient: (id: number) => void;
+}) {
+  const catId = ev.subcategory.category_id;
+  const catColor = icons.catColors.get(catId) || ev.subcategory.category_color;
+  const subcatIcon = icons.subcatIcons.get(ev.subcategory.id);
+  return (
+    <div className="events-row" onClick={onClick}>
+      <span className="events-row-time-start">{fmt.time(ev.start_at)}</span>
+      <span className="events-row-time-sep">–</span>
+      <span className="events-row-time-end">{fmt.time(ev.end_at)}</span>
+      <span className="events-row-cat">
+        <span className="events-row-cat-dot" style={{ background: catColor }} />
+        <span className="events-row-cat-name">{ev.subcategory.category_name}</span>
+      </span>
+      <span className="events-row-sub">
+        {subcatIcon && (
+          <span className="events-row-sub-icon">
+            <AppIcon name={subcatIcon} size={14} weight="duotone" color={catColor} />
+          </span>
+        )}
+        <span className="events-row-sub-name">{ev.subcategory.name}</span>
+      </span>
+      {ev.client && (
+        <span
+          className="events-row-client"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClient(ev.client!.id);
+          }}
+        >
+          {ev.client.full_name}
+        </span>
+      )}
+      <span className="events-row-cost">{fmt.money(ev.total_cost)} ₽</span>
+    </div>
+  );
+}
+
 export function EventsPage() {
   const nav = useNavigate();
   const [tab, setTab] = useState<TabKey>("today");
-  const [yearFilter, setYearFilter] = useState<string>("");      // "" = все годы
-  const [monthFilter, setMonthFilter] = useState<string>("");    // "1".."12" or ""
+  const [catFilter, setCatFilter] = useState<string>("");
   const [subcatFilter, setSubcatFilter] = useState<string>("");
+  const [yearFilter, setYearFilter] = useState<string>("");
+  const [monthFilter, setMonthFilter] = useState<string>("");
+  const [clientFilter, setClientFilter] = useState<string>("");
+  const [search, setSearch] = useState<string>("");
   const [limit, setLimit] = useState(PAGE_SIZE);
 
-  // Server returns all events; year/month/subcategory filtering happens
-  // client-side so the dropdowns can show only options that have data.
+  const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
+  const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
+
+  // Server fetch ignores filters — all narrowing happens client-side so the
+  // dropdowns can derive their option pools from the actual event data.
   const list = useQuery({
     queryKey: ["events", "list"],
     queryFn: () => eventsApi.list({}),
   });
+
+  const icons: IconMaps = useMemo(() => {
+    const catIcons = new Map<number, string | null>();
+    const catColors = new Map<number, string>();
+    const subcatIcons = new Map<number, string | null>();
+    for (const c of cats.data ?? []) {
+      catIcons.set(c.id, c.icon);
+      catColors.set(c.id, c.color);
+      for (const s of c.subcategories) subcatIcons.set(s.id, s.icon);
+    }
+    return { catIcons, catColors, subcatIcons };
+  }, [cats.data]);
 
   const todayKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
@@ -108,8 +180,24 @@ export function EventsPage() {
     [list.data],
   );
 
-  // --- Filter option pools (each derived from the previous filter step) ---
+  // --- Cascading dropdown option pools ---
 
+  // Subcategories: when a category is picked, restrict to its subcategories;
+  // otherwise show all. Category is already in its own filter, so the label
+  // is the subcategory name only.
+  const subcatOptions = useMemo(() => {
+    const out: { value: string; label: string }[] = [];
+    for (const c of cats.data ?? []) {
+      if (catFilter && c.id !== Number(catFilter)) continue;
+      for (const s of c.subcategories) {
+        out.push({ value: String(s.id), label: s.name });
+      }
+    }
+    out.sort((a, b) => a.label.localeCompare(b.label, "ru"));
+    return out;
+  }, [cats.data, catFilter]);
+
+  // Year/Month — derived from events; month is further constrained by year.
   const availableYears = useMemo(() => {
     const set = new Set<number>();
     for (const e of all) set.add(parseISO(e.start_at).getFullYear());
@@ -126,54 +214,55 @@ export function EventsPage() {
     return Array.from(set).sort((a, b) => a - b);
   }, [all, yearFilter]);
 
-  const availableSubcats = useMemo(() => {
-    const map = new Map<number, { name: string; categoryName: string }>();
-    for (const e of all) {
-      const d = parseISO(e.start_at);
-      if (yearFilter && d.getFullYear() !== Number(yearFilter)) continue;
-      if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) continue;
-      map.set(e.subcategory.id, {
-        name: e.subcategory.name,
-        categoryName: e.subcategory.category_name,
-      });
+  // Reset dependent filters that fell out of range.
+  useEffect(() => {
+    if (subcatFilter && !subcatOptions.find((o) => o.value === subcatFilter)) {
+      setSubcatFilter("");
     }
-    return Array.from(map.entries())
-      .map(([id, s]) => ({ id, ...s }))
-      .sort((a, b) =>
-        a.categoryName === b.categoryName
-          ? a.name.localeCompare(b.name, "ru")
-          : a.categoryName.localeCompare(b.categoryName, "ru"),
-      );
-  }, [all, yearFilter, monthFilter]);
-
-  // Auto-reset filters that become invalid when the upstream filter changes
+  }, [subcatOptions, subcatFilter]);
   useEffect(() => {
     if (monthFilter && !availableMonths.includes(Number(monthFilter))) {
       setMonthFilter("");
     }
   }, [availableMonths, monthFilter]);
-  useEffect(() => {
-    if (subcatFilter && !availableSubcats.find((s) => s.id === Number(subcatFilter))) {
-      setSubcatFilter("");
-    }
-  }, [availableSubcats, subcatFilter]);
 
-  // Reset pagination when the visible slice changes underneath us.
+  // Reset pagination whenever the visible slice changes underneath us.
   useEffect(
     () => setLimit(PAGE_SIZE),
-    [tab, yearFilter, monthFilter, subcatFilter],
+    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, search],
   );
 
-  // --- Apply the active filters to build the candidate list ---
+  // --- Filter pipeline ---
+  const q = search.trim().toLowerCase();
   const filtered = useMemo(() => {
     return all.filter((e) => {
       const d = parseISO(e.start_at);
+      if (catFilter && e.subcategory.category_id !== Number(catFilter)) return false;
+      if (subcatFilter && e.subcategory.id !== Number(subcatFilter)) return false;
       if (yearFilter && d.getFullYear() !== Number(yearFilter)) return false;
       if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) return false;
-      if (subcatFilter && e.subcategory.id !== Number(subcatFilter)) return false;
+      if (clientFilter && (e.client?.id ?? -1) !== Number(clientFilter)) return false;
+      if (q) {
+        const dateHaystack = [
+          format(d, "d MMMM yyyy", { locale: ru }),  // 15 мая 2026
+          format(d, "EEEE", { locale: ru }),          // понедельник
+          format(d, "EEE", { locale: ru }),           // пн
+          format(d, "MMM yyyy", { locale: ru }),      // май 2026
+          format(d, "dd.MM.yyyy"),
+          format(d, "yyyy-MM-dd"),
+        ].join(" ");
+        const haystacks = [
+          e.subcategory.name,
+          e.subcategory.category_name,
+          e.client?.full_name || "",
+          e.notes || "",
+          dateHaystack,
+        ];
+        if (!haystacks.some((h) => h.toLowerCase().includes(q))) return false;
+      }
       return true;
     });
-  }, [all, yearFilter, monthFilter, subcatFilter]);
+  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, q]);
 
   const counts = useMemo(() => {
     let today = 0, future = 0, past = 0;
@@ -195,7 +284,6 @@ export function EventsPage() {
     });
   }, [filtered, tab, todayKey]);
 
-  // Today → ascending (morning first), past/future → newest first
   const groups = useMemo(
     () => buildDayGroups(slice, todayKey, tab !== "today"),
     [slice, todayKey, tab],
@@ -207,14 +295,15 @@ export function EventsPage() {
   );
 
   // --- Select options ---
+  const catOptions = (cats.data ?? []).map((c) => ({ value: String(c.id), label: c.name }));
   const yearOptions = availableYears.map((y) => ({ value: String(y), label: String(y) }));
   const monthOptions = availableMonths.map((m) => ({
     value: String(m),
     label: format(parse(String(m), "M", new Date()), "LLLL", { locale: ru }),
   }));
-  const subcatOptions = availableSubcats.map((s) => ({
-    value: String(s.id),
-    label: `${s.categoryName} · ${s.name}`,
+  const clientOptions = (clientsList.data ?? []).map((c) => ({
+    value: String(c.id),
+    label: c.full_name,
   }));
 
   return (
@@ -266,7 +355,19 @@ export function EventsPage() {
       />
 
       <Card padding="p-4">
-        <div className="filter-row">
+        <div className="filter-row-4">
+          <Select
+            value={catFilter}
+            onChange={setCatFilter}
+            placeholder="Все категории"
+            options={catOptions}
+          />
+          <Select
+            value={subcatFilter}
+            onChange={setSubcatFilter}
+            placeholder="Все подкатегории"
+            options={subcatOptions}
+          />
           <Select
             value={yearFilter}
             onChange={setYearFilter}
@@ -279,11 +380,20 @@ export function EventsPage() {
             placeholder="Все месяцы"
             options={monthOptions}
           />
+        </div>
+        <div className="filter-row-2">
           <Select
-            value={subcatFilter}
-            onChange={setSubcatFilter}
-            placeholder="Все подкатегории"
-            options={subcatOptions}
+            value={clientFilter}
+            onChange={setClientFilter}
+            placeholder="Все клиенты"
+            options={clientOptions}
+          />
+          <Input
+            icon={<Search size={16} />}
+            placeholder="…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
           />
         </div>
       </Card>
@@ -308,10 +418,10 @@ export function EventsPage() {
           <Card padding="p-0">
             <div className={`event-table${g.isPast ? " dim" : ""}`}>
               {g.events.map((e) => (
-                <EventTableRow
+                <EventsRow
                   key={e.id}
                   ev={e}
-                  showDate={false}
+                  icons={icons}
                   onClick={() => nav(`/events/${e.id}/edit`)}
                   onClient={(id) => nav(`/clients/${id}`)}
                 />

@@ -725,6 +725,23 @@ input[type="number"] { -moz-appearance: textfield; }
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; }
 @media (max-width: 800px) { .filter-row { grid-template-columns: 1fr; } }
 
+/* Events page: row 1 has four equal-width selects (cat, subcat, year, month);
+   row 2 has the client select + search input. */
+.filter-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.filter-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+@media (max-width: 800px) {
+  .filter-row-4 { grid-template-columns: 1fr 1fr; }
+  .filter-row-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .filter-row-4 { grid-template-columns: 1fr; }
+}
+
 /* ============================================================
    Avatar / dot / badge
    ============================================================ */
@@ -922,6 +939,141 @@ input[type="number"] { -moz-appearance: textfield; }
 .event-cost { font-size: 13px; font-weight: 500; }
 
 /* ============================================================
+   Events-list-row
+   Desktop: single flex row
+     tstart – tend  ⏎20px⏎  ● cat  ⏎12px⏎  icon sub  ⟶auto⟶  client  ⏎12px⏎  cost
+   Mobile: 2-row grid
+     row 1: tstart  | cat    | sub    | cost
+     row 2: tend    | client | client | client
+   (client's left edge aligns with cat; tend sits directly under tstart)
+   ============================================================ */
+.events-row {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.12s;
+  min-width: 0;
+}
+.events-row:first-child { border-top: 0; }
+.events-row:hover { background: var(--bg-2); }
+
+.events-row-time-start,
+.events-row-time-end {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum';
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.events-row-time-sep {
+  margin: 0 4px;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+.events-row-time-end {
+  color: var(--muted);
+  margin-right: 20px;          /* 20px gap before category */
+}
+
+.events-row-cat,
+.events-row-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.events-row-cat {
+  color: var(--ink);
+  font-weight: 500;
+  margin-right: 12px;
+}
+.events-row-sub {
+  color: var(--muted);
+  font-size: 13px;
+}
+.events-row-cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.events-row-sub-icon {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.events-row-cat-name,
+.events-row-sub-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.events-row-client {
+  margin-left: auto;                   /* push client + cost to the right */
+  padding: 4px 10px;
+  border-radius: 9px;
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.events-row-client:hover { background: var(--accent-soft); }
+
+.events-row-cost {
+  margin-left: 12px;
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum';
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* When there's no client, cost has to be the one pushing itself right. */
+.events-row:not(:has(.events-row-client)) .events-row-cost { margin-left: auto; }
+
+.event-table.dim .events-row { opacity: 0.7; }
+
+@media (max-width: 640px) {
+  .events-row {
+    display: grid;
+    grid-template-columns: auto auto auto 1fr;
+    grid-template-areas:
+      "tstart cat    sub    cost"
+      "tend   client client client";
+    column-gap: 10px;
+    row-gap: 4px;
+    padding: 12px 14px;
+  }
+  /* Drop all desktop margins/flex rules; grid handles placement. */
+  .events-row > * { margin: 0; }
+  .events-row-time-start { grid-area: tstart; }
+  .events-row-time-end   { grid-area: tend; }
+  .events-row-time-sep   { display: none; }          /* "–" hidden on phones */
+  .events-row-cat        { grid-area: cat; }
+  .events-row-sub        { grid-area: sub; }
+  .events-row-client {
+    grid-area: client;
+    justify-self: start;
+    /* Offset = cat-dot width (8px) + .events-row-cat gap (6px). Aligns the
+       client name's first letter under the category name's first letter,
+       not under the colour dot. */
+    padding-left: 14px;
+    padding-right: 6px;
+  }
+  .events-row-cost {
+    grid-area: cost;
+    justify-self: end;
+  }
+}
+
+/* ============================================================
    Event table (Events page)
    ============================================================ */
 .event-table { display: flex; flex-direction: column; }
@@ -1090,13 +1242,19 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex;
   background: var(--surface);
   border-radius: var(--r-md);
-  /* Padding + gap give the corner badge somewhere safe to live — it can
-     hang slightly past the button edge into the gap between tabs without
-     ever crossing into a neighbour's `.on` background. */
+  /* Padding + gap give the corner badge somewhere safe to live — the
+     badge is centred on each tab's top-right corner via translate(50%, -50%),
+     so the gap must be wide enough to contain half the badge width (≈11px
+     with the white ring) without crossing into a neighbour's `.on` bg. */
   padding: 4px;
-  gap: 6px;
-  box-shadow: var(--shadow-1);
+  gap: 16px;
+  /* Match the lift of regular cards (was shadow-1, felt anaemic). */
+  box-shadow: var(--shadow-2);
 }
+/* When a Tabs lives directly inside .page (a column flex container), the
+   default flex `align-items: stretch` makes the switcher span the full
+   page width. Opt out so it hugs its labels instead. */
+.page > .view-switcher { align-self: flex-start; }
 .view-switch-btn {
   position: relative;
   border: 0;
@@ -1111,12 +1269,13 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background 0.12s, color 0.12s;
 }
 .tab-badge {
-  /* Top-right corner of the tab, lifted slightly above the button so the
-     own background sits below it. Horizontally it overhangs by 2px into
-     the 6px inter-tab gap — never reaches the neighbouring tab. */
+  /* Centred on the tab's top-right corner. translate(50%, -50%) pulls the
+     badge so its centre sits exactly on the corner — half the badge spills
+     into the inter-tab gap, the other half into the tab itself. */
   position: absolute;
-  top: -6px;
-  right: -2px;
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
   display: inline-grid;
   place-items: center;
   min-width: 18px;
@@ -1751,24 +1910,27 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Calendar list view */
   .list-cal-day { grid-template-columns: 56px 1fr; gap: 10px; padding: 12px 14px; }
 
-  /* Page header — stack title and actions, full width */
-  .page-head { flex-direction: column; align-items: stretch; gap: 10px; }
-  .page-head-actions {
+  /* Page header — Calendar has many controls (filter + view-switcher +
+     nav + buttons), so it stacks into a column on mobile. Other pages
+     (Events, Dashboard, Clients, Categories) keep the default flex-wrap
+     so a single action button sits content-width on the right of the
+     title group. We detect Calendar by the presence of .cal-nav. */
+  .page-head:has(.cal-nav) { flex-direction: column; align-items: stretch; gap: 10px; }
+  .page-head:has(.cal-nav) .page-head-actions {
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
     width: 100%;
   }
-  .page-head-actions > * { width: 100%; }
-  /* Inside the page-head-actions column, sub-flex containers fill the row */
-  .page-head-actions .view-switcher,
-  .page-head-actions .cal-nav {
+  .page-head:has(.cal-nav) .page-head-actions > * { width: 100%; }
+  .page-head:has(.cal-nav) .view-switcher,
+  .page-head:has(.cal-nav) .cal-nav {
     width: 100%;
     display: flex;
     justify-content: space-between;
   }
-  .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
-  .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
+  .page-head:has(.cal-nav) .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
+  .page-head:has(.cal-nav) .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
 
   /* ClientDetail tabs row: main tabs full-width, year filter on its own
      row, left-aligned. Bug fix: container previously kept everything on
