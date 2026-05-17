@@ -192,7 +192,7 @@ export function ClientDetailPage() {
       format(parse(String(i + 1), "M", new Date()), "LLL", { locale: ru }),
     );
     return {
-      grid: { top: 24, right: 16, bottom: 28, left: 56 },
+      grid: { top: 32, right: 16, bottom: 28, left: 56 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -237,10 +237,22 @@ export function ClientDetailPage() {
           data: monthly.data.values,
           itemStyle: { color: "oklch(0.62 0.13 145)", borderRadius: [4, 4, 0, 0] },
           barMaxWidth: 28,
+          label: {
+            show: true,
+            position: "top",
+            color: "#807A72",
+            fontSize: 10,
+            fontWeight: 600,
+            formatter: (p: unknown) => {
+              const v = (p as { value: number }).value;
+              if (!v) return "";
+              return v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
+            },
+          },
         },
       ],
     };
-  }, [monthly.data]);
+  }, [monthly.data, year]);
 
   // Earliest event across past + future, used as "первое событие" subtitle.
   // MUST be declared before any early return so the hook order is stable.

@@ -181,32 +181,22 @@ export function DashboardPage() {
           return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${item.color}"></span><span style="font-weight:500">${item.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${RUB(item.value)} · ${item.percent.toFixed(1)}%</div>`;
         },
       },
-      legend: isMobile
-        ? {
-            orient: "horizontal",
-            bottom: 4,
-            left: "center",
-            textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-            itemWidth: 10,
-            itemHeight: 10,
-            itemGap: 12,
-            icon: "roundRect",
-          }
-        : {
-            orient: "vertical",
-            right: 8,
-            top: "center",
-            textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
-            itemWidth: 10,
-            itemHeight: 10,
-            icon: "roundRect",
-          },
+      legend: {
+        orient: "horizontal",
+        bottom: 4,
+        left: "center",
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 12,
+        icon: "roundRect",
+      },
       series: [
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["46%", "64%"] : ["50%", "70%"],
-          center: isMobile ? ["50%", "44%"] : ["30%", "50%"],
+          radius: isMobile ? ["44%", "60%"] : ["46%", "62%"],
+          center: ["50%", "42%"],
           padAngle: 3,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
@@ -221,14 +211,13 @@ export function DashboardPage() {
             lineHeight: 14,
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
-              if (it.percent < 3) return "";
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
               return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
           },
           labelLine: { show: true, length: 14, length2: 16, smooth: true, lineStyle: { color: "#DFDCD3" } },
-          labelLayout: { hideOverlap: true },
+          labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
             scaleSize: 6,
@@ -252,7 +241,7 @@ export function DashboardPage() {
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
     return {
-      grid: { top: 24, right: 16, bottom: 28, left: 56 },
+      grid: { top: 32, right: 16, bottom: 28, left: 56 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -294,6 +283,17 @@ export function DashboardPage() {
           data: data.chart.monthly_values,
           itemStyle: { color: "oklch(0.62 0.13 145)", borderRadius: [4, 4, 0, 0] },
           barMaxWidth: 28,
+          label: {
+            show: true,
+            position: "top",
+            color: "#807A72",
+            fontSize: 10,
+            fontWeight: 600,
+            formatter: (p: unknown) => {
+              const v = (p as { value: number }).value;
+              return v > 0 ? fmtCompact(v) : "";
+            },
+          },
         },
       ],
     };
