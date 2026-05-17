@@ -1,5 +1,5 @@
 import * as echarts from "echarts/core";
-import { BarChart, PieChart } from "echarts/charts";
+import { BarChart, LineChart, PieChart } from "echarts/charts";
 import {
   GridComponent,
   LegendComponent,
@@ -12,6 +12,7 @@ import type { EChartsOption } from "echarts";
 
 echarts.use([
   BarChart,
+  LineChart,
   PieChart,
   GridComponent,
   LegendComponent,

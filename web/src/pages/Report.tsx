@@ -268,58 +268,44 @@ export function ReportPage() {
     );
     const netSeries = data.data.monthly.map((m) => Math.round(m.net));
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
+    const totalSeries = netSeries.map((n, i) => n + taxSeries[i]);
 
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
-      grid: { top: 28, right: 16, bottom: 56, left: 56 },
+      grid: { top: 32, right: 16, bottom: 28, left: 56 },
       tooltip: {
         trigger: "axis",
-        axisPointer: { type: "shadow" },
         backgroundColor: "#FFFFFF",
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (params: unknown) => {
-          const items = params as Array<{
-            seriesName: string;
-            value: number;
-            color: string;
-            dataIndex: number;
-          }>;
+          const items = params as Array<{ dataIndex: number }>;
           if (!items.length) return "";
           const idx = items[0].dataIndex;
           const monthDate = parse(String(idx + 1), "M", new Date());
-          const label = format(monthDate, "LLLL yyyy", { locale: ru });
-          const total = items.reduce((s, it) => s + (it.value || 0), 0);
-          const rows = items
-            .map(
-              (it) =>
-                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${it.color}"></span><span style="flex:1">${it.seriesName}</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(it.value)}</span></div>`,
-            )
-            .join("");
-          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label.replace(/yyyy/, String(year))}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`;
+          const label = format(monthDate, "LLLL yyyy", { locale: ru }).replace(
+            /yyyy/, String(year),
+          );
+          const net = netSeries[idx];
+          const tax = taxSeries[idx];
+          const total = net + tax;
+          return (
+            `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label}</div>` +
+            `<div style="display:flex;justify-content:space-between;gap:14px;font-size:12px;margin-top:4px"><span>Чистыми</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(net)}</span></div>` +
+            `<div style="display:flex;justify-content:space-between;gap:14px;font-size:12px;margin-top:2px"><span>Налог</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(tax)}</span></div>` +
+            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`
+          );
         },
-      },
-      legend: {
-        bottom: 4,
-        left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 14,
-        icon: "roundRect",
       },
       xAxis: {
         type: "category",
         data: labels,
         axisTick: { show: false },
         axisLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: {
-          ...ECHART_BASE_TEXT,
-          fontSize: 11,
-        },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
       },
       yAxis: {
         type: "value",
@@ -332,41 +318,38 @@ export function ReportPage() {
       },
       series: [
         {
-          name: "Чистыми",
-          type: "bar" as const,
-          stack: "total",
-          data: netSeries,
-          itemStyle: { color: "oklch(0.62 0.13 145)", borderRadius: [0, 0, 0, 0] },
-          barMaxWidth: 28,
-          label: {
-            show: true,
-            position: "insideTop",
-            color: "#FFFFFF",
-            fontSize: 10,
-            fontWeight: 600,
-            formatter: (p: unknown) => {
-              const v = (p as { value: number }).value;
-              return v > 0 ? fmtCompact(v) : "";
+          type: "line" as const,
+          smooth: 0.2,
+          data: totalSeries,
+          symbol: "circle",
+          symbolSize: 6,
+          showSymbol: true,
+          itemStyle: { color: "rgb(123, 182, 97)" },
+          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
+          areaStyle: {
+            color: {
+              type: "linear" as const,
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: "rgba(123, 182, 97, 0.42)" },
+                { offset: 1, color: "rgba(123, 182, 97, 0)" },
+              ],
             },
           },
-        },
-        {
-          name: "Налог",
-          type: "bar" as const,
-          stack: "total",
-          data: taxSeries,
-          itemStyle: { color: "oklch(0.78 0.10 145)", borderRadius: [4, 4, 0, 0] },
-          barMaxWidth: 28,
           label: {
             show: true,
             position: "top",
             color: "#2A2A2E",
             fontSize: isMobile ? 9 : 10,
             fontWeight: 600,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [2, 6, 2, 6],
             formatter: (p: unknown) => {
-              const item = p as { value: number; dataIndex: number };
-              const total = netSeries[item.dataIndex] + taxSeries[item.dataIndex];
-              return total > 0 ? fmtCompact(total) : "";
+              const v = (p as { value: number }).value;
+              return v > 0 ? fmtCompact(v) : "";
             },
           },
         },

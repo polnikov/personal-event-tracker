@@ -233,16 +233,35 @@ export function ClientDetailPage() {
       },
       series: [
         {
-          type: "bar" as const,
+          type: "line" as const,
+          smooth: 0.2,
           data: monthly.data.values,
-          itemStyle: { color: "oklch(0.62 0.13 145)", borderRadius: [4, 4, 0, 0] },
-          barMaxWidth: 28,
+          symbol: "circle",
+          symbolSize: 6,
+          showSymbol: true,
+          itemStyle: { color: "rgb(123, 182, 97)" },
+          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
+          areaStyle: {
+            color: {
+              type: "linear" as const,
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: "rgba(123, 182, 97, 0.42)" },
+                { offset: 1, color: "rgba(123, 182, 97, 0)" },
+              ],
+            },
+          },
           label: {
             show: true,
             position: "top",
-            color: "#807A72",
+            color: "#2A2A2E",
             fontSize: 10,
             fontWeight: 600,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [2, 6, 2, 6],
             formatter: (p: unknown) => {
               const v = (p as { value: number }).value;
               if (!v) return "";
