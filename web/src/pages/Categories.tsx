@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Edit3, Plus, Trash2 } from "lucide-react";
+import { Coins, Edit3, Plus, Trash2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -21,7 +21,9 @@ export function CategoriesPage() {
   const list = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
 
   const [creatingCat, setCreatingCat] = useState(false);
+  const [editingCat, setEditingCat] = useState<Category | null>(null);
   const [addingSubFor, setAddingSubFor] = useState<Category | null>(null);
+  const [editingSub, setEditingSub] = useState<{ cat: Category; sub: Subcategory } | null>(null);
   const [editingPriceFor, setEditingPriceFor] = useState<{ cat: Category; sub: Subcategory } | null>(null);
 
   const removeCat = useMutation({
@@ -66,17 +68,25 @@ export function CategoriesPage() {
                 </span>
                 <span className="h3">{cat.name}</span>
               </div>
-              <IconButton
-                danger
-                onClick={() => {
-                  if (confirm(`Удалить категорию "${cat.name}" со всеми подкатегориями?`)) {
-                    removeCat.mutate(cat.id);
-                  }
-                }}
-                aria-label="Удалить"
-              >
-                <Trash2 size={15} strokeWidth={1.6} />
-              </IconButton>
+              <div style={{ display: "flex", gap: 4 }}>
+                <IconButton
+                  onClick={() => setEditingCat(cat)}
+                  aria-label="Редактировать"
+                >
+                  <Edit3 size={15} strokeWidth={1.6} />
+                </IconButton>
+                <IconButton
+                  danger
+                  onClick={() => {
+                    if (confirm(`Удалить категорию "${cat.name}" со всеми подкатегориями?`)) {
+                      removeCat.mutate(cat.id);
+                    }
+                  }}
+                  aria-label="Удалить"
+                >
+                  <Trash2 size={15} strokeWidth={1.6} />
+                </IconButton>
+              </div>
             </div>
             <div className="subcat-list">
               {cat.subcategories.map((sub) => (
@@ -91,8 +101,19 @@ export function CategoriesPage() {
                     {sub.current_price ? `${fmt.money(sub.current_price)} ₽` : "—"}
                   </div>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <IconButton small onClick={() => setEditingPriceFor({ cat, sub })} aria-label="Цена">
+                    <IconButton
+                      small
+                      onClick={() => setEditingSub({ cat, sub })}
+                      aria-label="Имя/иконка"
+                    >
                       <Edit3 size={13} />
+                    </IconButton>
+                    <IconButton
+                      small
+                      onClick={() => setEditingPriceFor({ cat, sub })}
+                      aria-label="Новая цена"
+                    >
+                      <Coins size={13} />
                     </IconButton>
                     <IconButton
                       small
@@ -119,9 +140,19 @@ export function CategoriesPage() {
         ))}
       </div>
 
-      {creatingCat && <NewCategoryModal onClose={() => setCreatingCat(false)} />}
+      {creatingCat && <CategoryFormModal onClose={() => setCreatingCat(false)} />}
+      {editingCat && (
+        <CategoryFormModal category={editingCat} onClose={() => setEditingCat(null)} />
+      )}
       {addingSubFor && (
         <NewSubcategoryModal cat={addingSubFor} onClose={() => setAddingSubFor(null)} />
+      )}
+      {editingSub && (
+        <EditSubcategoryModal
+          cat={editingSub.cat}
+          sub={editingSub.sub}
+          onClose={() => setEditingSub(null)}
+        />
       )}
       {editingPriceFor && (
         <NewPriceModal
@@ -134,28 +165,49 @@ export function CategoriesPage() {
   );
 }
 
-function NewCategoryModal({ onClose }: { onClose: () => void }) {
+/**
+ * Dual-purpose modal: creates a new category when `category` is null/absent;
+ * edits the existing one when a category is passed in.
+ */
+function CategoryFormModal({
+  category,
+  onClose,
+}: {
+  category?: Category | null;
+  onClose: () => void;
+}) {
   const qc = useQueryClient();
-  const [name, setName] = useState("");
-  const [color, setColor] = useState("#7BB661");
-  const [icon, setIcon] = useState<string | null>(null);
-  const create = useMutation({
-    mutationFn: () => categoriesApi.create({ name: name.trim(), color, icon }),
+  const isEdit = !!category;
+  const [name, setName] = useState(category?.name ?? "");
+  const [color, setColor] = useState(category?.color ?? "#7BB661");
+  const [icon, setIcon] = useState<string | null>(category?.icon ?? null);
+
+  const save = useMutation({
+    mutationFn: () => {
+      const payload = { name: name.trim(), color, icon };
+      return isEdit
+        ? categoriesApi.update(category!.id, payload)
+        : categoriesApi.create(payload);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       onClose();
     },
   });
+
   return (
     <Modal
       open
       onOpenChange={(o) => !o && onClose()}
-      title="Новая категория"
+      title={isEdit ? "Редактирование категории" : "Новая категория"}
       footer={
         <>
           <Button variant="danger" onClick={onClose}>Отмена</Button>
-          <Button onClick={() => name.trim() && create.mutate()} disabled={create.isPending}>
-            Создать
+          <Button
+            onClick={() => name.trim() && save.mutate()}
+            disabled={save.isPending}
+          >
+            {isEdit ? "Сохранить" : "Создать"}
           </Button>
         </>
       }
@@ -250,6 +302,68 @@ function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => v
             />
           </Field>
         </div>
+        <Field label="Иконка">
+          <IconPicker value={icon} onChange={setIcon} color={cat.color} />
+        </Field>
+        <button type="submit" hidden />
+      </form>
+    </Modal>
+  );
+}
+
+/** Edit name and icon of an existing subcategory. Price is managed
+    separately (NewPriceModal) since it has its own history table. */
+function EditSubcategoryModal({
+  cat,
+  sub,
+  onClose,
+}: {
+  cat: Category;
+  sub: Subcategory;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [name, setName] = useState(sub.name);
+  const [icon, setIcon] = useState<string | null>(sub.icon);
+
+  const save = useMutation({
+    mutationFn: () =>
+      categoriesApi.updateSubcategory(sub.id, { name: name.trim(), icon }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      onClose();
+    },
+  });
+  const canSubmit = !!name.trim() && !save.isPending;
+
+  return (
+    <Modal
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={`Редактирование подкатегории · ${cat.name}`}
+      footer={
+        <>
+          <Button variant="danger" onClick={onClose}>Отмена</Button>
+          <Button onClick={() => canSubmit && save.mutate()} disabled={!canSubmit}>
+            Сохранить
+          </Button>
+        </>
+      }
+    >
+      <form
+        className="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (canSubmit) save.mutate();
+        }}
+      >
+        <Field label="Название">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoFocus
+          />
+        </Field>
         <Field label="Иконка">
           <IconPicker value={icon} onChange={setIcon} color={cat.color} />
         </Field>

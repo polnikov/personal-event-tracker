@@ -14,6 +14,7 @@ from ..schemas import (
     SubcategoryPriceCreate,
     SubcategoryPriceRead,
     SubcategoryRead,
+    SubcategoryUpdate,
 )
 from ..serializers import category_to_schema, subcategory_to_schema
 
@@ -94,6 +95,24 @@ def create_subcategory(cat_id: int, payload: SubcategoryCreate, db: Session = De
     sub = (
         db.execute(
             select(Subcategory).options(selectinload(Subcategory.prices)).where(Subcategory.id == sub.id)
+        )
+        .scalars()
+        .one()
+    )
+    return subcategory_to_schema(sub)
+
+
+@router.put("/subcategories/{sub_id}", response_model=SubcategoryRead)
+def update_subcategory(sub_id: int, payload: SubcategoryUpdate, db: Session = Depends(get_db)):
+    sub = db.get(Subcategory, sub_id)
+    if not sub:
+        raise HTTPException(404)
+    sub.name = payload.name.strip()
+    sub.icon = payload.icon
+    db.commit()
+    sub = (
+        db.execute(
+            select(Subcategory).options(selectinload(Subcategory.prices)).where(Subcategory.id == sub_id)
         )
         .scalars()
         .one()

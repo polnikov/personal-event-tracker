@@ -111,6 +111,14 @@ export const categories = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  updateSubcategory: (
+    subId: number,
+    payload: { name: string; icon: string | null },
+  ) =>
+    request<Subcategory>(`/categories/subcategories/${subId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
   removeSubcategory: (subId: number) =>
     request<{ ok: true }>(`/categories/subcategories/${subId}`, { method: "DELETE" }),
   addPrice: (subId: number, payload: { price_per_hour: number; effective_from: string }) =>
