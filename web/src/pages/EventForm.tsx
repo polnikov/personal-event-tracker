@@ -70,12 +70,19 @@ export function EventFormPage() {
     enabled: !isEdit && !!copyId,
   });
 
+  // Default datetime-local value for "new" / "copy" — today's date with the
+  // current local time. Computed once at first render so it stays stable.
+  const nowLocal = useMemo(
+    () => format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    [],
+  );
+
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       subcategory_id: "",
       client_id: "",
-      start_at: "",
+      start_at: nowLocal,
       duration_minutes: 60,
       notes: "",
       recalculate_price: false,
@@ -111,7 +118,7 @@ export function EventFormPage() {
       form.reset({
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
-        start_at: "",
+        start_at: nowLocal,
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
         recalculate_price: false,
