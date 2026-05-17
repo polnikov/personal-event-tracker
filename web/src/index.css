@@ -1090,14 +1090,19 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex;
   background: var(--surface);
   border-radius: var(--r-md);
-  padding: 2px;
+  /* Padding + gap give the corner badge somewhere safe to live — it can
+     hang slightly past the button edge into the gap between tabs without
+     ever crossing into a neighbour's `.on` background. */
+  padding: 4px;
+  gap: 6px;
   box-shadow: var(--shadow-1);
 }
 .view-switch-btn {
   position: relative;
   border: 0;
   background: transparent;
-  padding: 6px 14px;
+  /* Tight padding — the active backdrop hugs the label width closely. */
+  padding: 6px 8px;
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-2);
@@ -1106,14 +1111,16 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background 0.12s, color 0.12s;
 }
 .tab-badge {
-  /* Inline-positioned (not absolute) so it stays inside the button bounds.
-     A neighbouring `.on` tab's dark background can therefore never paint
-     over it, regardless of DOM order. */
+  /* Top-right corner of the tab, lifted slightly above the button so the
+     own background sits below it. Horizontally it overhangs by 2px into
+     the 6px inter-tab gap — never reaches the neighbouring tab. */
+  position: absolute;
+  top: -6px;
+  right: -2px;
   display: inline-grid;
   place-items: center;
   min-width: 18px;
   height: 18px;
-  margin-left: 8px;
   padding: 0 5px;
   border-radius: 999px;
   background: var(--accent);
@@ -1122,7 +1129,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 600;
   font-feature-settings: 'tnum';
   line-height: 1;
-  vertical-align: middle;
+  box-shadow: 0 0 0 2px var(--surface);
 }
 
 /* ClientDetail tabs row — main tabs on the left, optional year filter on

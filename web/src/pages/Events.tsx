@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO } from "date-fns";
+import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
   Button,
   Card,
   EventTableRow,
-  Input,
   Select,
   Tabs,
 } from "@/components/design";
-import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
+import { events as eventsApi } from "@/lib/api";
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
 
@@ -90,25 +89,17 @@ function paginateGroups(groups: DayGroup[], limit: number): { groups: DayGroup[]
 export function EventsPage() {
   const nav = useNavigate();
   const [tab, setTab] = useState<TabKey>("today");
-  const [catFilter, setCatFilter] = useState("");
-  const [clientFilter, setClientFilter] = useState("");
-  const [search, setSearch] = useState("");
+  const [yearFilter, setYearFilter] = useState<string>("");      // "" = все годы
+  const [monthFilter, setMonthFilter] = useState<string>("");    // "1".."12" or ""
+  const [subcatFilter, setSubcatFilter] = useState<string>("");
   const [limit, setLimit] = useState(PAGE_SIZE);
 
-  const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
-  const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
-
+  // Server returns all events; year/month/subcategory filtering happens
+  // client-side so the dropdowns can show only options that have data.
   const list = useQuery({
-    queryKey: ["events", "list", { catFilter, clientFilter }],
-    queryFn: () =>
-      eventsApi.list({
-        category_id: catFilter ? Number(catFilter) : undefined,
-        client_id: clientFilter ? Number(clientFilter) : undefined,
-      }),
+    queryKey: ["events", "list"],
+    queryFn: () => eventsApi.list({}),
   });
-
-  // Reset pagination when the visible slice changes underneath us.
-  useEffect(() => setLimit(PAGE_SIZE), [tab, catFilter, clientFilter, search]);
 
   const todayKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
@@ -117,29 +108,72 @@ export function EventsPage() {
     [list.data],
   );
 
-  const q = search.trim().toLowerCase();
+  // --- Filter option pools (each derived from the previous filter step) ---
+
+  const availableYears = useMemo(() => {
+    const set = new Set<number>();
+    for (const e of all) set.add(parseISO(e.start_at).getFullYear());
+    return Array.from(set).sort((a, b) => b - a);
+  }, [all]);
+
+  const availableMonths = useMemo(() => {
+    const set = new Set<number>();
+    for (const e of all) {
+      const d = parseISO(e.start_at);
+      if (yearFilter && d.getFullYear() !== Number(yearFilter)) continue;
+      set.add(d.getMonth() + 1);
+    }
+    return Array.from(set).sort((a, b) => a - b);
+  }, [all, yearFilter]);
+
+  const availableSubcats = useMemo(() => {
+    const map = new Map<number, { name: string; categoryName: string }>();
+    for (const e of all) {
+      const d = parseISO(e.start_at);
+      if (yearFilter && d.getFullYear() !== Number(yearFilter)) continue;
+      if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) continue;
+      map.set(e.subcategory.id, {
+        name: e.subcategory.name,
+        categoryName: e.subcategory.category_name,
+      });
+    }
+    return Array.from(map.entries())
+      .map(([id, s]) => ({ id, ...s }))
+      .sort((a, b) =>
+        a.categoryName === b.categoryName
+          ? a.name.localeCompare(b.name, "ru")
+          : a.categoryName.localeCompare(b.categoryName, "ru"),
+      );
+  }, [all, yearFilter, monthFilter]);
+
+  // Auto-reset filters that become invalid when the upstream filter changes
+  useEffect(() => {
+    if (monthFilter && !availableMonths.includes(Number(monthFilter))) {
+      setMonthFilter("");
+    }
+  }, [availableMonths, monthFilter]);
+  useEffect(() => {
+    if (subcatFilter && !availableSubcats.find((s) => s.id === Number(subcatFilter))) {
+      setSubcatFilter("");
+    }
+  }, [availableSubcats, subcatFilter]);
+
+  // Reset pagination when the visible slice changes underneath us.
+  useEffect(
+    () => setLimit(PAGE_SIZE),
+    [tab, yearFilter, monthFilter, subcatFilter],
+  );
+
+  // --- Apply the active filters to build the candidate list ---
   const filtered = useMemo(() => {
-    if (!q) return all;
     return all.filter((e) => {
       const d = parseISO(e.start_at);
-      const dateHaystack = [
-        format(d, "d MMMM yyyy", { locale: ru }),  // 15 мая 2026
-        format(d, "EEEE", { locale: ru }),          // понедельник
-        format(d, "EEE", { locale: ru }),           // пн
-        format(d, "MMM yyyy", { locale: ru }),      // май 2026
-        format(d, "dd.MM.yyyy"),                     // 15.05.2026
-        format(d, "yyyy-MM-dd"),                     // 2026-05-15
-      ].join(" ");
-      const haystacks = [
-        e.subcategory.name,
-        e.subcategory.category_name,
-        e.client?.full_name || "",
-        e.notes || "",
-        dateHaystack,
-      ];
-      return haystacks.some((h) => h.toLowerCase().includes(q));
+      if (yearFilter && d.getFullYear() !== Number(yearFilter)) return false;
+      if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) return false;
+      if (subcatFilter && e.subcategory.id !== Number(subcatFilter)) return false;
+      return true;
     });
-  }, [all, q]);
+  }, [all, yearFilter, monthFilter, subcatFilter]);
 
   const counts = useMemo(() => {
     let today = 0, future = 0, past = 0;
@@ -171,6 +205,17 @@ export function EventsPage() {
     () => (tab === "today" ? { groups, total: slice.length } : paginateGroups(groups, limit)),
     [groups, limit, tab, slice.length],
   );
+
+  // --- Select options ---
+  const yearOptions = availableYears.map((y) => ({ value: String(y), label: String(y) }));
+  const monthOptions = availableMonths.map((m) => ({
+    value: String(m),
+    label: format(parse(String(m), "M", new Date()), "LLLL", { locale: ru }),
+  }));
+  const subcatOptions = availableSubcats.map((s) => ({
+    value: String(s.id),
+    label: `${s.categoryName} · ${s.name}`,
+  }));
 
   return (
     <div className="page">
@@ -223,23 +268,22 @@ export function EventsPage() {
       <Card padding="p-4">
         <div className="filter-row">
           <Select
-            value={catFilter}
-            onChange={setCatFilter}
-            placeholder="Все категории"
-            options={cats.data?.map((c) => ({ value: String(c.id), label: c.name })) ?? []}
+            value={yearFilter}
+            onChange={setYearFilter}
+            placeholder="Все годы"
+            options={yearOptions}
           />
           <Select
-            value={clientFilter}
-            onChange={setClientFilter}
-            placeholder="Все клиенты"
-            options={clientsList.data?.map((c) => ({ value: String(c.id), label: c.full_name })) ?? []}
+            value={monthFilter}
+            onChange={setMonthFilter}
+            placeholder="Все месяцы"
+            options={monthOptions}
           />
-          <Input
-            icon={<Search size={16} />}
-            placeholder="…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onClear={() => setSearch("")}
+          <Select
+            value={subcatFilter}
+            onChange={setSubcatFilter}
+            placeholder="Все подкатегории"
+            options={subcatOptions}
           />
         </div>
       </Card>
