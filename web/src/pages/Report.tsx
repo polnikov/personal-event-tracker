@@ -140,39 +140,42 @@ export function ReportPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 4,
+        bottom: 0,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 12,
-        icon: "roundRect",
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 10.5 },
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 6,
+        icon: "circle",
       },
       series: [
         {
           name: "Часы",
           type: "pie" as const,
-          radius: isMobile ? ["44%", "58%"] : ["46%", "62%"],
-          center: ["50%", "42%"],
-          padAngle: 3,
+          radius: isMobile ? ["34%", "52%"] : ["36%", "56%"],
+          center: ["50%", "40%"],
+          padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
             position: "outer",
-            alignTo: "edge",
-            edgeDistance: 10,
             color: "#2A2A2E",
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: 600,
-            lineHeight: 14,
+            lineHeight: 13,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [2, 6, 2, 6],
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
-              return `${hours} ч\n${it.percent.toFixed(0)}%`;
+              return `${hours} ч | ${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 14, length2: 16, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: { show: true, length: 10, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
           labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
@@ -205,40 +208,43 @@ export function ReportPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 4,
+        bottom: 0,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 12,
-        icon: "roundRect",
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 10.5 },
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 6,
+        icon: "circle",
       },
       series: [
         {
           name: "Чистый доход",
           type: "pie" as const,
-          radius: isMobile ? ["44%", "58%"] : ["46%", "62%"],
-          center: ["50%", "42%"],
-          padAngle: 3,
+          radius: isMobile ? ["34%", "52%"] : ["36%", "56%"],
+          center: ["50%", "40%"],
+          padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
             position: "outer",
-            alignTo: "edge",
-            edgeDistance: 10,
             color: "#2A2A2E",
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: 600,
-            lineHeight: 14,
+            lineHeight: 13,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [2, 6, 2, 6],
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
-              return `${compact} ₽\n${it.percent.toFixed(0)}%`;
+              return `${compact} ₽ | ${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 14, length2: 16, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: { show: true, length: 10, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
           labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
@@ -425,7 +431,7 @@ export function ReportPage() {
             </div>
           </div>
           {hoursPie ? (
-            <Echart option={hoursPie} height={320} />
+            <Echart option={hoursPie} height={380} />
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}
@@ -439,7 +445,7 @@ export function ReportPage() {
             </div>
           </div>
           {netPie ? (
-            <Echart option={netPie} height={320} />
+            <Echart option={netPie} height={380} />
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}

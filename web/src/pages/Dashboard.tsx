@@ -183,40 +183,43 @@ export function DashboardPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 4,
+        bottom: 0,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 12,
-        icon: "roundRect",
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 10.5 },
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 6,
+        icon: "circle",
       },
       series: [
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["44%", "60%"] : ["46%", "62%"],
-          center: ["50%", "42%"],
-          padAngle: 3,
+          radius: isMobile ? ["34%", "54%"] : ["36%", "56%"],
+          center: ["50%", "40%"],
+          padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
-            position: "outer",
-            alignTo: "edge",
-            edgeDistance: 10,
+            position: "outer",       // radial — label sits at end of leader line
             color: "#2A2A2E",
-            fontSize: 11,
+            fontSize: 10.5,
             fontWeight: 600,
-            lineHeight: 14,
+            lineHeight: 13,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [2, 6, 2, 6],
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
-              return `${compact} ₽\n${it.percent.toFixed(0)}%`;
+              return `${compact} ₽ | ${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 14, length2: 16, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: { show: true, length: 10, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
           labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
@@ -401,7 +404,7 @@ export function DashboardPage() {
                 </div>
               </div>
               {pieOption ? (
-                <Echart option={pieOption} height={320} />
+                <Echart option={pieOption} height={380} />
               ) : (
                 <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
               )}
