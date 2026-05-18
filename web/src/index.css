@@ -1047,6 +1047,49 @@ input[type="number"] { -moz-appearance: textfield; }
   text-overflow: ellipsis;
 }
 
+/* Notes pill — chat icon + inline text on desktop; icon-only with
+   click-popover on mobile. Lives between sub and client. */
+.events-row-notes {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+  min-width: 0;
+  max-width: 260px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.events-row-notes-icon {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.events-row-notes-text {
+  color: var(--muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.events-row-notes-pop {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-3);
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: normal;
+  width: 260px;
+  max-width: calc(100vw - 32px);
+  z-index: 110;
+  cursor: default;
+}
+
 .events-row-client {
   margin-left: auto;                   /* push client + cost to the right */
   padding: 4px 10px;
@@ -1086,7 +1129,7 @@ input[type="number"] { -moz-appearance: textfield; }
     grid-template-columns: auto auto auto 1fr;
     grid-template-areas:
       "tstart cat    sub    cost"
-      "tend   client client client";
+      "tend   client client notes";
     column-gap: 10px;
     row-gap: 4px;
     padding: 12px 14px;
@@ -1110,6 +1153,19 @@ input[type="number"] { -moz-appearance: textfield; }
   .events-row-cost {
     grid-area: cost;
     justify-self: end;
+  }
+  /* Notes: icon only on row 2, right-aligned under the cost column. */
+  .events-row-notes {
+    grid-area: notes;
+    justify-self: end;
+    max-width: none;
+  }
+  .events-row-notes-text { display: none; }
+  .events-row-notes-pop {
+    /* Anchor popover to the right edge of the icon on mobile so it
+       doesn't shoot off-screen. */
+    left: auto;
+    right: 0;
   }
 }
 

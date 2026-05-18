@@ -14,7 +14,7 @@ import {
   Plus,
   User,
 } from "lucide-react";
-import { Button, Card, IconButton, Modal, Select } from "@/components/design";
+import { Button, Card, IconButton, Modal, NotesPill, Select } from "@/components/design";
 import { AppIcon } from "@/components/phosphor";
 import { calendar as calendarApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
@@ -459,6 +459,7 @@ function ListView({
                         )}
                         <span className="events-row-sub-name">{ex.subcategory}</span>
                       </span>
+                      {ex.notes ? <NotesPill notes={ex.notes} /> : null}
                       {ex.client && (
                         <span className="events-row-client events-row-client-static">
                           {ex.client}

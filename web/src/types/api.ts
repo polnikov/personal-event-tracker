@@ -178,5 +178,6 @@ export interface CalendarEvent {
     client: string;
     cost: number;
     duration: number;
+    notes: string;
   };
 }

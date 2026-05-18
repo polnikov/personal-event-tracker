@@ -131,7 +131,7 @@ function MonthGroupedEvents({
                   ev={e}
                   icons={icons}
                   dateLabel={label}
-                  clientOverride={e.notes || "—"}
+                  hideClient
                   onClick={() => onEventClick(e.id)}
                   onClient={onClientClick}
                 />

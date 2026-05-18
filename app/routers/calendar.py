@@ -64,6 +64,7 @@ def calendar_feed(
                     "client": client_name,
                     "cost": float(ev.total_cost),
                     "duration": ev.duration_minutes,
+                    "notes": ev.notes or "",
                 },
             )
         )

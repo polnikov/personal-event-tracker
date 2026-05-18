@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ChevronDown, X } from "lucide-react";
+import { ChatCircleDots } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { fmt, initials, stringToColor } from "@/lib/format";
 import type { EventItem } from "@/types/api";
@@ -659,6 +660,42 @@ export function EventTableRow({
 }
 
 // ──────────────────────────────────────────────────────────
+// NotesPill — chat icon + optional inline text (desktop) / click
+// popover (mobile). Used inside EventLineRow when an event has notes.
+
+export function NotesPill({ notes }: { notes: string }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLSpanElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <span
+      ref={ref}
+      className="events-row-notes"
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen((o) => !o);
+      }}
+      title={notes}
+    >
+      <span className="events-row-notes-icon">
+        <ChatCircleDots size={16} weight="duotone" />
+      </span>
+      <span className="events-row-notes-text">{notes}</span>
+      {open && <span className="events-row-notes-pop">{notes}</span>}
+    </span>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
 // EventLineRow — single-line row used on Events page and (via this
 // shared component) on Dashboard "Ближайшие", Calendar List,
 // ClientDetail past/future and Report royalty. Variant props:
@@ -712,6 +749,7 @@ export function EventLineRow({
         )}
         <span className="events-row-sub-name">{ev.subcategory.name}</span>
       </span>
+      {ev.notes ? <NotesPill notes={ev.notes} /> : null}
       {!hideClient && (
         clientOverride !== undefined ? (
           <span className="events-row-client events-row-client-static">
