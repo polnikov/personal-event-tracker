@@ -1558,102 +1558,10 @@ input[type="number"] { -moz-appearance: textfield; }
 .week-event-name { font-size: 12.5px; font-weight: 500; margin-top: 1px; }
 .week-event-sub { font-size: 11px; }
 
-/* List view */
-.list-cal { display: flex; flex-direction: column; }
-.list-cal-day {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 16px;
-  padding: 14px 20px;
-  border-top: 1px solid var(--line);
-}
-.list-cal-day:first-child { border-top: 0; }
-.list-cal-date { display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 2px; }
-.list-cal-day-num {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  font-feature-settings: 'tnum';
-}
-.list-cal-day-num.today {
-  background: var(--ink);
-  color: var(--bg);
-  border-radius: 999px;
-  width: 32px;
-  height: 32px;
-  display: inline-grid;
-  place-items: center;
-  font-size: 14px;
-}
-.list-cal-day-mon {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 500;
-}
-.list-cal-dow { font-size: 11px; }
-.list-cal-evs { display: flex; flex-direction: column; gap: 6px; }
-.list-cal-ev {
-  position: relative;
-  display: grid;
-  grid-template-columns: 92px 1fr auto;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 16px 12px 14px;
-  border-radius: 10px;
-  background: color-mix(in oklab, var(--cat) 9%, white);
-  border-left: 3px solid var(--cat);
-  cursor: pointer;
-  font-size: 13px;
-  transition: background 0.12s;
-}
-.list-cal-ev:hover { background: color-mix(in oklab, var(--cat) 18%, white); }
-.list-cal-ev-when { display: flex; flex-direction: column; }
-.list-cal-ev-time { color: var(--ink-2); font-size: 12.5px; }
-.list-cal-ev-body { min-width: 0; }
-.list-cal-ev-name {
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.list-cal-ev-client {
-  margin-top: 1px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-@media (min-width: 641px) {
-  .list-cal-ev-body {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    overflow: hidden;
-  }
-  .list-cal-ev-name { flex-shrink: 0; }
-  .list-cal-ev-client { margin-top: 0; }
-  .list-cal-ev-client::before {
-    content: "·";
-    margin-right: 6px;
-    color: var(--line-2);
-  }
-}
-.list-cal-ev-cost { font-weight: 500; justify-self: end; }
-.list-cal-ev-cat-icon {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-  box-shadow: var(--shadow-1);
-}
-
+/* Calendar List view now reuses the shared .events-row layout
+   (defined above) wrapped in .day-group + Card padding="p-0", so
+   the old .list-cal-* rules were removed as dead code. */
 @media (max-width: 800px) {
-  .list-cal-ev { grid-template-columns: 1fr; gap: 4px; }
   .week-event-sub { display: none; }
 }
 
@@ -2002,9 +1910,6 @@ input[type="number"] { -moz-appearance: textfield; }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  /* Calendar list view */
-  .list-cal-day { grid-template-columns: 56px 1fr; gap: 10px; padding: 12px 14px; }
 
   /* Page header — Calendar has many controls (filter + view-switcher +
      nav + buttons), so it stacks into a column on mobile. Other pages

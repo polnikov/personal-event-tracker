@@ -114,31 +114,35 @@ function MonthGroupedEvents({
   return (
     <div className="stack-md">
       {visibleGroups.map((g) => (
-        <Card key={g.key}>
-          <div className="card-head" style={{ marginBottom: 12 }}>
-            <div className="card-title" style={{ textTransform: "capitalize" }}>
-              {format(g.date, "LLLL yyyy", { locale: ru })}
+        <div key={g.key} className="day-group">
+          <div className="day-group-head">
+            <div>
+              <span className="day-group-weekday" style={{ textTransform: "capitalize" }}>
+                {format(g.date, "LLLL yyyy", { locale: ru })}
+              </span>
             </div>
             <div className="day-group-net mono">{RUB(g.net)}</div>
           </div>
-          <div className="event-table">
-            {g.events.map((e) => {
-              const d = parseISO(e.start_at);
-              const label = `${format(d, "d")} ${format(d, "EEEEEE", { locale: ru })}`;
-              return (
-                <EventLineRow
-                  key={e.id}
-                  ev={e}
-                  icons={icons}
-                  dateLabel={label}
-                  hideClient
-                  onClick={() => onEventClick(e.id)}
-                  onClient={onClientClick}
-                />
-              );
-            })}
-          </div>
-        </Card>
+          <Card padding="p-0">
+            <div className="event-table">
+              {g.events.map((e) => {
+                const d = parseISO(e.start_at);
+                const label = `${format(d, "d")} ${format(d, "EEEEEE", { locale: ru })}`;
+                return (
+                  <EventLineRow
+                    key={e.id}
+                    ev={e}
+                    icons={icons}
+                    dateLabel={label}
+                    hideClient
+                    onClick={() => onEventClick(e.id)}
+                    onClient={onClientClick}
+                  />
+                );
+              })}
+            </div>
+          </Card>
+        </div>
       ))}
       {limit < totalEvents && (
         <div style={{ display: "flex", justifyContent: "center" }}>
