@@ -9,13 +9,14 @@ import {
   Button,
   Card,
   Empty,
-  EventTableRow,
+  EventLineRow,
   Tabs,
+  buildEventLineIconMaps,
 } from "@/components/design";
 import type { EventItem } from "@/types/api";
 import { Echart, type EChartsOption } from "@/components/echart";
 import { ClientFormModal } from "@/components/ClientFormModal";
-import { clients as clientsApi } from "@/lib/api";
+import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 
 type TabKey = "future" | "past" | "analytics";
@@ -74,11 +75,15 @@ function MonthGroupedEvents({
   events,
   emptyTitle,
   onEventClick,
+  onClientClick,
+  icons,
   orderDesc = true,
 }: {
   events: EventItem[];
   emptyTitle: string;
   onEventClick: (id: number) => void;
+  onClientClick: (id: number) => void;
+  icons: ReturnType<typeof buildEventLineIconMaps>;
   orderDesc?: boolean;
 }) {
   const groups = useMemo(() => groupByMonth(events, orderDesc), [events, orderDesc]);
@@ -121,13 +126,14 @@ function MonthGroupedEvents({
               const d = parseISO(e.start_at);
               const label = `${format(d, "d")} ${format(d, "EEEEEE", { locale: ru })}`;
               return (
-                <EventTableRow
+                <EventLineRow
                   key={e.id}
                   ev={e}
-                  showDate
+                  icons={icons}
                   dateLabel={label}
-                  notesInsteadOfClient
+                  clientOverride={e.notes || "—"}
                   onClick={() => onEventClick(e.id)}
+                  onClient={onClientClick}
                 />
               );
             })}
@@ -158,6 +164,9 @@ export function ClientDetailPage() {
     queryFn: () => clientsApi.detail(clientId),
     enabled: !!clientId,
   });
+
+  const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
+  const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
   // Years actually present in this client's events (newest first).
   const availableYears = useMemo(() => {
@@ -402,7 +411,9 @@ export function ClientDetailPage() {
               events={future_events}
               emptyTitle="Будущих событий нет"
               orderDesc
+              icons={icons}
               onEventClick={(id) => nav(`/events/${id}/edit`)}
+              onClientClick={(id) => nav(`/clients/${id}`)}
             />
           )}
 
@@ -411,7 +422,9 @@ export function ClientDetailPage() {
               events={past_events}
               emptyTitle="Завершённых событий нет"
               orderDesc
+              icons={icons}
               onEventClick={(id) => nav(`/events/${id}/edit`)}
+              onClientClick={(id) => nav(`/clients/${id}`)}
             />
           )}
 

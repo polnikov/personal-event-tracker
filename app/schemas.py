@@ -254,6 +254,8 @@ class ReportMonthly(BaseModel):
 class ReportResponse(BaseModel):
     by_subcategory: list[ReportSubcatStat]
     monthly: list[ReportMonthly]
+    # 7×12 event-count matrix (rows: Mon..Sun, cols: Jan..Dec) for the year.
+    weekday_month: list[list[int]] = []
     events_with_royalty: list[EventRead]
 
 

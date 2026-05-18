@@ -129,6 +129,12 @@ def report(
         for m in range(1, 13)
     ]
 
+    # Weekday × month heatmap (whole year, filtered by category if any).
+    # Rows: Mon=0..Sun=6; Cols: Jan=0..Dec=11.
+    weekday_month = [[0 for _ in range(12)] for _ in range(7)]
+    for e in year_events:
+        weekday_month[e.start_at.weekday()][e.start_at.month - 1] += 1
+
     # Events with royalty (period)
     royalty_events = [e for e in period_events if e.royalty > 0]
     royalty_events.sort(key=lambda e: e.start_at, reverse=True)
@@ -136,5 +142,6 @@ def report(
     return ReportResponse(
         by_subcategory=by_subcategory,
         monthly=monthly,
+        weekday_month=weekday_month,
         events_with_royalty=[event_to_schema(e) for e in royalty_events],
     )

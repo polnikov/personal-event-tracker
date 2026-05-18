@@ -7,11 +7,13 @@ import { ru } from "date-fns/locale";
 import {
   Button,
   Card,
+  EventLineRow,
   Input,
   Select,
   Tabs,
+  Toggle,
+  buildEventLineIconMaps,
 } from "@/components/design";
-import { AppIcon } from "@/components/phosphor";
 import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
@@ -87,58 +89,6 @@ function paginateGroups(groups: DayGroup[], limit: number): { groups: DayGroup[]
   return { groups: out, total };
 }
 
-interface IconMaps {
-  catIcons: Map<number, string | null>;
-  catColors: Map<number, string>;
-  subcatIcons: Map<number, string | null>;
-}
-
-function EventsRow({
-  ev,
-  icons,
-  onClick,
-  onClient,
-}: {
-  ev: EventItem;
-  icons: IconMaps;
-  onClick: () => void;
-  onClient: (id: number) => void;
-}) {
-  const catId = ev.subcategory.category_id;
-  const catColor = icons.catColors.get(catId) || ev.subcategory.category_color;
-  const subcatIcon = icons.subcatIcons.get(ev.subcategory.id);
-  return (
-    <div className="events-row" onClick={onClick}>
-      <span className="events-row-time-start">{fmt.time(ev.start_at)}</span>
-      <span className="events-row-time-sep">–</span>
-      <span className="events-row-time-end">{fmt.time(ev.end_at)}</span>
-      <span className="events-row-cat">
-        <span className="events-row-cat-dot" style={{ background: catColor }} />
-        <span className="events-row-cat-name">{ev.subcategory.category_name}</span>
-      </span>
-      <span className="events-row-sub">
-        {subcatIcon && (
-          <span className="events-row-sub-icon">
-            <AppIcon name={subcatIcon} size={14} weight="duotone" color={catColor} />
-          </span>
-        )}
-        <span className="events-row-sub-name">{ev.subcategory.name}</span>
-      </span>
-      {ev.client && (
-        <span
-          className="events-row-client"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClient(ev.client!.id);
-          }}
-        >
-          {ev.client.full_name}
-        </span>
-      )}
-      <span className="events-row-cost">{fmt.money(ev.total_cost)} ₽</span>
-    </div>
-  );
-}
 
 export function EventsPage() {
   const nav = useNavigate();
@@ -148,7 +98,10 @@ export function EventsPage() {
   const [yearFilter, setYearFilter] = useState<string>("");
   const [monthFilter, setMonthFilter] = useState<string>("");
   const [clientFilter, setClientFilter] = useState<string>("");
+  const [royaltyOnly, setRoyaltyOnly] = useState(false);
   const [search, setSearch] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [limit, setLimit] = useState(PAGE_SIZE);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
@@ -161,17 +114,7 @@ export function EventsPage() {
     queryFn: () => eventsApi.list({}),
   });
 
-  const icons: IconMaps = useMemo(() => {
-    const catIcons = new Map<number, string | null>();
-    const catColors = new Map<number, string>();
-    const subcatIcons = new Map<number, string | null>();
-    for (const c of cats.data ?? []) {
-      catIcons.set(c.id, c.icon);
-      catColors.set(c.id, c.color);
-      for (const s of c.subcategories) subcatIcons.set(s.id, s.icon);
-    }
-    return { catIcons, catColors, subcatIcons };
-  }, [cats.data]);
+  const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
   const todayKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
 
@@ -229,7 +172,7 @@ export function EventsPage() {
   // Reset pagination whenever the visible slice changes underneath us.
   useEffect(
     () => setLimit(PAGE_SIZE),
-    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, search],
+    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, search, dateFrom, dateTo],
   );
 
   // --- Filter pipeline ---
@@ -237,11 +180,15 @@ export function EventsPage() {
   const filtered = useMemo(() => {
     return all.filter((e) => {
       const d = parseISO(e.start_at);
+      const dKey = dayKey(e.start_at);
       if (catFilter && e.subcategory.category_id !== Number(catFilter)) return false;
       if (subcatFilter && e.subcategory.id !== Number(subcatFilter)) return false;
       if (yearFilter && d.getFullYear() !== Number(yearFilter)) return false;
       if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) return false;
       if (clientFilter && (e.client?.id ?? -1) !== Number(clientFilter)) return false;
+      if (royaltyOnly && (parseFloat(e.royalty) || 0) <= 0) return false;
+      if (dateFrom && dKey < dateFrom) return false;
+      if (dateTo && dKey > dateTo) return false;
       if (q) {
         const dateHaystack = [
           format(d, "d MMMM yyyy", { locale: ru }),  // 15 мая 2026
@@ -262,7 +209,7 @@ export function EventsPage() {
       }
       return true;
     });
-  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, q]);
+  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, dateFrom, dateTo, q]);
 
   const counts = useMemo(() => {
     let today = 0, future = 0, past = 0;
@@ -381,12 +328,17 @@ export function EventsPage() {
             options={monthOptions}
           />
         </div>
-        <div className="filter-row-2">
+        <div className="filter-row-events-2">
           <Select
             value={clientFilter}
             onChange={setClientFilter}
             placeholder="Все клиенты"
             options={clientOptions}
+          />
+          <Toggle
+            checked={royaltyOnly}
+            onChange={setRoyaltyOnly}
+            label="Роялти"
           />
           <Input
             icon={<Search size={16} />}
@@ -394,6 +346,18 @@ export function EventsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClear={() => setSearch("")}
+          />
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            aria-label="С"
+          />
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            aria-label="По"
           />
         </div>
       </Card>
@@ -418,7 +382,7 @@ export function EventsPage() {
           <Card padding="p-0">
             <div className={`event-table${g.isPast ? " dim" : ""}`}>
               {g.events.map((e) => (
-                <EventsRow
+                <EventLineRow
                   key={e.id}
                   ev={e}
                   icons={icons}

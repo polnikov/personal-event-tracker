@@ -15,6 +15,7 @@ import {
   User,
 } from "lucide-react";
 import { Button, Card, IconButton, Modal, Select } from "@/components/design";
+import { AppIcon } from "@/components/phosphor";
 import { calendar as calendarApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -432,35 +433,43 @@ function ListView({
                 </span>
               </div>
             </div>
-            <Card padding="p-4">
-              <div className="list-cal-evs">
-                {evs.map((e) => (
-                  <div
-                    key={e.id}
-                    className="list-cal-ev"
-                    style={{ "--cat": e.backgroundColor } as React.CSSProperties}
-                    onClick={() => onEvent(e)}
-                  >
-                    <div className="list-cal-ev-when">
-                      <div className="list-cal-ev-time mono">
-                        {fmt.time(e.start)} – {fmt.time(e.end)}
-                      </div>
-                    </div>
-                    <div className="list-cal-ev-body">
-                      <div className="list-cal-ev-name">
-                        {e.extendedProps.category} | {e.extendedProps.subcategory}
-                      </div>
-                      {e.extendedProps.client && (
-                        <div className="list-cal-ev-client muted small">
-                          {e.extendedProps.client}
-                        </div>
+            <Card padding="p-0">
+              <div className="event-table">
+                {evs.map((e) => {
+                  const ex = e.extendedProps;
+                  const catColor = ex.category_color || e.backgroundColor;
+                  return (
+                    <div
+                      key={e.id}
+                      className="events-row"
+                      onClick={() => onEvent(e)}
+                    >
+                      <span className="events-row-time-start">{fmt.time(e.start)}</span>
+                      <span className="events-row-time-sep">–</span>
+                      <span className="events-row-time-end">{fmt.time(e.end)}</span>
+                      <span className="events-row-cat">
+                        <span className="events-row-cat-dot" style={{ background: catColor }} />
+                        <span className="events-row-cat-name">{ex.category}</span>
+                      </span>
+                      <span className="events-row-sub">
+                        {ex.subcategory_icon && (
+                          <span className="events-row-sub-icon">
+                            <AppIcon name={ex.subcategory_icon} size={14} weight="duotone" color={catColor} />
+                          </span>
+                        )}
+                        <span className="events-row-sub-name">{ex.subcategory}</span>
+                      </span>
+                      {ex.client && (
+                        <span className="events-row-client events-row-client-static">
+                          {ex.client}
+                        </span>
                       )}
+                      <span className="events-row-cost">
+                        {ex.cost.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽
+                      </span>
                     </div>
-                    <div className="list-cal-ev-cost mono">
-                      {e.extendedProps.cost.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           </div>

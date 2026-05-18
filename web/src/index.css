@@ -726,7 +726,8 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (max-width: 800px) { .filter-row { grid-template-columns: 1fr; } }
 
 /* Events page: row 1 has four equal-width selects (cat, subcat, year, month);
-   row 2 has the client select + search input. */
+   row 2 packs the rest — Client (flex), Royalty toggle, Search (flex) and
+   the date-range pair (start / end) on the right. */
 .filter-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .filter-row-2 {
   display: grid;
@@ -734,12 +735,37 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 12px;
   margin-top: 12px;
 }
-@media (max-width: 800px) {
+.filter-row-events-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+@media (max-width: 900px) {
   .filter-row-4 { grid-template-columns: 1fr 1fr; }
   .filter-row-2 { grid-template-columns: 1fr; }
+  /* Three rows on tablet: client+toggle, search, date-from+date-to */
+  .filter-row-events-2 {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "client    toggle"
+      "search    search"
+      "from      to";
+  }
+  .filter-row-events-2 > :nth-child(1) { grid-area: client; }
+  .filter-row-events-2 > :nth-child(2) { grid-area: toggle; }
+  .filter-row-events-2 > :nth-child(3) { grid-area: search; }
+  .filter-row-events-2 > :nth-child(4) { grid-area: from; }
+  .filter-row-events-2 > :nth-child(5) { grid-area: to; }
 }
 @media (max-width: 480px) {
   .filter-row-4 { grid-template-columns: 1fr; }
+  .filter-row-events-2 {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+  .filter-row-events-2 > * { grid-area: auto !important; }
 }
 
 /* ============================================================
@@ -959,6 +985,14 @@ input[type="number"] { -moz-appearance: textfield; }
 .events-row:first-child { border-top: 0; }
 .events-row:hover { background: var(--bg-2); }
 
+.events-row-date {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: 14px;
+}
 .events-row-time-start,
 .events-row-time-end {
   font-family: var(--font-mono);
@@ -1026,6 +1060,12 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-shrink: 0;
 }
 .events-row-client:hover { background: var(--accent-soft); }
+/* Non-interactive variant (e.g. notes shown in place of client name) */
+.events-row-client-static {
+  cursor: default;
+  color: var(--muted);
+}
+.events-row-client-static:hover { background: transparent; }
 
 .events-row-cost {
   margin-left: 12px;

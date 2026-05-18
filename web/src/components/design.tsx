@@ -4,6 +4,36 @@ import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmt, initials, stringToColor } from "@/lib/format";
 import type { EventItem } from "@/types/api";
+import { AppIcon } from "@/components/phosphor";
+
+// Icon lookup maps used by EventLineRow. Build once per page via
+// useMemo over the categories query response and pass in.
+export interface EventLineIconMaps {
+  catColors: Map<number, string>;
+  catIcons: Map<number, string | null>;
+  subcatIcons: Map<number, string | null>;
+}
+
+export function buildEventLineIconMaps(
+  cats:
+    | Array<{
+        id: number;
+        color: string;
+        icon: string | null;
+        subcategories: Array<{ id: number; icon: string | null }>;
+      }>
+    | undefined,
+): EventLineIconMaps {
+  const catIcons = new Map<number, string | null>();
+  const catColors = new Map<number, string>();
+  const subcatIcons = new Map<number, string | null>();
+  for (const c of cats ?? []) {
+    catIcons.set(c.id, c.icon);
+    catColors.set(c.id, c.color);
+    for (const s of c.subcategories) subcatIcons.set(s.id, s.icon);
+  }
+  return { catIcons, catColors, subcatIcons };
+}
 
 // ──────────────────────────────────────────────────────────
 // Card
@@ -624,6 +654,84 @@ export function EventTableRow({
       <div className="event-trow-cost mono">
         {fmt.money(costOverride !== undefined ? costOverride : ev.total_cost)} ₽
       </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
+// EventLineRow — single-line row used on Events page and (via this
+// shared component) on Dashboard "Ближайшие", Calendar List,
+// ClientDetail past/future and Report royalty. Variant props:
+//   - dateLabel  → prefix the time block with a custom date label
+//                  (e.g. "12 пн" for month-grouped lists)
+//   - costOverride → replace the right-side cost amount
+//                  (e.g. royalty amount on the Report page)
+//   - clientOverride → replace the clickable client pill with custom
+//                  text (e.g. notes on ClientDetail); pass null to hide
+//   - hideClient → omit the client cell entirely
+
+export function EventLineRow({
+  ev,
+  icons,
+  onClick,
+  onClient,
+  dateLabel,
+  costOverride,
+  clientOverride,
+  hideClient,
+}: {
+  ev: EventItem;
+  icons: EventLineIconMaps;
+  onClick?: () => void;
+  onClient?: (id: number) => void;
+  dateLabel?: React.ReactNode;
+  costOverride?: number | string;
+  clientOverride?: React.ReactNode;
+  hideClient?: boolean;
+}) {
+  const catId = ev.subcategory.category_id;
+  const catColor = icons.catColors.get(catId) || ev.subcategory.category_color;
+  const subcatIcon = icons.subcatIcons.get(ev.subcategory.id);
+  return (
+    <div className="events-row" onClick={onClick}>
+      {dateLabel !== undefined ? (
+        <span className="events-row-date">{dateLabel}</span>
+      ) : null}
+      <span className="events-row-time-start">{fmt.time(ev.start_at)}</span>
+      <span className="events-row-time-sep">–</span>
+      <span className="events-row-time-end">{fmt.time(ev.end_at)}</span>
+      <span className="events-row-cat">
+        <span className="events-row-cat-dot" style={{ background: catColor }} />
+        <span className="events-row-cat-name">{ev.subcategory.category_name}</span>
+      </span>
+      <span className="events-row-sub">
+        {subcatIcon && (
+          <span className="events-row-sub-icon">
+            <AppIcon name={subcatIcon} size={14} weight="duotone" color={catColor} />
+          </span>
+        )}
+        <span className="events-row-sub-name">{ev.subcategory.name}</span>
+      </span>
+      {!hideClient && (
+        clientOverride !== undefined ? (
+          <span className="events-row-client events-row-client-static">
+            {clientOverride}
+          </span>
+        ) : ev.client ? (
+          <span
+            className="events-row-client"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClient?.(ev.client!.id);
+            }}
+          >
+            {ev.client.full_name}
+          </span>
+        ) : null
+      )}
+      <span className="events-row-cost">
+        {fmt.money(costOverride !== undefined ? costOverride : ev.total_cost)} ₽
+      </span>
     </div>
   );
 }

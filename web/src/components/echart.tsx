@@ -1,10 +1,11 @@
 import * as echarts from "echarts/core";
-import { BarChart, LineChart, PieChart } from "echarts/charts";
+import { BarChart, HeatmapChart, LineChart, PieChart } from "echarts/charts";
 import {
   GridComponent,
   LegendComponent,
   TitleComponent,
   TooltipComponent,
+  VisualMapComponent,
 } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
 import ReactECharts from "echarts-for-react/lib/core";
@@ -12,12 +13,14 @@ import type { EChartsOption } from "echarts";
 
 echarts.use([
   BarChart,
+  HeatmapChart,
   LineChart,
   PieChart,
   GridComponent,
   LegendComponent,
   TitleComponent,
   TooltipComponent,
+  VisualMapComponent,
   CanvasRenderer,
 ]);
 

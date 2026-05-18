@@ -6,8 +6,9 @@ import { ru } from "date-fns/locale";
 import {
   Card,
   Empty,
-  EventTableRow,
+  EventLineRow,
   Select,
+  buildEventLineIconMaps,
 } from "@/components/design";
 import { Echart, type EChartsOption } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
@@ -75,6 +76,7 @@ export function ReportPage() {
   const [categoryId, setCategoryId] = useState<string>("");
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
+  const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
   const yearsQuery = useQuery({
     queryKey: ["report", "years"],
@@ -357,6 +359,95 @@ export function ReportPage() {
     };
   }, [data.data, year, isMobile]);
 
+  const heatmapOption: EChartsOption | null = useMemo(() => {
+    const matrix = data.data?.weekday_month;
+    if (!matrix || matrix.length !== 7) return null;
+    const monthLabels = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
+    const dowLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    // ECharts heatmap data: [x_index, y_index, value]. Y-axis is inverted by
+    // default (bottom→top), so we feed reversed weekday indices so Mon
+    // appears at the top and Sun at the bottom of the chart.
+    const cells: [number, number, number][] = [];
+    let maxCount = 0;
+    for (let w = 0; w < 7; w++) {
+      for (let m = 0; m < 12; m++) {
+        const c = matrix[w][m] || 0;
+        cells.push([m, 6 - w, c]);
+        if (c > maxCount) maxCount = c;
+      }
+    }
+    return {
+      grid: { top: 16, right: 16, bottom: 28, left: 56 },
+      tooltip: {
+        position: "top",
+        backgroundColor: "#FFFFFF",
+        borderColor: "#ECEAE3",
+        borderWidth: 1,
+        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        formatter: (p: unknown) => {
+          const it = p as { value: [number, number, number] };
+          const [m, wRev, c] = it.value;
+          const w = 6 - wRev;
+          return `<div style="font-size:12px"><span style="font-weight:600">${dowLabels[w]} · ${monthLabels[m]}</span><br/><span class="mono">${c} событий</span></div>`;
+        },
+      },
+      visualMap: {
+        show: false,
+        type: "continuous",
+        min: 0,
+        max: Math.max(maxCount, 1),
+        calculable: false,
+        inRange: {
+          color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"],
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: monthLabels,
+        splitArea: { show: false },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      yAxis: {
+        type: "category",
+        data: [...dowLabels].reverse(),  // reversed: Mon at top
+        splitArea: { show: false },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      series: [
+        {
+          type: "heatmap" as const,
+          data: cells,
+          label: {
+            show: true,
+            color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: 11,
+            formatter: (p: unknown) => {
+              const v = (p as { value: [number, number, number] }).value[2];
+              return v > 0 ? String(v) : "";
+            },
+          },
+          itemStyle: {
+            borderColor: "#FFFFFF",
+            borderWidth: 2,
+            borderRadius: 4,
+          },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 8,
+              shadowColor: "rgba(42, 42, 46, 0.15)",
+            },
+          },
+        },
+      ],
+    };
+  }, [data.data?.weekday_month]);
+
   const royaltyEvents = data.data?.events_with_royalty ?? [];
   const royaltyGroups = useMemo(() => groupRoyaltyByDay(royaltyEvents), [royaltyEvents]);
   const yearTotal = useMemo(
@@ -460,6 +551,18 @@ export function ReportPage() {
         )}
       </Card>
 
+      {!isMobile && heatmapOption && (
+        <Card>
+          <div className="card-head">
+            <div>
+              <div className="card-title">События по дням недели</div>
+              <div className="muted small">{year}</div>
+            </div>
+          </div>
+          <Echart option={heatmapOption} height={290} />
+        </Card>
+      )}
+
       <div className="section">
         <div className="section-head">
           <div className="section-title">События с роялти</div>
@@ -485,10 +588,10 @@ export function ReportPage() {
               <Card padding="p-0">
                 <div className="event-table">
                   {g.events.map((e) => (
-                    <EventTableRow
+                    <EventLineRow
                       key={e.id}
                       ev={e}
-                      showDate={false}
+                      icons={icons}
                       costOverride={royaltyOfEvent(e)}
                       onClick={() => nav(`/events/${e.id}/edit`)}
                       onClient={(id) => nav(`/clients/${id}`)}

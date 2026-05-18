@@ -7,11 +7,12 @@ import { ru } from "date-fns/locale";
 import {
   Button,
   Card,
-  EventTableRow,
+  EventLineRow,
+  buildEventLineIconMaps,
 } from "@/components/design";
 import type { EventItem } from "@/types/api";
 import { Echart, type EChartsOption } from "@/components/echart";
-import { dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
+import { categories as categoriesApi, dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -75,6 +76,9 @@ export function DashboardPage() {
     queryKey: ["events", "list", "future"],
     queryFn: () => eventsApi.list(),
   });
+
+  const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
+  const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
   const today = useMemo(() => new Date(), []);
   const todayLabel = fmt.todayHeader(today);
@@ -381,10 +385,10 @@ export function DashboardPage() {
                   <Card padding="p-0">
                     <div className="event-table">
                       {g.events.map((e) => (
-                        <EventTableRow
+                        <EventLineRow
                           key={e.id}
                           ev={e}
-                          showDate={false}
+                          icons={icons}
                           onClick={() => nav(`/events/${e.id}/edit`)}
                           onClient={(id) => nav(`/clients/${id}`)}
                         />
