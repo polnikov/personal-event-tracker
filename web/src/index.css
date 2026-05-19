@@ -1760,6 +1760,7 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-bottom: 8px;
 }
 .client-card-meta { display: flex; flex-direction: column; gap: 4px; }
+.client-card-no-contacts { color: var(--danger); }
 .client-meta-row {
   display: inline-flex;
   align-items: center;

@@ -19,9 +19,11 @@ export function ClientsPage() {
   const [creating, setCreating] = useState(false);
 
   const qc = useQueryClient();
+  // Server returns the full list; narrowing happens client-side so the
+  // search can hit every visible field (name, phone, telegram, notes).
   const list = useQuery({
-    queryKey: ["clients", q],
-    queryFn: () => clientsApi.list(q),
+    queryKey: ["clients", ""],
+    queryFn: () => clientsApi.list(""),
   });
 
   const remove = useMutation({
@@ -29,14 +31,25 @@ export function ClientsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
   });
 
+  const filtered = useMemo(() => {
+    const all = list.data ?? [];
+    const needle = q.trim().toLowerCase();
+    if (!needle) return all;
+    return all.filter((c) => {
+      const hay = [c.full_name, c.phone || "", c.telegram || "", c.notes || ""]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [list.data, q]);
+
   // Sort by event count desc; ties broken by name for a stable order.
   const sorted = useMemo(() => {
-    if (!list.data) return [];
-    return [...list.data].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       if (b.events_count !== a.events_count) return b.events_count - a.events_count;
       return a.full_name.localeCompare(b.full_name, "ru");
     });
-  }, [list.data]);
+  }, [filtered]);
 
   const PAGE = 10;
   const [limit, setLimit] = useState(PAGE);
@@ -57,15 +70,13 @@ export function ClientsPage() {
         </Button>
       </div>
 
-      <Card padding="p-4">
-        <Input
-          icon={<Search size={16} />}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onClear={() => setQ("")}
-          placeholder="…"
-        />
-      </Card>
+      <Input
+        icon={<Search size={16} />}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onClear={() => setQ("")}
+        placeholder="Поиск…"
+      />
 
       <div className="grid grid-3 gap-md">
         {visible.map((c) => (
@@ -104,7 +115,7 @@ export function ClientsPage() {
                 </div>
               )}
               {!c.phone && !c.telegram && (
-                <div className="muted small">Контакты не заполнены</div>
+                <div className="client-card-no-contacts small">Контакты не заполнены</div>
               )}
             </div>
             {c.notes && <div className="client-card-note">{c.notes}</div>}
