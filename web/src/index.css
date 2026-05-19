@@ -1341,38 +1341,56 @@ input[type="number"] { -moz-appearance: textfield; }
 /* View switcher (Month / Week / List) */
 .view-switcher {
   display: inline-flex;
+  align-items: stretch;
   background: var(--surface);
   border-radius: var(--r-md);
-  /* Padding + gap give the corner badge somewhere safe to live — the
-     badge is centred on each tab's top-right corner via translate(50%, -50%),
-     so the gap must be wide enough to contain half the badge width (≈11px
-     with the white ring) without crossing into a neighbour's `.on` bg. */
-  padding: 4px;
-  gap: 16px;
-  /* Match the lift of regular cards (was shadow-1, felt anaemic). */
+  /* No outer padding or gap — the active tab's background fills its slot
+     edge-to-edge ("без окантовки"). First/last buttons borrow the outer
+     radius so the active fill still looks like a rounded pill at the ends.
+     No overflow:hidden so the corner badge can stick out above and past. */
+  padding: 0;
+  gap: 0;
   box-shadow: var(--shadow-2);
+  min-height: 38px;
 }
 /* When a Tabs lives directly inside .page (a column flex container), the
    default flex `align-items: stretch` makes the switcher span the full
-   page width. Opt out so it hugs its labels instead. */
+   page width. Opt out so it hugs its labels instead on desktop. */
 .page > .view-switcher { align-self: flex-start; }
 .view-switch-btn {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   background: transparent;
-  /* Tight padding — the active backdrop hugs the label width closely. */
-  padding: 6px 8px;
+  padding: 0 14px;
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-2);
-  border-radius: 9px;
+  border-radius: 0;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
+.view-switch-btn:first-child { border-top-left-radius: var(--r-md); border-bottom-left-radius: var(--r-md); }
+.view-switch-btn:last-child  { border-top-right-radius: var(--r-md); border-bottom-right-radius: var(--r-md); }
+
+/* Reverse paint order: earlier tabs stack above later ones. A corner
+   badge on tab N spills into tab N+1's left edge by ~half its width;
+   the higher z-index keeps that overflow visible above tab N+1's
+   background — including the dark active fill — no matter how many
+   neighbouring tabs also carry badges. Covers up to 5 tabs which is
+   more than any current Tabs<> usage. */
+.view-switcher > .view-switch-btn:nth-last-child(1) { z-index: 1; }
+.view-switcher > .view-switch-btn:nth-last-child(2) { z-index: 2; }
+.view-switcher > .view-switch-btn:nth-last-child(3) { z-index: 3; }
+.view-switcher > .view-switch-btn:nth-last-child(4) { z-index: 4; }
+.view-switcher > .view-switch-btn:nth-last-child(5) { z-index: 5; }
+
 .tab-badge {
-  /* Centred on the tab's top-right corner. translate(50%, -50%) pulls the
-     badge so its centre sits exactly on the corner — half the badge spills
-     into the inter-tab gap, the other half into the tab itself. */
+  /* Centre of the badge sits exactly on the tab's top-right corner —
+     half overhanging horizontally onto the seam with the next tab,
+     half above the tab top. */
   position: absolute;
   top: 0;
   right: 0;
@@ -1392,9 +1410,9 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: 0 0 0 2px var(--surface);
 }
 
-/* ClientDetail tabs row — main tabs on the left, optional year filter on
-   the right. On mobile they stack: main tabs span full width, year tabs
-   drop to row 2, left-aligned. */
+/* ClientDetail tabs row — main tabs on the left, optional year pager on
+   the right. On mobile they stack: main tabs span full width, year pager
+   drops to row 2, left-aligned. */
 .client-detail-tabs-row {
   display: flex;
   justify-content: space-between;
@@ -1406,6 +1424,39 @@ input[type="number"] { -moz-appearance: textfield; }
 .view-switch-btn.on {
   background: var(--ink);
   color: var(--bg);
+}
+
+/* Year chevron pager — same surface/shadow/height as .view-switcher so
+   it sits neatly next to or under the main tabs. */
+.year-nav {
+  display: inline-flex;
+  align-items: stretch;
+  min-height: 38px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+.year-nav .icon-btn {
+  width: 36px;
+  height: auto;
+  border-radius: 0;
+}
+.year-nav .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.year-nav-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-feature-settings: 'tnum';
+  color: var(--ink);
+  user-select: none;
 }
 
 /* Week view (Google-style time grid) */
@@ -1938,21 +1989,26 @@ input[type="number"] { -moz-appearance: textfield; }
   .page-head:has(.cal-nav) .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
   .page-head:has(.cal-nav) .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
 
-  /* ClientDetail tabs row: main tabs full-width, year filter on its own
-     row, left-aligned. Bug fix: container previously kept everything on
-     one line so the year switcher's background partly hid the badge. */
+  /* Mobile: top-level Tabs<> live as a direct child of .page (Events,
+     ClientDetail tabs row). On phones they stretch full width and the
+     buttons split that width equally. */
+  .page > .view-switcher {
+    align-self: stretch;
+    width: 100%;
+  }
+  .page > .view-switcher .view-switch-btn,
+  .client-detail-tabs-row > .view-switcher:first-child .view-switch-btn {
+    flex: 1;
+  }
+
+  /* ClientDetail tabs row: main tabs full-width, year pager on its own row */
   .client-detail-tabs-row { flex-direction: column; align-items: stretch; gap: 8px; }
   .client-detail-tabs-row > .view-switcher:first-child {
     display: flex;
     width: 100%;
   }
-  .client-detail-tabs-row > .view-switcher:not(:first-child) {
+  .client-detail-tabs-row > .year-nav {
     align-self: flex-start;
-    width: auto;
-  }
-  .client-detail-tabs-row > .view-switcher:not(:first-child) .view-switch-btn {
-    flex: 0 0 auto;
-    padding: 6px 12px;
   }
 
   /* Calendar month grid — rounded all four corners (was only top via Card) */

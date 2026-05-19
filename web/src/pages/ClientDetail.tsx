@@ -3,13 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Edit3, Phone, Plus, Send, StickyNote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit3, Phone, Plus, Send, StickyNote } from "lucide-react";
 import {
   Avatar,
   Button,
   Card,
   Empty,
   EventLineRow,
+  IconButton,
   Tabs,
   buildEventLineIconMaps,
 } from "@/components/design";
@@ -183,25 +184,35 @@ export function ClientDetailPage() {
     return format(t, "yyyy-MM-dd");
   }, []);
 
-  // Years actually present in this client's events (newest first).
+  // Years that have at least one event — chevron pager only navigates
+  // between these. ASC order so prev/next neighbour lookups are simple.
   const availableYears = useMemo(() => {
-    if (!data) return [];
-    const set = new Set<number>();
-    for (const e of [...data.future_events, ...data.past_events]) {
-      set.add(parseISO(e.start_at).getFullYear());
-    }
-    return Array.from(set).sort((a, b) => b - a);
+    if (!data) return [] as number[];
+    const ys = new Set<number>();
+    for (const e of data.future_events) ys.add(new Date(e.start_at).getFullYear());
+    for (const e of data.past_events) ys.add(new Date(e.start_at).getFullYear());
+    return Array.from(ys).sort((a, b) => a - b);
   }, [data]);
+  const hasAnyEvents = availableYears.length > 0;
 
-  const yearOptions = useMemo(
-    () => availableYears.map((y) => ({ value: String(y), label: String(y) })),
-    [availableYears],
-  );
+  const prevYear = useMemo(() => {
+    const candidates = availableYears.filter((y) => y < year);
+    return candidates.length ? candidates[candidates.length - 1] : null;
+  }, [availableYears, year]);
+  const nextYear = useMemo(() => {
+    const candidates = availableYears.filter((y) => y > year);
+    return candidates.length ? candidates[0] : null;
+  }, [availableYears, year]);
 
-  // If selected year isn't in the data, switch to the most recent available one.
+  // If the currently-selected year has no data, snap to the closest year
+  // that does (prefer most recent past year, otherwise nearest future).
   useEffect(() => {
-    if (availableYears.length === 0) return;
-    if (!availableYears.includes(year)) setYear(availableYears[0]);
+    if (!availableYears.length) return;
+    if (availableYears.includes(year)) return;
+    const past = availableYears.filter((y) => y < year);
+    const future = availableYears.filter((y) => y > year);
+    if (past.length) setYear(past[past.length - 1]);
+    else setYear(future[0]);
   }, [availableYears, year]);
 
   const monthly = useQuery({
@@ -412,12 +423,24 @@ export function ClientDetailPage() {
                 { value: "analytics", label: "Аналитика" },
               ]}
             />
-            {tab === "analytics" && yearOptions.length > 0 && (
-              <Tabs<string>
-                value={String(year)}
-                onChange={(v) => setYear(Number(v))}
-                options={yearOptions}
-              />
+            {tab === "analytics" && hasAnyEvents && (
+              <div className="year-nav">
+                <IconButton
+                  onClick={() => prevYear != null && setYear(prevYear)}
+                  disabled={prevYear == null}
+                  aria-label="Предыдущий год"
+                >
+                  <ChevronLeft size={16} />
+                </IconButton>
+                <span className="year-nav-label">{year}</span>
+                <IconButton
+                  onClick={() => nextYear != null && setYear(nextYear)}
+                  disabled={nextYear == null}
+                  aria-label="Следующий год"
+                >
+                  <ChevronRight size={16} />
+                </IconButton>
+              </div>
             )}
           </div>
 
@@ -444,7 +467,7 @@ export function ClientDetailPage() {
           )}
 
           {tab === "analytics" && (
-            availableYears.length === 0 ? (
+            !hasAnyEvents ? (
               <Card>
                 <Empty
                   title="Нет данных для аналитики"
