@@ -1327,7 +1327,15 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ============================================================
    Event table (Events page)
    ============================================================ */
-.event-table { display: flex; flex-direction: column; }
+.event-table {
+  display: flex;
+  flex-direction: column;
+  /* Inherit the parent Card's rounded corners and clip child hover
+     backgrounds so they follow the card's curve instead of bleeding
+     into sharp 0,0 corners. */
+  border-radius: inherit;
+  overflow: hidden;
+}
 .event-table.dim { opacity: 0.7; }
 .event-trow {
   display: grid;
