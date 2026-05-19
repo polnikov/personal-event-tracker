@@ -1662,6 +1662,16 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ============================================================
    Client cards
    ============================================================ */
+/* Stretch every card in a row to the tallest card's height, then push
+   the divider + stats footer to the bottom so it sits at the same
+   vertical level across the row regardless of contact/notes length. */
+.client-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.client-card .client-card-foot { margin-top: auto; }
+
 .client-card-top {
   display: flex;
   justify-content: space-between;

@@ -69,7 +69,12 @@ export function ClientsPage() {
 
       <div className="grid grid-3 gap-md">
         {visible.map((c) => (
-          <Card key={c.id} interactive onClick={() => nav(`/clients/${c.id}`)}>
+          <Card
+            key={c.id}
+            className="client-card"
+            interactive
+            onClick={() => nav(`/clients/${c.id}`)}
+          >
             <div className="client-card-top">
               <Avatar name={c.full_name} size={44} />
               <IconButton
