@@ -12,6 +12,7 @@ import {
   Card,
   Field,
   Input,
+  SearchableSelect,
   Select,
   Textarea,
   Toggle,
@@ -276,7 +277,7 @@ export function EventFormPage() {
               />
             </Field>
             <Field label="Клиент">
-              <Select
+              <SearchableSelect
                 value={clientValue}
                 onChange={(v) => form.setValue("client_id", v)}
                 placeholder="— без клиента —"

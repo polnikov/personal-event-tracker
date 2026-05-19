@@ -186,6 +186,120 @@ export function Select({ value, onChange, options, placeholder, className, group
 }
 
 // ──────────────────────────────────────────────────────────
+// SearchableSelect — input + dropdown combobox (filter as you type).
+
+interface SearchableSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  className?: string;
+}
+
+export function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  className,
+}: SearchableSelectProps) {
+  const [query, setQuery] = React.useState("");
+  const [open, setOpen] = React.useState(false);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+
+  const selected = React.useMemo(
+    () => options.find((o) => o.value === value),
+    [options, value],
+  );
+
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, query]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  const displayValue = open ? query : selected?.label ?? "";
+  const showClear = !!selected && !open;
+
+  return (
+    <div className={cn("searchable-select", className)} ref={wrapRef}>
+      <div className={cn("input-wrap", showClear && "has-clear")}>
+        <input
+          type="text"
+          className="input"
+          value={displayValue}
+          placeholder={placeholder}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+        />
+        {showClear ? (
+          <button
+            type="button"
+            className="input-clear"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onChange("");
+              setQuery("");
+            }}
+            aria-label="Очистить"
+            tabIndex={-1}
+          >
+            <X size={14} strokeWidth={1.8} />
+          </button>
+        ) : (
+          <span className="select-chev select-chev-static">
+            <ChevronDown size={14} />
+          </span>
+        )}
+      </div>
+      {open && (
+        <div className="searchable-select-list" role="listbox">
+          {filtered.length === 0 ? (
+            <div className="searchable-select-empty">Ничего не найдено</div>
+          ) : (
+            filtered.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                role="option"
+                aria-selected={o.value === value}
+                className={cn(
+                  "searchable-select-item",
+                  o.value === value && "on",
+                )}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange(o.value);
+                  setQuery("");
+                  setOpen(false);
+                }}
+              >
+                {o.label}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────────────────
 // Avatar — colorful initials block
 
 export function Avatar({ name, size = 36, color }: { name: string; size?: number; color?: string }) {

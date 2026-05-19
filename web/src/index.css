@@ -643,6 +643,53 @@ input[type="number"] { -moz-appearance: textfield; }
   place-items: center;
 }
 
+/* Searchable select — combobox: text input + filterable dropdown. */
+.searchable-select { position: relative; }
+.searchable-select .select-chev-static {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+}
+.searchable-select-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-3);
+  padding: 4px;
+}
+.searchable-select-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.searchable-select-item:hover { background: var(--bg-2); }
+.searchable-select-item.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 500; }
+.searchable-select-empty {
+  padding: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
 /* Form helpers */
 .form { display: flex; flex-direction: column; gap: 16px; }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
