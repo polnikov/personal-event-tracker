@@ -713,6 +713,7 @@ export function EventLineRow({
   onClick,
   onClient,
   dateLabel,
+  dateBadge,
   costOverride,
   clientOverride,
   hideClient,
@@ -722,6 +723,7 @@ export function EventLineRow({
   onClick?: () => void;
   onClient?: (id: number) => void;
   dateLabel?: React.ReactNode;
+  dateBadge?: { day: string; weekday: string };
   costOverride?: number | string;
   clientOverride?: React.ReactNode;
   hideClient?: boolean;
@@ -731,7 +733,15 @@ export function EventLineRow({
   const subcatIcon = icons.subcatIcons.get(ev.subcategory.id);
   return (
     <div className="events-row" onClick={onClick}>
-      {dateLabel !== undefined ? (
+      {dateBadge ? (
+        <span
+          className="events-row-date-badge"
+          style={{ ["--cat" as string]: catColor }}
+        >
+          <span className="events-row-date-badge-day">{dateBadge.day}</span>
+          <span className="events-row-date-badge-wd">{dateBadge.weekday}</span>
+        </span>
+      ) : dateLabel !== undefined ? (
         <span className="events-row-date">{dateLabel}</span>
       ) : null}
       <span className="events-row-time-start">{fmt.time(ev.start_at)}</span>

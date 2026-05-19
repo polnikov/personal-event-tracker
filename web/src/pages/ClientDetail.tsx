@@ -132,13 +132,15 @@ function MonthGroupedEvents({
             <div className="event-table">
               {g.events.map((e) => {
                 const d = parseISO(e.start_at);
-                const label = `${format(d, "d")} ${format(d, "EEEEEE", { locale: ru })}`;
                 return (
                   <EventLineRow
                     key={e.id}
                     ev={e}
                     icons={icons}
-                    dateLabel={label}
+                    dateBadge={{
+                      day: format(d, "d"),
+                      weekday: format(d, "EEEEEE", { locale: ru }),
+                    }}
                     hideClient
                     onClick={() => onEventClick(e.id)}
                     onClient={onClientClick}

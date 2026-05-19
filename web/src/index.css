@@ -993,6 +993,38 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-shrink: 0;
   margin-right: 14px;
 }
+
+/* Date badge — rounded square tinted with the event's category colour.
+   Used in ClientDetail (and future month-grouped lists) in place of the
+   plain text date. Two stacked lines: day number + abbreviated weekday. */
+.events-row-date-badge {
+  --cat: var(--ink);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  margin-right: 14px;
+  background: color-mix(in oklab, var(--cat) 18%, var(--surface));
+  color: color-mix(in oklab, var(--cat) 55%, var(--ink));
+  line-height: 1;
+  user-select: none;
+}
+.events-row-date-badge-day {
+  font-size: 16px;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+}
+.events-row-date-badge-wd {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: lowercase;
+  opacity: 0.85;
+}
 .events-row-time-start,
 .events-row-time-end {
   font-family: var(--font-mono);
@@ -1126,16 +1158,22 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (max-width: 640px) {
   .events-row {
     display: grid;
-    grid-template-columns: auto auto auto 1fr;
+    grid-template-columns: auto auto auto auto 1fr;
     grid-template-areas:
-      "tstart cat    sub    cost"
-      "tend   client client notes";
+      "badge tstart cat    sub    cost"
+      "badge tend   client client notes";
     column-gap: 10px;
     row-gap: 4px;
     padding: 12px 14px;
+    align-items: center;
   }
   /* Drop all desktop margins/flex rules; grid handles placement. */
   .events-row > * { margin: 0; }
+  .events-row-date-badge {
+    grid-area: badge;
+    align-self: center;
+    margin-right: 4px;
+  }
   .events-row-time-start { grid-area: tstart; }
   .events-row-time-end   { grid-area: tend; }
   .events-row-time-sep   { display: none; }          /* "–" hidden on phones */
