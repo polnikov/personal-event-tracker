@@ -9,6 +9,7 @@ import {
   Card,
   EventLineRow,
   Input,
+  SearchableSelect,
   Select,
   Tabs,
   Toggle,
@@ -358,7 +359,7 @@ export function EventsPage() {
             />
           </div>
           <div className="filter-row-events-3">
-            <Select
+            <SearchableSelect
               value={clientFilter}
               onChange={setClientFilter}
               placeholder="Все клиенты"

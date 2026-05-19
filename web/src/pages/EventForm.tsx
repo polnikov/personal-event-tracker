@@ -116,10 +116,13 @@ export function EventFormPage() {
       const e = sourceForCopy.data;
       const tax = parseFloat(e.tax) || 0;
       const royalty = parseFloat(e.royalty) || 0;
+      // Copy keeps the source event's time-of-day but moves the date to today.
+      const sourceTime = format(parseISO(e.start_at), "HH:mm");
+      const todayDate = format(new Date(), "yyyy-MM-dd");
       form.reset({
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
-        start_at: nowLocal,
+        start_at: `${todayDate}T${sourceTime}`,
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
         recalculate_price: false,
