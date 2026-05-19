@@ -11,17 +11,17 @@ import {
   buildEventLineIconMaps,
 } from "@/components/design";
 import type { EventItem } from "@/types/api";
-import { Echart, type EChartsOption } from "@/components/echart";
+import {
+  Echart,
+  ECHART_BASE_TEXT,
+  GRID_LEFT_FLUSH,
+  type EChartsOption,
+} from "@/components/echart";
 import { categories as categoriesApi, dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
-
-const ECHART_BASE_TEXT = {
-  fontFamily: "Inter, system-ui, sans-serif",
-  color: "#807A72",
-};
 
 function netOfEvent(e: EventItem): number {
   const gross = parseFloat(e.total_cost) || 0;
@@ -94,7 +94,7 @@ export function DashboardPage() {
     const xLabels = dates.map((d) => parseInt(d.slice(8, 10), 10).toString());
 
     return {
-      grid: { top: 24, right: 16, bottom: 64, left: 56 },
+      grid: { top: 24, right: 16, bottom: 44, left: 32 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -129,7 +129,7 @@ export function DashboardPage() {
         },
       },
       legend: {
-        bottom: 4,
+        bottom: 0,
         left: "center",
         textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
         itemWidth: 10,
@@ -155,11 +155,23 @@ export function DashboardPage() {
       },
       yAxis: {
         type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
-          formatter: (v: number) => (v >= 1000 ? `${v / 1000}k` : String(v)),
+          inside: true,
+          align: "left",
+          verticalAlign: "bottom",
+          // Negative left-padding shifts the Y label out of the plot area
+          // back toward the card's title column, while grid.left keeps the
+          // first bar clear of the axis line.
+          padding: [0, 0, 4, -28],
+          // Skip the "0" tick so the bottom-most Y label doesn't sit on
+          // top of the first X-axis label.
+          formatter: (v: number) =>
+            v === 0 ? "" : v >= 1000 ? `${v / 1000}k` : String(v),
         },
       },
       series: data.chart.daily_series.map((s) => ({
@@ -190,20 +202,20 @@ export function DashboardPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 0,
+        bottom: 4,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 10.5 },
-        itemWidth: 8,
-        itemHeight: 8,
-        itemGap: 6,
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 14,
         icon: "circle",
       },
       series: [
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["34%", "54%"] : ["36%", "56%"],
-          center: ["50%", "40%"],
+          radius: isMobile ? ["30%", "46%"] : ["38%", "60%"],
+          center: ["50%", "50%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
@@ -211,7 +223,9 @@ export function DashboardPage() {
             show: true,
             position: "outer",       // radial — label sits at end of leader line
             color: "#2A2A2E",
-            fontSize: 10.5,
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: isMobile ? 9 : 10.5,
             fontWeight: 600,
             lineHeight: 13,
             backgroundColor: "#FFFFFF",
@@ -226,7 +240,13 @@ export function DashboardPage() {
               return `${compact} ₽ | ${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 10, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: {
+            show: true,
+            length: isMobile ? 4 : 10,
+            length2: isMobile ? 4 : 10,
+            smooth: true,
+            lineStyle: { color: "#DFDCD3" },
+          },
           labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
@@ -251,7 +271,7 @@ export function DashboardPage() {
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
     return {
-      grid: { top: 32, right: 16, bottom: 28, left: 56 },
+      grid: { top: 32, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -280,18 +300,28 @@ export function DashboardPage() {
       },
       yAxis: {
         type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
-          formatter: (v: number) => fmtCompact(v),
+          inside: true,
+          align: "left",
+          verticalAlign: "bottom",
+          padding: [0, 0, 4, 0],
+          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
         },
       },
       series: [
         {
           type: "line" as const,
           smooth: 0.2,
-          data: data.chart.monthly_values,
+          // Per-point label.show is forced to false on zero values so empty
+          // months don't render a stray label pill above the baseline.
+          data: data.chart.monthly_values.map((v) =>
+            v > 0 ? v : { value: v, label: { show: false } },
+          ),
           symbol: "circle",
           symbolSize: 6,
           showSymbol: true,
@@ -311,6 +341,8 @@ export function DashboardPage() {
             show: true,
             position: "top",
             color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
             fontSize: 10,
             fontWeight: 600,
             backgroundColor: "#FFFFFF",
@@ -318,10 +350,7 @@ export function DashboardPage() {
             borderWidth: 1,
             borderRadius: 6,
             padding: [2, 6, 2, 6],
-            formatter: (p: unknown) => {
-              const v = (p as { value: number }).value;
-              return v > 0 ? fmtCompact(v) : "";
-            },
+            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },
       ],
@@ -410,22 +439,22 @@ export function DashboardPage() {
 
           {/* Row 2: daily + pie */}
           <div className="grid grid-2 gap-md">
-            <Card>
+            <Card className="chart-card">
               <div className="card-head">
                 <div>
                   <div className="card-title">Доход по дням</div>
                   <div className="muted small" style={{ textTransform: "capitalize" }}>{monthLabel}</div>
                 </div>
-                <div className="muted small">{fmt.money(data.total_cost)} ₽</div>
+                <div className="card-head-sum">{fmt.money(data.total_cost)} ₽</div>
               </div>
               {dailyOption ? (
-                <Echart option={dailyOption} height={280} />
+                <Echart option={dailyOption} height={392} />
               ) : (
                 <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
               )}
             </Card>
 
-            <Card>
+            <Card className="chart-card">
               <div className="card-head">
                 <div>
                   <div className="card-title">Доход по категориям</div>
@@ -441,13 +470,13 @@ export function DashboardPage() {
           </div>
 
           {/* Row 3: monthly */}
-          <Card>
+          <Card className="chart-card">
             <div className="card-head">
               <div>
                 <div className="card-title">Доход по месяцам</div>
                 <div className="muted small">{new Date().getFullYear()}</div>
               </div>
-              <div className="muted small">
+              <div className="card-head-sum">
                 {fmt.money(data.chart.monthly_values.reduce((s, v) => s + v, 0))} ₽
               </div>
             </div>

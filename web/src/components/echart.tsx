@@ -26,6 +26,24 @@ echarts.use([
 
 export type { EChartsOption };
 
+// Shared chart styling tokens. All chart cards now use 14px padding,
+// monospace tick/value labels, and a Y axis flush with the card title
+// (achieved via `inside: true` + tiny grid.left, see `yAxisFlushLeft`).
+export const ECHART_BASE_TEXT = {
+  fontFamily: "Inter, system-ui, sans-serif",
+  color: "#807A72",
+};
+
+export const ECHART_MONO_TEXT = {
+  fontFamily: "JetBrains Mono, ui-monospace, monospace",
+  fontFeatureSettings: "'tnum'",
+  color: "#807A72",
+};
+
+/** Default left grid inset for charts where Y labels sit flush with the
+ *  card title (allows labels rendered `inside` the plot area). */
+export const GRID_LEFT_FLUSH = 4;
+
 export function Echart({
   option,
   height = 220,

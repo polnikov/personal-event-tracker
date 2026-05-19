@@ -10,7 +10,12 @@ import {
   Select,
   buildEventLineIconMaps,
 } from "@/components/design";
-import { Echart, type EChartsOption } from "@/components/echart";
+import {
+  Echart,
+  ECHART_BASE_TEXT,
+  GRID_LEFT_FLUSH,
+  type EChartsOption,
+} from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -61,11 +66,6 @@ const SUBCAT_PALETTE = [
   "#EC4899", "#0EA5E9", "#F1416C", "#FACA15", "#5E6278",
   "#00BFA5", "#7239EA",
 ];
-
-const ECHART_BASE_TEXT = {
-  fontFamily: "Inter, system-ui, sans-serif",
-  color: "#807A72",
-};
 
 export function ReportPage() {
   const nav = useNavigate();
@@ -142,20 +142,20 @@ export function ReportPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 0,
+        bottom: 4,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 10.5 },
-        itemWidth: 8,
-        itemHeight: 8,
-        itemGap: 6,
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 14,
         icon: "circle",
       },
       series: [
         {
           name: "Часы",
           type: "pie" as const,
-          radius: isMobile ? ["34%", "52%"] : ["36%", "56%"],
-          center: ["50%", "40%"],
+          radius: isMobile ? ["30%", "46%"] : ["38%", "60%"],
+          center: ["50%", "50%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
@@ -163,7 +163,9 @@ export function ReportPage() {
             show: true,
             position: "outer",
             color: "#2A2A2E",
-            fontSize: 10.5,
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: isMobile ? 9 : 10.5,
             fontWeight: 600,
             lineHeight: 13,
             backgroundColor: "#FFFFFF",
@@ -177,7 +179,13 @@ export function ReportPage() {
               return `${hours} ч | ${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 10, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: {
+            show: true,
+            length: isMobile ? 4 : 10,
+            length2: isMobile ? 4 : 10,
+            smooth: true,
+            lineStyle: { color: "#DFDCD3" },
+          },
           labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
@@ -210,20 +218,20 @@ export function ReportPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 0,
+        bottom: 4,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 10.5 },
-        itemWidth: 8,
-        itemHeight: 8,
-        itemGap: 6,
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 14,
         icon: "circle",
       },
       series: [
         {
           name: "Чистый доход",
           type: "pie" as const,
-          radius: isMobile ? ["34%", "52%"] : ["36%", "56%"],
-          center: ["50%", "40%"],
+          radius: isMobile ? ["30%", "46%"] : ["38%", "60%"],
+          center: ["50%", "50%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
@@ -231,7 +239,9 @@ export function ReportPage() {
             show: true,
             position: "outer",
             color: "#2A2A2E",
-            fontSize: 10.5,
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: isMobile ? 9 : 10.5,
             fontWeight: 600,
             lineHeight: 13,
             backgroundColor: "#FFFFFF",
@@ -246,7 +256,13 @@ export function ReportPage() {
               return `${compact} ₽ | ${it.percent.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 10, length2: 10, smooth: true, lineStyle: { color: "#DFDCD3" } },
+          labelLine: {
+            show: true,
+            length: isMobile ? 4 : 10,
+            length2: isMobile ? 4 : 10,
+            smooth: true,
+            lineStyle: { color: "#DFDCD3" },
+          },
           labelLayout: { hideOverlap: false },
           emphasis: {
             scale: true,
@@ -276,7 +292,7 @@ export function ReportPage() {
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
-      grid: { top: 32, right: 16, bottom: 28, left: 56 },
+      grid: { top: 32, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
       tooltip: {
         trigger: "axis",
         backgroundColor: "#FFFFFF",
@@ -311,18 +327,26 @@ export function ReportPage() {
       },
       yAxis: {
         type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
-          formatter: (v: number) => fmtCompact(v),
+          inside: true,
+          align: "left",
+          verticalAlign: "bottom",
+          padding: [0, 0, 4, 0],
+          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
         },
       },
       series: [
         {
           type: "line" as const,
           smooth: 0.2,
-          data: totalSeries,
+          data: totalSeries.map((v) =>
+            v > 0 ? v : { value: v, label: { show: false } },
+          ),
           symbol: "circle",
           symbolSize: 6,
           showSymbol: true,
@@ -342,6 +366,8 @@ export function ReportPage() {
             show: true,
             position: "top",
             color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
             fontSize: isMobile ? 9 : 10,
             fontWeight: 600,
             backgroundColor: "#FFFFFF",
@@ -349,10 +375,7 @@ export function ReportPage() {
             borderWidth: 1,
             borderRadius: 6,
             padding: [2, 6, 2, 6],
-            formatter: (p: unknown) => {
-              const v = (p as { value: number }).value;
-              return v > 0 ? fmtCompact(v) : "";
-            },
+            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },
       ],
@@ -377,7 +400,7 @@ export function ReportPage() {
       }
     }
     return {
-      grid: { top: 16, right: 16, bottom: 28, left: 56 },
+      grid: { top: 16, right: 16, bottom: 28, left: 26 },
       tooltip: {
         position: "top",
         backgroundColor: "#FFFFFF",
@@ -450,6 +473,16 @@ export function ReportPage() {
 
   const royaltyEvents = data.data?.events_with_royalty ?? [];
   const royaltyGroups = useMemo(() => groupRoyaltyByDay(royaltyEvents), [royaltyEvents]);
+
+  const hoursTotal = useMemo(
+    () => subcatColored.reduce((s, x) => s + (x.hours || 0), 0),
+    [subcatColored],
+  );
+  const netTotal = useMemo(
+    () => subcatColored.reduce((s, x) => s + (x.net || 0), 0),
+    [subcatColored],
+  );
+
   const yearTotal = useMemo(
     () =>
       (data.data?.monthly ?? []).reduce(
@@ -497,12 +530,17 @@ export function ReportPage() {
       </Card>
 
       <div className="grid grid-2 gap-md">
-        <Card>
+        <Card className="chart-card">
           <div className="card-head">
             <div>
               <div className="card-title">Часы по подкатегориям</div>
               <div className="muted small">{periodLabel}</div>
             </div>
+            {hoursPie && (
+              <div className="card-head-sum">
+                {hoursTotal.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч
+              </div>
+            )}
           </div>
           {hoursPie ? (
             <Echart option={hoursPie} height={380} />
@@ -511,12 +549,15 @@ export function ReportPage() {
           )}
         </Card>
 
-        <Card>
+        <Card className="chart-card">
           <div className="card-head">
             <div>
               <div className="card-title">Чистый доход по подкатегориям</div>
               <div className="muted small">{periodLabel}</div>
             </div>
+            {netPie && (
+              <div className="card-head-sum">{fmt.money(netTotal)} ₽</div>
+            )}
           </div>
           {netPie ? (
             <Echart option={netPie} height={380} />
@@ -526,18 +567,17 @@ export function ReportPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="chart-card">
         <div className="report-monthly-head">
-          <div className="card-title">Доход по месяцам</div>
           <div className="report-monthly-meta-row">
-            <span className="muted small">{year}</span>
+            <div className="card-title">Доход по месяцам</div>
             <span className="muted small">
               <span style={{ marginRight: 4 }}>чистыми</span>
               <span className="mono">{fmt.money(yearTotal.net)} ₽</span>
             </span>
           </div>
           <div className="report-monthly-meta-row">
-            <span />
+            <span className="muted small">{year}</span>
             <span className="muted small">
               <span style={{ marginRight: 4 }}>налог</span>
               <span className="mono">{fmt.money(yearTotal.tax)} ₽</span>
@@ -552,7 +592,7 @@ export function ReportPage() {
       </Card>
 
       {!isMobile && heatmapOption && (
-        <Card>
+        <Card className="chart-card">
           <div className="card-head">
             <div>
               <div className="card-title">События по дням недели</div>

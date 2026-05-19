@@ -15,7 +15,12 @@ import {
   buildEventLineIconMaps,
 } from "@/components/design";
 import type { EventItem } from "@/types/api";
-import { Echart, type EChartsOption } from "@/components/echart";
+import {
+  Echart,
+  ECHART_BASE_TEXT,
+  GRID_LEFT_FLUSH,
+  type EChartsOption,
+} from "@/components/echart";
 import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { fmt, pluralize } from "@/lib/format";
@@ -228,8 +233,10 @@ export function ClientDetailPage() {
     const labels = Array.from({ length: 12 }, (_, i) =>
       format(parse(String(i + 1), "M", new Date()), "LLL", { locale: ru }),
     );
+    const fmtCompact = (v: number) =>
+      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
     return {
-      grid: { top: 32, right: 16, bottom: 28, left: 56 },
+      grid: { top: 32, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -253,26 +260,32 @@ export function ClientDetailPage() {
         axisTick: { show: false },
         axisLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
-          fontFamily: "Inter, system-ui, sans-serif",
-          color: "#807A72",
+          ...ECHART_BASE_TEXT,
           fontSize: 11,
         },
       },
       yAxis: {
         type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
-          fontFamily: "Inter, system-ui, sans-serif",
-          color: "#807A72",
+          ...ECHART_BASE_TEXT,
           fontSize: 10.5,
-          formatter: (v: number) => (v >= 1000 ? `${v / 1000}k` : String(v)),
+          inside: true,
+          align: "left",
+          verticalAlign: "bottom",
+          padding: [0, 0, 4, 0],
+          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
         },
       },
       series: [
         {
           type: "line" as const,
           smooth: 0.2,
-          data: monthly.data.values,
+          data: monthly.data.values.map((v) =>
+            v > 0 ? v : { value: v, label: { show: false } },
+          ),
           symbol: "circle",
           symbolSize: 6,
           showSymbol: true,
@@ -292,6 +305,8 @@ export function ClientDetailPage() {
             show: true,
             position: "top",
             color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
             fontSize: 10,
             fontWeight: 600,
             backgroundColor: "#FFFFFF",
@@ -299,11 +314,7 @@ export function ClientDetailPage() {
             borderWidth: 1,
             borderRadius: 6,
             padding: [2, 6, 2, 6],
-            formatter: (p: unknown) => {
-              const v = (p as { value: number }).value;
-              if (!v) return "";
-              return v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
-            },
+            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },
       ],
@@ -487,14 +498,14 @@ export function ClientDetailPage() {
                 />
               </Card>
             ) : (
-              <Card>
+              <Card className="chart-card">
                 <div className="card-head">
                   <div>
                     <div className="card-title">Доход по месяцам</div>
                     <div className="muted small">{year}</div>
                   </div>
                   {monthly.data && (
-                    <div className="muted small">
+                    <div className="card-head-sum">
                       {fmt.money(monthly.data.values.reduce((s, v) => s + v, 0))} ₽
                     </div>
                   )}
