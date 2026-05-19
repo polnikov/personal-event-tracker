@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { ChevronDown, Plus, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -103,6 +103,17 @@ export function EventsPage() {
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const [limit, setLimit] = useState(PAGE_SIZE);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const activeFilterCount =
+    (catFilter ? 1 : 0) +
+    (subcatFilter ? 1 : 0) +
+    (yearFilter ? 1 : 0) +
+    (monthFilter ? 1 : 0) +
+    (clientFilter ? 1 : 0) +
+    (royaltyOnly ? 1 : 0) +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
@@ -266,89 +277,113 @@ export function EventsPage() {
         </Button>
       </div>
 
-      <Tabs<TabKey>
-        value={tab}
-        onChange={setTab}
-        options={[
-          {
-            value: "future",
-            label: (
-              <>
-                Будущие
-                {counts.future > 0 && <span className="tab-badge">{counts.future}</span>}
-              </>
-            ),
-          },
-          {
-            value: "past",
-            label: (
-              <>
-                Прошедшие
-                {counts.past > 0 && <span className="tab-badge">{counts.past}</span>}
-              </>
-            ),
-          },
-        ]}
-      />
-
-      <Card padding="p-4">
-        <div className="filter-row-4">
-          <Select
-            value={catFilter}
-            onChange={setCatFilter}
-            placeholder="Все категории"
-            options={catOptions}
-          />
-          <Select
-            value={subcatFilter}
-            onChange={setSubcatFilter}
-            placeholder="Все подкатегории"
-            options={subcatOptions}
-          />
-          <Select
-            value={yearFilter}
-            onChange={setYearFilter}
-            placeholder="Все годы"
-            options={yearOptions}
-          />
-          <Select
-            value={monthFilter}
-            onChange={setMonthFilter}
-            placeholder="Все месяцы"
-            options={monthOptions}
-          />
-        </div>
-        <div className="filter-row-events-2">
-          <Select
-            value={clientFilter}
-            onChange={setClientFilter}
-            placeholder="Все клиенты"
-            options={clientOptions}
-          />
-          <Toggle
-            checked={royaltyOnly}
-            onChange={setRoyaltyOnly}
-            label="Роялти"
-          />
+      <div className="events-controls">
+        <Tabs<TabKey>
+          value={tab}
+          onChange={setTab}
+          options={[
+            {
+              value: "future",
+              label: (
+                <>
+                  Будущие
+                  {counts.future > 0 && <span className="tab-badge">{counts.future}</span>}
+                </>
+              ),
+            },
+            {
+              value: "past",
+              label: (
+                <>
+                  Прошедшие
+                  {counts.past > 0 && <span className="tab-badge">{counts.past}</span>}
+                </>
+              ),
+            },
+          ]}
+        />
+        <div className="events-search">
           <Input
             icon={<Search size={16} />}
-            placeholder="…"
+            placeholder="Поиск…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onClear={() => setSearch("")}
           />
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            aria-label="С"
+        </div>
+      </div>
+
+      <Card padding="p-4" className="events-filters">
+        <button
+          type="button"
+          className="events-filters-toggle"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+        >
+          <span>Фильтры</span>
+          {activeFilterCount > 0 && (
+            <span className="events-filters-count">{activeFilterCount}</span>
+          )}
+          <ChevronDown
+            size={16}
+            className="events-filters-caret"
+            style={{ transform: filtersOpen ? "rotate(180deg)" : "none" }}
           />
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            aria-label="По"
-          />
+        </button>
+        <div className="events-filters-body" data-open={filtersOpen ? "true" : "false"}>
+          <div className="filter-row-4">
+            <Select
+              value={catFilter}
+              onChange={setCatFilter}
+              placeholder="Все категории"
+              options={catOptions}
+            />
+            <Select
+              value={subcatFilter}
+              onChange={setSubcatFilter}
+              placeholder="Все подкатегории"
+              options={subcatOptions}
+            />
+            <Select
+              value={yearFilter}
+              onChange={setYearFilter}
+              placeholder="Все годы"
+              options={yearOptions}
+            />
+            <Select
+              value={monthFilter}
+              onChange={setMonthFilter}
+              placeholder="Все месяцы"
+              options={monthOptions}
+            />
+          </div>
+          <div className="filter-row-events-3">
+            <Select
+              value={clientFilter}
+              onChange={setClientFilter}
+              placeholder="Все клиенты"
+              options={clientOptions}
+            />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              aria-label="С"
+            />
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              aria-label="По"
+            />
+          </div>
+          <div className="events-filter-foot">
+            <Toggle
+              checked={royaltyOnly}
+              onChange={setRoyaltyOnly}
+              label="Только с роялти"
+            />
+          </div>
         </div>
       </Card>
 

@@ -726,8 +726,7 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (max-width: 800px) { .filter-row { grid-template-columns: 1fr; } }
 
 /* Events page: row 1 has four equal-width selects (cat, subcat, year, month);
-   row 2 packs the rest — Client (flex), Royalty toggle, Search (flex) and
-   the date-range pair (start / end) on the right. */
+   row 2 client + date range; royalty toggle in a footer row below. */
 .filter-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .filter-row-2 {
   display: grid;
@@ -735,37 +734,102 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 12px;
   margin-top: 12px;
 }
-.filter-row-events-2 {
+.filter-row-events-3 {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  margin-top: 12px;
 }
+
+/* Tabs + search live on a single row on desktop (search right-aligned);
+   stack as full-width search above a collapsible filters card on mobile. */
+.events-controls { display: flex; align-items: center; gap: 12px; }
+.events-search {
+  margin-left: auto;
+  width: clamp(220px, 28vw, 360px);
+}
+.events-filters-toggle { display: none; }
+.events-filters-body { display: block; }
+.events-filters-body > .filter-row-events-3 { margin-top: 12px; }
+.events-filter-foot {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-start;
+}
+.events-filters-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+}
+
 @media (max-width: 900px) {
   .filter-row-4 { grid-template-columns: 1fr 1fr; }
   .filter-row-2 { grid-template-columns: 1fr; }
-  /* Three rows on tablet: client+toggle, search, date-from+date-to */
-  .filter-row-events-2 {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .filter-row-events-3 {
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      "client    toggle"
-      "search    search"
-      "from      to";
+      "client client"
+      "from   to";
   }
-  .filter-row-events-2 > :nth-child(1) { grid-area: client; }
-  .filter-row-events-2 > :nth-child(2) { grid-area: toggle; }
-  .filter-row-events-2 > :nth-child(3) { grid-area: search; }
-  .filter-row-events-2 > :nth-child(4) { grid-area: from; }
-  .filter-row-events-2 > :nth-child(5) { grid-area: to; }
+  .filter-row-events-3 > :nth-child(1) { grid-area: client; }
+  .filter-row-events-3 > :nth-child(2) { grid-area: from; }
+  .filter-row-events-3 > :nth-child(3) { grid-area: to; }
 }
+
+@media (max-width: 800px) {
+  /* Tighter rhythm: page-level gap matches the inner events-controls gap
+     so tabs ↔ search ↔ Фильтры button all sit 12px apart. */
+  .page { gap: 12px; }
+  .events-controls { flex-direction: column; align-items: stretch; gap: 12px; }
+  .events-search { margin-left: 0; width: 100%; }
+
+  /* Card padding is dropped so the toggle becomes a tab-shaped button
+     of the same height as .view-switcher (38px). The body restores its
+     own padding when expanded. */
+  .card.events-filters.p-4 { padding: 0; }
+  .events-filters-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 38px;
+    padding: 0 14px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--r-md);
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .events-filters-caret {
+    margin-left: auto;
+    transition: transform 0.18s ease;
+    color: var(--muted);
+  }
+  .events-filters-body {
+    display: none;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--line);
+  }
+  .events-filters-body[data-open="true"] { display: block; }
+}
+
 @media (max-width: 480px) {
   .filter-row-4 { grid-template-columns: 1fr; }
-  .filter-row-events-2 {
+  .filter-row-events-3 {
     grid-template-columns: 1fr;
     grid-template-areas: none;
   }
-  .filter-row-events-2 > * { grid-area: auto !important; }
+  .filter-row-events-3 > * { grid-area: auto !important; }
 }
 
 /* ============================================================
@@ -2065,11 +2129,13 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Mobile: top-level Tabs<> live as a direct child of .page (Events,
      ClientDetail tabs row). On phones they stretch full width and the
      buttons split that width equally. */
-  .page > .view-switcher {
+  .page > .view-switcher,
+  .events-controls > .view-switcher {
     align-self: stretch;
     width: 100%;
   }
   .page > .view-switcher .view-switch-btn,
+  .events-controls > .view-switcher .view-switch-btn,
   .client-detail-tabs-row > .view-switcher:first-child .view-switch-btn {
     flex: 1;
   }
