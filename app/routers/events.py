@@ -23,6 +23,36 @@ router = APIRouter(
 )
 
 
+DUPLICATE_MSG = (
+    "Уже есть событие с этим клиентом, датой/временем и подкатегорией"
+)
+
+
+def _find_duplicate_event(
+    db: Session,
+    *,
+    subcategory_id: int,
+    client_id: int | None,
+    start_at: datetime,
+    exclude_id: int | None = None,
+) -> Event | None:
+    """Returns an existing event whose (client, subcategory, start_at) tuple
+    matches the proposed payload. NULL client is treated as a real value so
+    two anonymous events at the same slot still collide. Used to enforce the
+    uniqueness rule on both POST and PUT."""
+    stmt = select(Event).where(
+        Event.subcategory_id == subcategory_id,
+        Event.start_at == start_at,
+    )
+    if client_id is None:
+        stmt = stmt.where(Event.client_id.is_(None))
+    else:
+        stmt = stmt.where(Event.client_id == client_id)
+    if exclude_id is not None:
+        stmt = stmt.where(Event.id != exclude_id)
+    return db.execute(stmt).scalar_one_or_none()
+
+
 @router.get("", response_model=EventListResponse)
 def list_events(
     category_id: int | None = Query(None),
@@ -125,6 +155,13 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
     sub = db.get(Subcategory, payload.subcategory_id)
     if not sub:
         raise HTTPException(400, "Подкатегория не найдена")
+    if _find_duplicate_event(
+        db,
+        subcategory_id=payload.subcategory_id,
+        client_id=payload.client_id,
+        start_at=payload.start_at,
+    ):
+        raise HTTPException(409, DUPLICATE_MSG)
     if payload.price_per_hour is not None:
         rate = payload.price_per_hour
     else:
@@ -163,6 +200,14 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
     e = db.get(Event, event_id)
     if not e:
         raise HTTPException(404)
+    if _find_duplicate_event(
+        db,
+        subcategory_id=payload.subcategory_id,
+        client_id=payload.client_id,
+        start_at=payload.start_at,
+        exclude_id=event_id,
+    ):
+        raise HTTPException(409, DUPLICATE_MSG)
 
     subcategory_changed = payload.subcategory_id != e.subcategory_id
     e.subcategory_id = payload.subcategory_id
