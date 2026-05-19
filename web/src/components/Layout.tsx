@@ -1,15 +1,31 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { BarChart3, Calendar as CalendarIcon, FileText, List, Menu, Tag, Users } from "lucide-react";
+import { Menu } from "lucide-react";
+import {
+  CalendarDots,
+  ChartPieSlice,
+  GridFour,
+  IdentificationCard,
+  ListPlus,
+  Tag,
+} from "@phosphor-icons/react";
+import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { to: "/", label: "Дашборд", Icon: BarChart3, end: true },
-  { to: "/calendar", label: "Календарь", Icon: CalendarIcon, end: false },
-  { to: "/events", label: "События", Icon: List, end: false },
-  { to: "/clients", label: "Клиенты", Icon: Users, end: false },
+type NavItem = {
+  to: string;
+  label: string;
+  Icon: PhosphorIconType;
+  end: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { to: "/", label: "Дашборд", Icon: GridFour, end: true },
+  { to: "/calendar", label: "Календарь", Icon: CalendarDots, end: false },
+  { to: "/events", label: "События", Icon: ListPlus, end: false },
+  { to: "/clients", label: "Клиенты", Icon: IdentificationCard, end: false },
   { to: "/categories", label: "Категории", Icon: Tag, end: false },
-  { to: "/report", label: "Отчёт", Icon: FileText, end: false },
+  { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
 ];
 
 export function Layout() {
@@ -49,7 +65,7 @@ export function Layout() {
                 className={cn("nav-item", active && "active")}
               >
                 <span className="nav-icon">
-                  <Icon size={18} strokeWidth={1.6} />
+                  <Icon size={18} weight="fill" />
                 </span>
                 <span>{label}</span>
               </NavLink>

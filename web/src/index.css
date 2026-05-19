@@ -1694,6 +1694,20 @@ input[type="number"] { -moz-appearance: textfield; }
 .meta-note { display: flex; gap: 10px; font-size: 13px; color: var(--ink-2); padding-top: 4px; }
 .client-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* Header actions: aligned with the app's primary/secondary tokens,
+   with a faint outline on the secondary so it doesn't dissolve into
+   the white card. */
+.client-detail-action.btn { font-weight: 500; }
+.client-detail-action--edit.btn-secondary {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
+}
+.client-detail-action--edit.btn-secondary:hover {
+  background: var(--bg-2);
+  border-color: color-mix(in oklab, var(--ink) 22%, transparent);
+}
+
 /* ============================================================
    Categories
    ============================================================ */

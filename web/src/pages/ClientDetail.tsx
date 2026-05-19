@@ -377,13 +377,23 @@ export function ClientDetailPage() {
           </div>
 
           <div className="client-detail-actions">
-            <Button variant="secondary" size="sm" icon={<Edit3 size={14} />}
-              onClick={() => setEditing(true)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="client-detail-action client-detail-action--edit"
+              icon={<Edit3 size={14} />}
+              onClick={() => setEditing(true)}
+            >
               Редактировать
             </Button>
-            <Button variant="ghost" size="sm" icon={<Plus size={14} />}
-              onClick={() => nav(`/events/new?client=${client.id}`)}>
-              Событие
+            <Button
+              variant="primary"
+              size="sm"
+              className="client-detail-action client-detail-action--add"
+              icon={<Plus size={14} />}
+              onClick={() => nav(`/events/new?client=${client.id}`)}
+            >
+              Добавить событие
             </Button>
           </div>
         </Card>
