@@ -18,6 +18,7 @@ import {
 import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
+import { EventFormModal } from "@/pages/EventForm";
 
 type TabKey = "future" | "past";
 const PAGE_SIZE = 10;
@@ -105,6 +106,13 @@ export function EventsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Modal state: { eventId } for edit, { copyId } for duplicate, "new" for create.
+  const [modal, setModal] = useState<
+    | { kind: "new"; prefillClient?: string }
+    | { kind: "edit"; eventId: number }
+    | { kind: "copy"; copyId: number }
+    | null
+  >(null);
 
   const activeFilterCount =
     (catFilter ? 1 : 0) +
@@ -273,7 +281,7 @@ export function EventsPage() {
             {filtered.length} {pluralize(filtered.length, "событие", "события", "событий")}
           </div>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => nav("/events/new")}>
+        <Button icon={<Plus size={16} />} onClick={() => setModal({ kind: "new" })}>
           Новое событие
         </Button>
       </div>
@@ -412,7 +420,7 @@ export function EventsPage() {
                   key={e.id}
                   ev={e}
                   icons={icons}
-                  onClick={() => nav(`/events/${e.id}/edit`)}
+                  onClick={() => setModal({ kind: "edit", eventId: e.id })}
                   onClient={(id) => nav(`/clients/${id}`)}
                 />
               ))}
@@ -441,6 +449,16 @@ export function EventsPage() {
           </div>
         </Card>
       )}
+
+      <EventFormModal
+        open={modal !== null}
+        eventId={modal?.kind === "edit" ? modal.eventId : undefined}
+        copyId={modal?.kind === "copy" ? modal.copyId : undefined}
+        prefillClient={modal?.kind === "new" ? modal.prefillClient : undefined}
+        onClose={() => setModal(null)}
+        onSaved={() => setModal(null)}
+        onCopy={(srcId) => setModal({ kind: "copy", copyId: srcId })}
+      />
     </div>
   );
 }
