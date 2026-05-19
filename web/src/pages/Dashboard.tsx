@@ -55,7 +55,9 @@ function groupUpcomingByDay(events: EventItem[]): UpcomingDayGroup[] {
       net: evs.reduce((s, e) => s + netOfEvent(e), 0),
     });
   }
-  groups.sort((a, b) => b.key.localeCompare(a.key));
+  // Closest first: today → +1 → +2 ... — matches the user's expectation
+  // of an upcoming-events feed.
+  groups.sort((a, b) => a.key.localeCompare(b.key));
   return groups;
 }
 
@@ -81,6 +83,7 @@ export function DashboardPage() {
   const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
   const today = useMemo(() => new Date(), []);
+  const todayKey = useMemo(() => format(today, "yyyy-MM-dd"), [today]);
   const todayLabel = fmt.todayHeader(today);
   const data = dash.data;
 
@@ -377,6 +380,9 @@ export function DashboardPage() {
                         {" · "}
                         {format(g.date, "d MMMM", { locale: ru })}
                       </span>
+                      {g.key === todayKey && (
+                        <span className="day-group-today"> · сегодня</span>
+                      )}
                     </div>
                     {g.events.length >= 2 && (
                       <div className="day-group-net mono">{fmt.money(g.net)} ₽</div>

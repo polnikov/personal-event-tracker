@@ -17,7 +17,7 @@ import type { EventItem } from "@/types/api";
 import { Echart, type EChartsOption } from "@/components/echart";
 import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
-import { fmt } from "@/lib/format";
+import { fmt, pluralize } from "@/lib/format";
 
 type TabKey = "future" | "past" | "analytics";
 
@@ -120,6 +120,10 @@ function MonthGroupedEvents({
               <span className="day-group-weekday" style={{ textTransform: "capitalize" }}>
                 {format(g.date, "LLLL yyyy", { locale: ru })}
               </span>
+              <span className="day-group-date muted">
+                {" · "}
+                {g.events.length} {pluralize(g.events.length, "событие", "события", "событий")}
+              </span>
             </div>
             <div className="day-group-net mono">{RUB(g.net)}</div>
           </div>
@@ -171,6 +175,13 @@ export function ClientDetailPage() {
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
+
+  // "Будущие" starts strictly from tomorrow — today's events are dropped.
+  const tomorrowKey = useMemo(() => {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    return format(t, "yyyy-MM-dd");
+  }, []);
 
   // Years actually present in this client's events (newest first).
   const availableYears = useMemo(() => {
@@ -412,9 +423,9 @@ export function ClientDetailPage() {
 
           {tab === "future" && (
             <MonthGroupedEvents
-              events={future_events}
+              events={future_events.filter((e) => e.start_at.slice(0, 10) >= tomorrowKey)}
               emptyTitle="Будущих событий нет"
-              orderDesc
+              orderDesc={false}
               icons={icons}
               onEventClick={(id) => nav(`/events/${id}/edit`)}
               onClientClick={(id) => nav(`/clients/${id}`)}

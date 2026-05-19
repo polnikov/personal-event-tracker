@@ -18,7 +18,7 @@ import { categories as categoriesApi, clients as clientsApi, events as eventsApi
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
 
-type TabKey = "today" | "future" | "past";
+type TabKey = "future" | "past";
 const PAGE_SIZE = 10;
 
 function netOf(e: EventItem): number {
@@ -92,7 +92,7 @@ function paginateGroups(groups: DayGroup[], limit: number): { groups: DayGroup[]
 
 export function EventsPage() {
   const nav = useNavigate();
-  const [tab, setTab] = useState<TabKey>("today");
+  const [tab, setTab] = useState<TabKey>("future");
   const [catFilter, setCatFilter] = useState<string>("");
   const [subcatFilter, setSubcatFilter] = useState<string>("");
   const [yearFilter, setYearFilter] = useState<string>("");
@@ -212,33 +212,32 @@ export function EventsPage() {
   }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, dateFrom, dateTo, q]);
 
   const counts = useMemo(() => {
-    let today = 0, future = 0, past = 0;
+    let future = 0, past = 0;
     for (const e of filtered) {
       const k = dayKey(e.start_at);
-      if (k === todayKey) today++;
-      else if (k > todayKey) future++;
-      else past++;
+      if (k > todayKey) future++;
+      else if (k < todayKey) past++;
     }
-    return { today, future, past };
+    return { future, past };
   }, [filtered, todayKey]);
 
   const slice = useMemo(() => {
     return filtered.filter((e) => {
       const k = dayKey(e.start_at);
-      if (tab === "today") return k === todayKey;
-      if (tab === "future") return k > todayKey;
-      return k < todayKey;
+      if (tab === "future") return k > todayKey;   // from tomorrow onwards
+      return k < todayKey;                          // strictly past, today excluded
     });
   }, [filtered, tab, todayKey]);
 
+  // Future → ASC (closest day first), Past → DESC (newest day first)
   const groups = useMemo(
-    () => buildDayGroups(slice, todayKey, tab !== "today"),
+    () => buildDayGroups(slice, todayKey, tab === "past"),
     [slice, todayKey, tab],
   );
 
   const paginated = useMemo(
-    () => (tab === "today" ? { groups, total: slice.length } : paginateGroups(groups, limit)),
-    [groups, limit, tab, slice.length],
+    () => paginateGroups(groups, limit),
+    [groups, limit],
   );
 
   // --- Select options ---
@@ -271,15 +270,6 @@ export function EventsPage() {
         value={tab}
         onChange={setTab}
         options={[
-          {
-            value: "today",
-            label: (
-              <>
-                Сегодня
-                {counts.today > 0 && <span className="tab-badge">{counts.today}</span>}
-              </>
-            ),
-          },
           {
             value: "future",
             label: (
@@ -375,7 +365,7 @@ export function EventsPage() {
                 {g.key === todayKey ? " · сегодня" : ""}
               </span>
             </div>
-            {(tab === "today" || g.events.length >= 2) && (
+            {g.events.length >= 2 && (
               <div className="day-group-net mono">{fmt.money(g.net)} ₽</div>
             )}
           </div>
@@ -395,7 +385,7 @@ export function EventsPage() {
         </div>
       ))}
 
-      {tab !== "today" && paginated.total > limit && (
+      {paginated.total > limit && (
         <div style={{ display: "flex", justifyContent: "center" }}>
           <Button variant="secondary" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
             Загрузить ещё ({paginated.total - limit})
@@ -407,11 +397,9 @@ export function EventsPage() {
         <Card>
           <div className="empty">
             <div className="empty-title">
-              {tab === "today"
-                ? "Сегодня событий нет"
-                : tab === "future"
-                  ? "Будущих событий нет"
-                  : "Прошедших событий нет"}
+              {tab === "future"
+                ? "Будущих событий нет"
+                : "Прошедших событий нет"}
             </div>
             <div className="empty-hint">Попробуйте сбросить фильтры или создать новое</div>
           </div>
