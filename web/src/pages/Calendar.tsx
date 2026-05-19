@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addMinutes, format, parseISO, startOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -14,28 +13,33 @@ import {
   Plus,
   User,
 } from "lucide-react";
-import { Button, Card, IconButton, Modal, NotesPill, Select } from "@/components/design";
-import { AppIcon } from "@/components/phosphor";
+import { Button, Card, IconButton, Modal, SearchableSelect } from "@/components/design";
+import { EventFormModal } from "@/pages/EventForm";
 import { calendar as calendarApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/api";
 
 const DOW = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-type View = "month" | "week" | "list";
+type View = "month" | "week";
 
-const HOUR_HEIGHT = 44;
+const HOUR_HEIGHT = 56;
 const START_HOUR = 6;
 const END_HOUR = 23;
 const HOUR_COUNT = END_HOUR - START_HOUR + 1;
 
 export function CalendarPage() {
-  const nav = useNavigate();
   const today = useMemo(() => new Date(), []);
   const [view, setView] = useState<View>("week");
   const [cursor, setCursor] = useState(() => new Date());
   const [openEvent, setOpenEvent] = useState<CalendarEvent | null>(null);
   const [clientFilter, setClientFilter] = useState("");
+  const [formModal, setFormModal] = useState<
+    | { kind: "new" }
+    | { kind: "edit"; eventId: number }
+    | { kind: "copy"; copyId: number }
+    | null
+  >(null);
 
   const clientsList = useQuery({
     queryKey: ["clients", ""],
@@ -50,12 +54,8 @@ export function CalendarPage() {
       const end = addDays(start, 42);
       return { start, end };
     }
-    if (view === "week") {
-      const start = startOfWeek(cursor, { weekStartsOn: 1 });
-      return { start, end: addDays(start, 7) };
-    }
-    const start = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
-    return { start, end: addDays(start, 30) };
+    const start = startOfWeek(cursor, { weekStartsOn: 1 });
+    return { start, end: addDays(start, 7) };
   }, [view, cursor]);
 
   const feed = useQuery({
@@ -85,31 +85,22 @@ export function CalendarPage() {
 
   const headerLabel = useMemo(() => {
     if (view === "month") return fmt.monthYear(cursor);
-    if (view === "week") {
-      const start = startOfWeek(cursor, { weekStartsOn: 1 });
-      const end = addDays(start, 6);
-      return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM", { locale: ru })}`;
-    }
-    return `${format(range.start, "d MMM", { locale: ru })} – ${format(addDays(range.end, -1), "d MMM", { locale: ru })}`;
-  }, [view, cursor, range]);
+    const start = startOfWeek(cursor, { weekStartsOn: 1 });
+    const end = addDays(start, 6);
+    return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM", { locale: ru })}`;
+  }, [view, cursor]);
 
-  const navigate = (dir: -1 | 0 | 1) => {
-    if (dir === 0) {
-      setCursor(new Date());
-      return;
-    }
+  const navigate = (dir: -1 | 1) => {
     if (view === "month") {
       setCursor((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1));
-    } else if (view === "week") {
-      setCursor((d) => addDays(d, 7 * dir));
     } else {
-      setCursor((d) => addDays(d, 14 * dir));
+      setCursor((d) => addDays(d, 7 * dir));
     }
   };
 
   const handleMonthDayClick = (d: Date) => {
     setCursor(d);
-    setView("list");
+    setView("week");
   };
 
   return (
@@ -119,33 +110,29 @@ export function CalendarPage() {
           <h1 className="h1">Календарь</h1>
           <div className="muted">Расписание событий</div>
         </div>
-        <div className="page-head-actions">
-          <div style={{ minWidth: 180 }}>
-            <Select
-              value={clientFilter || "all"}
-              onChange={(v) => setClientFilter(v === "all" ? "" : v)}
-              options={[
-                { value: "all", label: "Все клиенты" },
-                ...((clientsList.data ?? []).map((c) => ({ value: String(c.id), label: c.full_name }))),
-              ]}
-            />
-          </div>
-          <ViewSwitcher value={view} onChange={setView} />
-          <div className="cal-nav">
-            <IconButton onClick={() => navigate(-1)} aria-label="Назад">
-              <ChevronLeft size={16} />
-            </IconButton>
-            <span className="cal-month">{headerLabel}</span>
-            <IconButton onClick={() => navigate(1)} aria-label="Вперёд">
-              <ChevronRight size={16} />
-            </IconButton>
-          </div>
-          <Button variant="secondary" onClick={() => navigate(0)}>
-            Сегодня
-          </Button>
-          <Button icon={<Plus size={16} />} onClick={() => nav("/events/new")}>
-            Событие
-          </Button>
+        <Button icon={<Plus size={16} />} onClick={() => setFormModal({ kind: "new" })}>
+          Событие
+        </Button>
+      </div>
+
+      <div className="cal-controls">
+        <div className="cal-controls-filter">
+          <SearchableSelect
+            value={clientFilter}
+            onChange={setClientFilter}
+            placeholder="Все клиенты"
+            options={(clientsList.data ?? []).map((c) => ({ value: String(c.id), label: c.full_name }))}
+          />
+        </div>
+        <ViewSwitcher value={view} onChange={setView} onToday={() => setCursor(new Date())} />
+        <div className="cal-nav">
+          <IconButton onClick={() => navigate(-1)} aria-label="Назад">
+            <ChevronLeft size={16} />
+          </IconButton>
+          <span className="cal-month">{headerLabel}</span>
+          <IconButton onClick={() => navigate(1)} aria-label="Вперёд">
+            <ChevronRight size={16} />
+          </IconButton>
         </div>
       </div>
 
@@ -166,35 +153,41 @@ export function CalendarPage() {
           onEvent={(e) => setOpenEvent(e)}
         />
       )}
-      {view === "list" && (
-        <ListView
-          start={range.start}
-          end={range.end}
-          eventsByDay={eventsByDay}
-          today={today}
-          onEvent={(e) => setOpenEvent(e)}
-        />
-      )}
-
       {openEvent && (
         <EventDetailModal
           event={openEvent}
           onClose={() => setOpenEvent(null)}
           onEdit={(id) => {
             setOpenEvent(null);
-            nav(`/events/${id}/edit`);
+            setFormModal({ kind: "edit", eventId: id });
           }}
         />
       )}
+
+      <EventFormModal
+        open={formModal !== null}
+        eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
+        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
+        onClose={() => setFormModal(null)}
+        onSaved={() => setFormModal(null)}
+        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
+      />
     </div>
   );
 }
 
-function ViewSwitcher({ value, onChange }: { value: View; onChange: (v: View) => void }) {
+function ViewSwitcher({
+  value,
+  onChange,
+  onToday,
+}: {
+  value: View;
+  onChange: (v: View) => void;
+  onToday: () => void;
+}) {
   const opts: { value: View; label: string }[] = [
     { value: "month", label: "Месяц" },
     { value: "week", label: "Неделя" },
-    { value: "list", label: "Список" },
   ];
   return (
     <div className="view-switcher">
@@ -208,6 +201,16 @@ function ViewSwitcher({ value, onChange }: { value: View; onChange: (v: View) =>
           {o.label}
         </button>
       ))}
+      {/* Action tab — sits right of "Неделя" and snaps cursor to today
+          without changing the current view. Never gets the "on" state. */}
+      <button
+        type="button"
+        className="view-switch-btn"
+        onClick={onToday}
+        aria-label="Перейти к сегодняшнему дню"
+      >
+        Сегодня
+      </button>
     </div>
   );
 }
@@ -374,109 +377,6 @@ function WeekView({
         </div>
       </div>
     </Card>
-  );
-}
-
-function ListView({
-  start,
-  end,
-  today,
-  eventsByDay,
-  onEvent,
-}: {
-  start: Date;
-  end: Date;
-  today: Date;
-  eventsByDay: Map<string, CalendarEvent[]>;
-  onEvent: (e: CalendarEvent) => void;
-}) {
-  const days: Date[] = [];
-  const cur = new Date(start);
-  while (cur < end) {
-    days.push(new Date(cur));
-    cur.setDate(cur.getDate() + 1);
-  }
-  const todayKey = today.toDateString();
-  const daysWithEvents = days
-    .filter((d) => (eventsByDay.get(d.toDateString()) || []).length > 0)
-    .sort((a, b) => b.getTime() - a.getTime());
-
-  if (daysWithEvents.length === 0) {
-    return (
-      <Card>
-        <div className="empty">
-          <div className="empty-title">В этот период событий нет</div>
-          <div className="empty-hint">Попробуйте сменить диапазон или создать событие</div>
-        </div>
-      </Card>
-    );
-  }
-
-  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  return (
-    <div className="stack-md">
-      {daysWithEvents.map((d) => {
-        const evs = eventsByDay.get(d.toDateString()) || [];
-        const isToday = d.toDateString() === todayKey;
-        return (
-          <div key={d.toISOString()} className="day-group">
-            <div className="day-group-head">
-              <div>
-                <span className="day-group-weekday">
-                  {capitalize(format(d, "EEEE", { locale: ru }))}
-                </span>
-                <span className="day-group-date muted">
-                  {" · "}
-                  {format(d, "d MMMM", { locale: ru })}
-                  {isToday ? " · сегодня" : ""}
-                </span>
-              </div>
-            </div>
-            <Card padding="p-0">
-              <div className="event-table">
-                {evs.map((e) => {
-                  const ex = e.extendedProps;
-                  const catColor = ex.category_color || e.backgroundColor;
-                  return (
-                    <div
-                      key={e.id}
-                      className="events-row"
-                      onClick={() => onEvent(e)}
-                    >
-                      <span className="events-row-time-start">{fmt.time(e.start)}</span>
-                      <span className="events-row-time-sep">–</span>
-                      <span className="events-row-time-end">{fmt.time(e.end)}</span>
-                      <span className="events-row-cat">
-                        <span className="events-row-cat-dot" style={{ background: catColor }} />
-                        <span className="events-row-cat-name">{ex.category}</span>
-                      </span>
-                      <span className="events-row-sub">
-                        {ex.subcategory_icon && (
-                          <span className="events-row-sub-icon">
-                            <AppIcon name={ex.subcategory_icon} size={14} weight="duotone" color={catColor} />
-                          </span>
-                        )}
-                        <span className="events-row-sub-name">{ex.subcategory}</span>
-                      </span>
-                      {ex.notes ? <NotesPill notes={ex.notes} /> : null}
-                      {ex.client && (
-                        <span className="events-row-client events-row-client-static">
-                          {ex.client}
-                        </span>
-                      )}
-                      <span className="events-row-cost">
-                        {ex.cost.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
