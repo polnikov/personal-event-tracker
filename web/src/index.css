@@ -95,8 +95,10 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: color-mix(in oklab, var(--bg) 85%, transparent);
-  backdrop-filter: blur(8px);
+  background: color-mix(in oklab, var(--bg) 60%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-2);
   border-bottom: 1px solid var(--line);
   margin: -28px -36px 16px;
 }
@@ -132,6 +134,10 @@
   }
   .app[data-mobile-open="true"] .sidebar { transform: translateX(0); }
   .mobile-trigger { display: flex; }
+  /* +30% icon size on phones: hamburger gets a literal size bump in JSX,
+     while sidebar nav-item icons are scaled via transform so the same
+     desktop component stays untouched on bigger screens. */
+  .sidebar .nav-icon { transform: scale(1.3); transform-origin: center; }
   .app[data-mobile-open="true"] .mobile-backdrop {
     display: block;
     position: fixed;

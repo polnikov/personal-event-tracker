@@ -85,7 +85,7 @@ export function Layout() {
             onClick={() => setMobileOpen(true)}
             aria-label="Меню"
           >
-            <Menu size={18} />
+            <Menu size={24} />
           </button>
           <div className="mobile-trigger-brand">
             <img src="/icon.png" alt="" className="brand-mark" style={{ width: 24, height: 24 }} />
