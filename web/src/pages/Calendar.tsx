@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button, Card, IconButton, Modal, SearchableSelect } from "@/components/design";
 import { EventFormModal } from "@/pages/EventForm";
+import { DateTimePicker } from "@/components/DateTimePicker";
 import { calendar as calendarApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -512,12 +513,7 @@ function EventDetailModal({
           <div className="muted small">Текущее: {dateLine}</div>
           <label className="field">
             <div className="field-label">Новое время</div>
-            <input
-              type="datetime-local"
-              className="input"
-              value={newStart}
-              onChange={(e) => setNewStart(e.target.value)}
-            />
+            <DateTimePicker value={newStart} onChange={setNewStart} />
             {newEndPreview && (
               <span className="muted small">Окончание: {newEndPreview}</span>
             )}

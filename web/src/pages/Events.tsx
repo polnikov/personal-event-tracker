@@ -19,6 +19,7 @@ import { categories as categoriesApi, clients as clientsApi, events as eventsApi
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
 import { EventFormModal } from "@/pages/EventForm";
+import { DatePicker } from "@/components/DatePicker";
 
 type TabKey = "future" | "past";
 const PAGE_SIZE = 10;
@@ -373,17 +374,17 @@ export function EventsPage() {
               placeholder="Все клиенты"
               options={clientOptions}
             />
-            <Input
-              type="date"
+            <DatePicker
               value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              aria-label="С"
+              onChange={setDateFrom}
+              placeholder="С"
+              ariaLabel="С"
             />
-            <Input
-              type="date"
+            <DatePicker
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              aria-label="По"
+              onChange={setDateTo}
+              placeholder="По"
+              ariaLabel="По"
             />
           </div>
           <div className="events-filter-foot">

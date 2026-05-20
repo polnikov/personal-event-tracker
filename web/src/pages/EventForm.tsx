@@ -20,6 +20,7 @@ import {
 } from "@/components/design";
 import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { DateTimePicker } from "@/components/DateTimePicker";
 
 const schema = z.object({
   subcategory_id: z.string().min(1, "Выберите подкатегорию"),
@@ -305,7 +306,10 @@ export function EventForm({
 
         <div className="form-grid-2">
           <Field label="Дата и время" error={form.formState.errors.start_at?.message}>
-            <Input type="datetime-local" {...form.register("start_at")} />
+            <DateTimePicker
+              value={startAtValue}
+              onChange={(v) => form.setValue("start_at", v, { shouldValidate: true })}
+            />
             {endLabel && <span className="muted small">Окончание: {endLabel}</span>}
           </Field>
           <Field label="Длительность" error={form.formState.errors.duration_minutes?.message}>

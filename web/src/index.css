@@ -696,6 +696,170 @@ input[type="number"] { -moz-appearance: textfield; }
   text-align: center;
 }
 
+/* =============================================================
+   DatePicker / DateTimePicker — Radix Popover + react-day-picker.
+   Styled to match the app's surface / ink / accent tokens. */
+.popover-content {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-3);
+  padding: 6px;
+  z-index: 120;
+  animation: fadeIn 0.12s ease;
+}
+
+.datepicker-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  text-align: left;
+}
+.datepicker-trigger:hover { border-color: color-mix(in oklab, var(--ink) 18%, transparent); }
+.datepicker-trigger:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+.datepicker-trigger.is-empty .datepicker-label { color: var(--muted); }
+.datepicker-trigger:disabled { opacity: 0.55; cursor: not-allowed; }
+.datepicker-icon { color: var(--muted); flex-shrink: 0; }
+.datepicker-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.datepicker-clear {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  color: var(--muted);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.datepicker-clear:hover { background: var(--bg-2); color: var(--ink); }
+.datepicker-popover { padding: 8px; min-width: 260px; }
+
+.datetimepicker {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.datetimepicker-date { min-width: 0; }
+.datetimepicker-time {
+  width: 110px;
+  font-feature-settings: 'tnum';
+}
+
+/* Calendar (react-day-picker) — all custom class names come from
+   <Calendar classNames=…/>, default rdp-* classes are NOT used. */
+.rdp-app { font-size: 13px; color: var(--ink); }
+.rdp-months { display: flex; gap: 12px; }
+.rdp-month { display: flex; flex-direction: column; gap: 6px; min-width: 240px; }
+.rdp-caption {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 44px;
+  min-height: 32px;
+}
+.rdp-caption-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: capitalize;
+  font-feature-settings: 'tnum';
+}
+
+.rdp-nav { position: absolute; inset: 0; pointer-events: none; }
+.rdp-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.rdp-nav-btn:hover { background: var(--bg-2); color: var(--ink); }
+.rdp-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+/* Negative offsets push chevrons into the popover's own gutter so they
+   don't sit on top of the first/last column of dates. */
+.rdp-nav-prev { left: -6px; }
+.rdp-nav-next { right: -6px; }
+.rdp-grid { border-collapse: collapse; width: 100%; }
+.rdp-weekdays { display: table-row; }
+.rdp-weekday {
+  padding: 4px 0;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.rdp-week { display: table-row; }
+.rdp-cell {
+  padding: 1px;
+  text-align: center;
+}
+.rdp-day {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-feature-settings: 'tnum';
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.rdp-day:hover { background: var(--bg-2); }
+.rdp-day-outside .rdp-day { color: var(--muted); opacity: 0.55; }
+.rdp-day-today .rdp-day {
+  font-weight: 600;
+  color: var(--accent-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 60%, transparent);
+}
+.rdp-day-selected .rdp-day {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.rdp-day-selected .rdp-day:hover { background: var(--accent); }
+.rdp-day-range-middle .rdp-day {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-radius: 0;
+}
+.rdp-day-range-start .rdp-day { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.rdp-day-range-end .rdp-day { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.rdp-day-disabled .rdp-day { opacity: 0.3; cursor: not-allowed; }
+.rdp-day-hidden { visibility: hidden; }
+
 /* Form helpers */
 .form { display: flex; flex-direction: column; gap: 16px; }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
