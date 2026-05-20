@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Copy, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Trash2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -74,6 +74,7 @@ export function EventForm({
   const [error, setError] = useState<string | null>(null);
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [royaltyEnabled, setRoyaltyEnabled] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   // Tracks the last (subcategory, start_at) pair we synced price from.
   // Used to skip the initial reset from existing/copy data while letting
@@ -363,7 +364,7 @@ export function EventForm({
           />
         </Field>
 
-        <div className="form-grid-2">
+        <div className="form-grid-2 tax-royalty-row">
           <div className="field">
             <Toggle checked={taxEnabled} onChange={setTaxEnabled} label="Налог" />
             {taxEnabled && (
@@ -426,9 +427,26 @@ export function EventForm({
           )}
         </div>
 
-        <Field label="Примечания">
-          <Textarea rows={3} placeholder="Дополнительная информация" {...form.register("notes")} />
-        </Field>
+        <div className={cn("collapsible", notesOpen && "is-open")}>
+          <button
+            type="button"
+            className="collapsible-head"
+            onClick={() => setNotesOpen((o) => !o)}
+            aria-expanded={notesOpen}
+          >
+            <span>Примечания</span>
+            <ChevronDown size={16} className="collapsible-caret" />
+          </button>
+          {notesOpen && (
+            <div className="collapsible-body">
+              <Textarea
+                rows={3}
+                placeholder="Дополнительная информация"
+                {...form.register("notes")}
+              />
+            </div>
+          )}
+        </div>
 
         {isEdit && (
           <label className="meta-row" style={{ cursor: "pointer", alignItems: "flex-start" }}>

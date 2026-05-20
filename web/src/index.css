@@ -925,6 +925,33 @@ input[type="number"] { -moz-appearance: textfield; }
 .rdp-day-disabled .rdp-day { opacity: 0.3; cursor: not-allowed; }
 .rdp-day-hidden { visibility: hidden; }
 
+/* Collapsible block — used for the Notes field in EventForm. */
+.collapsible {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.collapsible-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.collapsible-caret {
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 0.18s ease;
+}
+.collapsible.is-open .collapsible-caret { transform: rotate(180deg); }
+.collapsible-body { display: block; }
+
 /* Form helpers */
 .form { display: flex; flex-direction: column; gap: 16px; }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -2320,10 +2347,23 @@ input[type="number"] { -moz-appearance: textfield; }
    Mobile responsive overrides
    ============================================================ */
 @media (max-width: 640px) {
-  /* Prevent iOS auto-zoom on focused inputs */
+  /* Prevent iOS auto-zoom on focused inputs. Explicit line-height so the
+     native <select> (subcategory) renders at the same visual rhythm as
+     the <input> used by the SearchableSelect (client). */
   .input, .textarea, .select {
     font-size: 16px;
+    line-height: 1.4;
   }
+  /* Mobile-friendly chip touch target. */
+  .chip {
+    min-height: 44px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+  }
+  /* Keep Налог + Роялти on a single row on phones. */
+  .form-grid-2.tax-royalty-row { grid-template-columns: 1fr 1fr; }
 
   /* Page heads breathe better */
   .page-head { gap: 10px; }
