@@ -75,9 +75,10 @@ export function EventForm({
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [royaltyEnabled, setRoyaltyEnabled] = useState(false);
 
-  // Tracks the last subcategory id we synced price from. Used to detect
-  // user-driven changes vs. initial reset from existing/copy data.
-  const lastSyncedSubcat = useRef<string>("");
+  // Tracks the last (subcategory, start_at) pair we synced price from.
+  // Used to skip the initial reset from existing/copy data while letting
+  // subsequent subcategory OR date changes drive a re-sync.
+  const lastSyncedKey = useRef<string>("");
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
@@ -132,7 +133,7 @@ export function EventForm({
       });
       setTaxEnabled(tax > 0);
       setRoyaltyEnabled(royalty > 0);
-      lastSyncedSubcat.current = String(e.subcategory_id);
+      lastSyncedKey.current = `${e.subcategory_id}@${format(parseISO(e.start_at), "yyyy-MM-dd'T'HH:mm")}`;
     } else if (sourceForCopy.data) {
       const e = sourceForCopy.data;
       const tax = parseFloat(e.tax) || 0;
@@ -140,10 +141,11 @@ export function EventForm({
       // Copy keeps the source event's time-of-day but moves the date to today.
       const sourceTime = format(parseISO(e.start_at), "HH:mm");
       const todayDate = format(new Date(), "yyyy-MM-dd");
+      const copyStartAt = `${todayDate}T${sourceTime}`;
       form.reset({
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
-        start_at: `${todayDate}T${sourceTime}`,
+        start_at: copyStartAt,
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
         recalculate_price: false,
@@ -153,7 +155,7 @@ export function EventForm({
       });
       setTaxEnabled(tax > 0);
       setRoyaltyEnabled(royalty > 0);
-      lastSyncedSubcat.current = String(e.subcategory_id);
+      lastSyncedKey.current = `${e.subcategory_id}@${copyStartAt}`;
     } else if (prefillClient) {
       form.setValue("client_id", prefillClient);
     }
@@ -224,26 +226,39 @@ export function EventForm({
   const taxValue = form.watch("tax");
   const royaltyValue = form.watch("royalty");
 
-  // Update price whenever the user changes the subcategory.
-  // Skip the initial sync triggered by loading an existing event or a copy
-  // (lastSyncedSubcat is set to that value so we don't overwrite the snapshot price).
+  // Re-sync the price whenever the subcategory OR start_at changes.
+  // Picks the most recent historical price whose effective_from ≤ the
+  // chosen start_at (mirrors backend get_price_at). Falls back to the
+  // subcategory's current_price if no historical row matches.
+  // Initial load from an existing event / copy seeds lastSyncedKey with
+  // the loaded pair so the very first run is skipped — the snapshot
+  // price stays put until the user actually edits subcategory or date.
   useEffect(() => {
     if (!subcatValue || !cats.data) return;
-    if (subcatValue === lastSyncedSubcat.current) return;
+    const key = `${subcatValue}@${startAtValue}`;
+    if (key === lastSyncedKey.current) return;
     const subId = Number(subcatValue);
     for (const c of cats.data) {
       const s = c.subcategories.find((s) => s.id === subId);
-      if (s) {
-        form.setValue(
-          "price_per_hour",
-          s.current_price ? parseFloat(s.current_price) || 0 : 0,
-          { shouldDirty: true },
-        );
-        lastSyncedSubcat.current = subcatValue;
-        break;
-      }
+      if (!s) continue;
+      const startMs = startAtValue ? new Date(startAtValue).getTime() : Date.now();
+      const applicable = (s.prices ?? [])
+        .filter((p) => new Date(p.effective_from).getTime() <= startMs)
+        .sort(
+          (a, b) =>
+            new Date(b.effective_from).getTime() -
+            new Date(a.effective_from).getTime(),
+        )[0];
+      const priceStr = applicable?.price_per_hour ?? s.current_price;
+      form.setValue(
+        "price_per_hour",
+        priceStr ? parseFloat(priceStr) || 0 : 0,
+        { shouldDirty: true },
+      );
+      lastSyncedKey.current = key;
+      break;
     }
-  }, [subcatValue, cats.data, form]);
+  }, [subcatValue, startAtValue, cats.data, form]);
 
   const subcatGroups = useMemo(
     () =>
