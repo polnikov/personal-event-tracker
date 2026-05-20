@@ -23,6 +23,7 @@ import {
 } from "@/components/echart";
 import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
+import { EventFormModal } from "@/pages/EventForm";
 import { fmt, pluralize } from "@/lib/format";
 
 type TabKey = "future" | "past" | "analytics";
@@ -174,6 +175,12 @@ export function ClientDetailPage() {
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<TabKey>("future");
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
+  const [formModal, setFormModal] = useState<
+    | { kind: "new"; prefillClient?: string }
+    | { kind: "edit"; eventId: number }
+    | { kind: "copy"; copyId: number }
+    | null
+  >(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["clients", "detail", clientId],
@@ -404,7 +411,9 @@ export function ClientDetailPage() {
               size="sm"
               className="client-detail-action client-detail-action--add"
               icon={<Plus size={14} />}
-              onClick={() => nav(`/events/new?client=${client.id}`)}
+              onClick={() =>
+                setFormModal({ kind: "new", prefillClient: String(client.id) })
+              }
             >
               Добавить событие
             </Button>
@@ -473,7 +482,7 @@ export function ClientDetailPage() {
               emptyTitle="Будущих событий нет"
               orderDesc={false}
               icons={icons}
-              onEventClick={(id) => nav(`/events/${id}/edit`)}
+              onEventClick={(id) => setFormModal({ kind: "edit", eventId: id })}
               onClientClick={(id) => nav(`/clients/${id}`)}
             />
           )}
@@ -484,7 +493,7 @@ export function ClientDetailPage() {
               emptyTitle="Завершённых событий нет"
               orderDesc
               icons={icons}
-              onEventClick={(id) => nav(`/events/${id}/edit`)}
+              onEventClick={(id) => setFormModal({ kind: "edit", eventId: id })}
               onClientClick={(id) => nav(`/clients/${id}`)}
             />
           )}
@@ -522,6 +531,16 @@ export function ClientDetailPage() {
           )}
         </div>
       </div>
+
+      <EventFormModal
+        open={formModal !== null}
+        eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
+        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
+        prefillClient={formModal?.kind === "new" ? formModal.prefillClient : undefined}
+        onClose={() => setFormModal(null)}
+        onSaved={() => setFormModal(null)}
+        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
+      />
     </div>
   );
 }

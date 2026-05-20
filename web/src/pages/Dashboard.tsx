@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -18,6 +18,7 @@ import {
   type EChartsOption,
 } from "@/components/echart";
 import { categories as categoriesApi, dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
+import { EventFormModal } from "@/pages/EventForm";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -67,6 +68,12 @@ function capitalize(s: string): string {
 
 export function DashboardPage() {
   const nav = useNavigate();
+  const [formModal, setFormModal] = useState<
+    | { kind: "new" }
+    | { kind: "edit"; eventId: number }
+    | { kind: "copy"; copyId: number }
+    | null
+  >(null);
   const isMobile = useIsMobile();
 
   const dash = useQuery({
@@ -383,7 +390,7 @@ export function DashboardPage() {
           <div className="muted" style={{ textTransform: "lowercase" }}>{todayLabel}</div>
         </div>
         <div className="page-head-actions">
-          <Button icon={<Plus size={16} />} onClick={() => nav("/events/new")}>
+          <Button icon={<Plus size={16} />} onClick={() => setFormModal({ kind: "new" })}>
             Новое событие
           </Button>
         </div>
@@ -424,7 +431,7 @@ export function DashboardPage() {
                           key={e.id}
                           ev={e}
                           icons={icons}
-                          onClick={() => nav(`/events/${e.id}/edit`)}
+                          onClick={() => setFormModal({ kind: "edit", eventId: e.id })}
                           onClient={(id) => nav(`/clients/${id}`)}
                         />
                       ))}
@@ -488,6 +495,15 @@ export function DashboardPage() {
           </Card>
         </>
       )}
+
+      <EventFormModal
+        open={formModal !== null}
+        eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
+        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
+        onClose={() => setFormModal(null)}
+        onSaved={() => setFormModal(null)}
+        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import {
   type EChartsOption,
 } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
+import { EventFormModal } from "@/pages/EventForm";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EventItem } from "@/types/api";
@@ -74,6 +75,11 @@ export function ReportPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [categoryId, setCategoryId] = useState<string>("");
+  const [formModal, setFormModal] = useState<
+    | { kind: "edit"; eventId: number }
+    | { kind: "copy"; copyId: number }
+    | null
+  >(null);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
@@ -633,7 +639,7 @@ export function ReportPage() {
                       ev={e}
                       icons={icons}
                       costOverride={royaltyOfEvent(e)}
-                      onClick={() => nav(`/events/${e.id}/edit`)}
+                      onClick={() => setFormModal({ kind: "edit", eventId: e.id })}
                       onClient={(id) => nav(`/clients/${id}`)}
                     />
                   ))}
@@ -650,6 +656,15 @@ export function ReportPage() {
           </Card>
         )}
       </div>
+
+      <EventFormModal
+        open={formModal !== null}
+        eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
+        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
+        onClose={() => setFormModal(null)}
+        onSaved={() => setFormModal(null)}
+        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
+      />
     </div>
   );
 }
