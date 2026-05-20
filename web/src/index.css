@@ -1984,10 +1984,8 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-top: 1px;
   color: var(--ink);
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .week-time-ev-client {
   font-size: 10.5px;
