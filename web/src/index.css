@@ -1698,8 +1698,25 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-wrap: wrap;
 }
 .cal-controls-filter { min-width: 200px; flex: 0 1 240px; }
-.cal-controls > .cal-nav { margin-left: auto; }
-.cal-controls > .view-switcher + .cal-nav { margin-left: 0; }
+/* Group the view-switcher + nav on the right side with a single shared
+   shadow; individual children drop their own surface/box-shadow so the
+   wrapper reads as one card. The client filter stays on the left. */
+.cal-controls-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  padding: 4px;
+}
+.cal-controls-actions .view-switcher,
+.cal-controls-actions .cal-nav {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
 .cal-dow {
   padding: 12px 14px;
   font-size: 11px;
@@ -2503,9 +2520,20 @@ input[type="number"] { -moz-appearance: textfield; }
   }
   .cal-controls > * { width: 100%; }
   .cal-controls-filter { flex: 0 0 auto; min-width: 0; }
-  .cal-controls > .cal-nav { margin-left: 0; }
-  .cal-controls .view-switcher,
-  .cal-controls .cal-nav {
+  .cal-controls-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    margin-left: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .cal-controls-actions .view-switcher,
+  .cal-controls-actions .cal-nav {
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    padding: 2px;
     width: 100%;
     display: flex;
     justify-content: space-between;

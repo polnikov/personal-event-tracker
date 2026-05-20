@@ -125,15 +125,17 @@ export function CalendarPage() {
             options={(clientsList.data ?? []).map((c) => ({ value: String(c.id), label: c.full_name }))}
           />
         </div>
-        <ViewSwitcher value={view} onChange={setView} onToday={() => setCursor(new Date())} />
-        <div className="cal-nav">
-          <IconButton onClick={() => navigate(-1)} aria-label="Назад">
-            <ChevronLeft size={16} />
-          </IconButton>
-          <span className="cal-month">{headerLabel}</span>
-          <IconButton onClick={() => navigate(1)} aria-label="Вперёд">
-            <ChevronRight size={16} />
-          </IconButton>
+        <div className="cal-controls-actions">
+          <ViewSwitcher value={view} onChange={setView} onToday={() => setCursor(new Date())} />
+          <div className="cal-nav">
+            <IconButton onClick={() => navigate(-1)} aria-label="Назад">
+              <ChevronLeft size={16} />
+            </IconButton>
+            <span className="cal-month">{headerLabel}</span>
+            <IconButton onClick={() => navigate(1)} aria-label="Вперёд">
+              <ChevronRight size={16} />
+            </IconButton>
+          </div>
         </div>
       </div>
 
