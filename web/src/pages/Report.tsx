@@ -160,8 +160,8 @@ export function ReportPage() {
         {
           name: "Часы",
           type: "pie" as const,
-          radius: isMobile ? ["30%", "46%"] : ["38%", "60%"],
-          center: ["50%", "50%"],
+          radius: isMobile ? ["35%", "50%"] : ["35%", "65%"],
+          center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
@@ -171,7 +171,7 @@ export function ReportPage() {
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
-            fontSize: isMobile ? 9 : 10.5,
+            fontSize: isMobile ? 11 : 12.5,
             fontWeight: 600,
             lineHeight: 13,
             backgroundColor: "#FFFFFF",
@@ -236,8 +236,8 @@ export function ReportPage() {
         {
           name: "Чистый доход",
           type: "pie" as const,
-          radius: isMobile ? ["30%", "46%"] : ["38%", "60%"],
-          center: ["50%", "50%"],
+          radius: isMobile ? ["35%", "50%"] : ["35%", "65%"],
+          center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
@@ -247,7 +247,7 @@ export function ReportPage() {
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
-            fontSize: isMobile ? 9 : 10.5,
+            fontSize: isMobile ? 11 : 12.5,
             fontWeight: 600,
             lineHeight: 13,
             backgroundColor: "#FFFFFF",
@@ -407,19 +407,7 @@ export function ReportPage() {
     }
     return {
       grid: { top: 16, right: 16, bottom: 28, left: 26 },
-      tooltip: {
-        position: "top",
-        backgroundColor: "#FFFFFF",
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
-        formatter: (p: unknown) => {
-          const it = p as { value: [number, number, number] };
-          const [m, wRev, c] = it.value;
-          const w = 6 - wRev;
-          return `<div style="font-size:12px"><span style="font-weight:600">${dowLabels[w]} · ${monthLabels[m]}</span><br/><span class="mono">${c} событий</span></div>`;
-        },
-      },
+      tooltip: { show: false },
       visualMap: {
         show: false,
         type: "continuous",
