@@ -232,23 +232,25 @@ export function EventsPage() {
     });
   }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, dateFrom, dateTo, q]);
 
+  // "Future" includes events whose end time is still ahead of now — that
+  // covers tomorrow's events, today's not-yet-started events, and events
+  // currently in progress. "Past" is the strict complement.
+  const isFuture = (e: EventItem) => new Date(e.end_at).getTime() > Date.now();
+
   const counts = useMemo(() => {
     let future = 0, past = 0;
     for (const e of filtered) {
-      const k = dayKey(e.start_at);
-      if (k > todayKey) future++;
-      else if (k < todayKey) past++;
+      if (isFuture(e)) future++;
+      else past++;
     }
     return { future, past };
-  }, [filtered, todayKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered]);
 
   const slice = useMemo(() => {
-    return filtered.filter((e) => {
-      const k = dayKey(e.start_at);
-      if (tab === "future") return k > todayKey;   // from tomorrow onwards
-      return k < todayKey;                          // strictly past, today excluded
-    });
-  }, [filtered, tab, todayKey]);
+    return filtered.filter((e) => (tab === "future" ? isFuture(e) : !isFuture(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, tab]);
 
   // Future → ASC (closest day first), Past → DESC (newest day first)
   const groups = useMemo(
