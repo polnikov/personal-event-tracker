@@ -2243,14 +2243,19 @@ input[type="number"] { -moz-appearance: textfield; }
   animation: popIn 0.2s ease;
 }
 .modal-lg { max-width: 640px; }
-/* Calendar reschedule modal: 20% narrower than the default (480 → 384). */
-.modal-content:has(.modal-body-cal-detail) { max-width: 384px; }
-/* Distribute footer buttons evenly across the modal width. */
+/* Calendar reschedule modal: sized to the natural width of its footer
+   button row, not a fixed value. width:max-content lets the modal hug
+   the widest child (the 3 action buttons + gaps + padding); the buttons
+   no longer stretch so they keep their natural label widths. */
+.modal-content:has(.modal-body-cal-detail) {
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
 .modal-content:has(.modal-body-cal-detail) .modal-foot {
   justify-content: stretch;
 }
 .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn {
-  flex: 1;
+  flex: 0 0 auto;
   justify-content: center;
 }
 .modal-head {
@@ -2384,6 +2389,26 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Close icon's right edge aligns with the footer button right edge (16px). */
   .modal-close-floating { top: 16px; right: 16px; }
   .modal-body-cal-detail .form { margin-top: 20px; }
+
+  /* Calendar detail modal on phones: full-width modal, two-row footer.
+     Row 1 splits Перенести / Копировать 50/50; row 2 hosts Редактировать
+     on the full width. */
+  .modal-content:has(.modal-body-cal-detail) {
+    width: calc(100% - 16px);
+    max-width: none;
+  }
+  .modal-content:has(.modal-body-cal-detail) .modal-foot {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "reschedule copy"
+      "edit       edit";
+    gap: 8px;
+  }
+  .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn:nth-child(1) { grid-area: reschedule; }
+  .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn:nth-child(2) { grid-area: copy; }
+  .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn:nth-child(3) { grid-area: edit; }
+  .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn { width: 100%; flex: initial; }
 
   /* Event table rows fit phone width. Client/notes drop to row 2 under
      the subcategory badge instead of getting hidden. */

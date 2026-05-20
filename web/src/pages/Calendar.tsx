@@ -2,19 +2,17 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addMinutes, format, parseISO, startOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import {
-  CalendarClock,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Copy,
-  DollarSign,
-  Edit3,
-  FileText,
-  Hourglass,
-  Plus,
-  User,
-} from "lucide-react";
+  ClockClockwise,
+  Clock as ClockIcon,
+  Copy as CopyIcon,
+  CurrencyRub,
+  Hourglass as HourglassIcon,
+  Note,
+  PencilSimple,
+  User as UserIcon,
+} from "@phosphor-icons/react";
 import { Button, Card, IconButton, Modal, SearchableSelect } from "@/components/design";
 import { EventFormModal } from "@/pages/EventForm";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -465,7 +463,7 @@ function EventDetailModal({
               Назад
             </Button>
             <Button
-              icon={<CalendarClock size={14} />}
+              icon={<ClockClockwise size={14} weight="fill" />}
               onClick={() => reschedule.mutate()}
               disabled={reschedule.isPending}
             >
@@ -476,19 +474,22 @@ function EventDetailModal({
           <>
             <Button
               variant="secondary"
-              icon={<CalendarClock size={14} />}
+              icon={<ClockClockwise size={14} weight="fill" />}
               onClick={() => setRescheduleOpen(true)}
             >
               Перенести
             </Button>
             <Button
               variant="secondary"
-              icon={<Copy size={14} />}
+              icon={<CopyIcon size={14} weight="fill" />}
               onClick={() => onCopy(eventId)}
             >
               Копировать
             </Button>
-            <Button icon={<Edit3 size={14} />} onClick={() => onEdit(eventId)}>
+            <Button
+              icon={<PencilSimple size={14} weight="fill" />}
+              onClick={() => onEdit(eventId)}
+            >
               Редактировать
             </Button>
           </>
@@ -505,28 +506,28 @@ function EventDetailModal({
             <span>{event.extendedProps.category} | {event.extendedProps.subcategory}</span>
           </div>
           <div className="meta-row">
-            <span className="meta-icon"><Clock size={14} strokeWidth={1.6} /></span>
+            <span className="meta-icon"><ClockIcon size={14} weight="fill" /></span>
             <span className="mono">{dateLine}</span>
           </div>
           <div className="meta-row">
-            <span className="meta-icon"><Hourglass size={14} strokeWidth={1.6} /></span>
+            <span className="meta-icon"><HourglassIcon size={14} weight="fill" /></span>
             <span>{fmt.duration(event.extendedProps.duration)}</span>
           </div>
           {event.extendedProps.client && (
             <div className="meta-row">
-              <span className="meta-icon"><User size={14} strokeWidth={1.6} /></span>
+              <span className="meta-icon"><UserIcon size={14} weight="fill" /></span>
               <span>{event.extendedProps.client}</span>
             </div>
           )}
           <div className="meta-row">
-            <span className="meta-icon"><DollarSign size={14} strokeWidth={1.6} /></span>
+            <span className="meta-icon"><CurrencyRub size={14} weight="fill" /></span>
             <span className="mono">
               {event.extendedProps.cost.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽
             </span>
           </div>
           {detail.data?.notes && (
             <div className="meta-note">
-              <span className="meta-icon"><FileText size={14} strokeWidth={1.6} /></span>
+              <span className="meta-icon"><Note size={14} weight="fill" /></span>
               <span>{detail.data.notes}</span>
             </div>
           )}
