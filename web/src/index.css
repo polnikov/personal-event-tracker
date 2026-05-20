@@ -1497,8 +1497,9 @@ input[type="number"] { -moz-appearance: textfield; }
 
 .events-row-client {
   margin-left: auto;                   /* push client + cost to the right */
-  padding: 4px 10px;
+  padding: 4px;
   border-radius: 9px;
+  background: var(--accent-soft);
   color: var(--accent-ink);
   font-size: 13px;
   font-weight: 500;
@@ -1507,13 +1508,16 @@ input[type="number"] { -moz-appearance: textfield; }
   white-space: nowrap;
   flex-shrink: 0;
 }
-.events-row-client:hover { background: var(--accent-soft); }
+.events-row-client:hover {
+  background: color-mix(in oklab, var(--accent-soft) 80%, var(--accent));
+}
 /* Non-interactive variant (e.g. notes shown in place of client name) */
 .events-row-client-static {
   cursor: default;
+  background: var(--bg-2);
   color: var(--muted);
 }
-.events-row-client-static:hover { background: transparent; }
+.events-row-client-static:hover { background: var(--bg-2); }
 
 .events-row-cost {
   margin-left: 12px;
@@ -1555,11 +1559,7 @@ input[type="number"] { -moz-appearance: textfield; }
   .events-row-client {
     grid-area: client;
     justify-self: start;
-    /* Offset = cat-dot width (8px) + .events-row-cat gap (6px). Aligns the
-       client name's first letter under the category name's first letter,
-       not under the colour dot. */
-    padding-left: 14px;
-    padding-right: 6px;
+    padding: 4px;
   }
   .events-row-cost {
     grid-area: cost;
