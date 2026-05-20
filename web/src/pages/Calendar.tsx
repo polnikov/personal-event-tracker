@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addMinutes, format, parseISO, startOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Copy,
   DollarSign,
   Edit3,
   FileText,
@@ -161,6 +163,10 @@ export function CalendarPage() {
           onEdit={(id) => {
             setOpenEvent(null);
             setFormModal({ kind: "edit", eventId: id });
+          }}
+          onCopy={(id) => {
+            setOpenEvent(null);
+            setFormModal({ kind: "copy", copyId: id });
           }}
         />
       )}
@@ -385,10 +391,12 @@ function EventDetailModal({
   event,
   onClose,
   onEdit,
+  onCopy,
 }: {
   event: CalendarEvent;
   onClose: () => void;
   onEdit: (id: number) => void;
+  onCopy: (id: number) => void;
 }) {
   const qc = useQueryClient();
   const eventId = Number(event.id);
@@ -456,14 +464,29 @@ function EventDetailModal({
             <Button variant="secondary" onClick={() => setRescheduleOpen(false)}>
               Назад
             </Button>
-            <Button onClick={() => reschedule.mutate()} disabled={reschedule.isPending}>
+            <Button
+              icon={<CalendarClock size={14} />}
+              onClick={() => reschedule.mutate()}
+              disabled={reschedule.isPending}
+            >
               {reschedule.isPending ? "Перенос…" : "Перенести"}
             </Button>
           </>
         ) : (
           <>
-            <Button variant="secondary" onClick={() => setRescheduleOpen(true)}>
+            <Button
+              variant="secondary"
+              icon={<CalendarClock size={14} />}
+              onClick={() => setRescheduleOpen(true)}
+            >
               Перенести
+            </Button>
+            <Button
+              variant="secondary"
+              icon={<Copy size={14} />}
+              onClick={() => onCopy(eventId)}
+            >
+              Копировать
             </Button>
             <Button icon={<Edit3 size={14} />} onClick={() => onEdit(eventId)}>
               Редактировать

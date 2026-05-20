@@ -760,7 +760,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .datetimepicker-date { min-width: 0; }
 .datetimepicker-time {
-  width: 110px;
+  width: 100%;
   font-feature-settings: 'tnum';
 }
 
@@ -2216,6 +2216,16 @@ input[type="number"] { -moz-appearance: textfield; }
   animation: popIn 0.2s ease;
 }
 .modal-lg { max-width: 640px; }
+/* Calendar reschedule modal: 20% narrower than the default (480 → 384). */
+.modal-content:has(.modal-body-cal-detail) { max-width: 384px; }
+/* Distribute footer buttons evenly across the modal width. */
+.modal-content:has(.modal-body-cal-detail) .modal-foot {
+  justify-content: stretch;
+}
+.modal-content:has(.modal-body-cal-detail) .modal-foot > .btn {
+  flex: 1;
+  justify-content: center;
+}
 .modal-head {
   display: flex;
   align-items: center;
