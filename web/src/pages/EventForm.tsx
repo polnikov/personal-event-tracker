@@ -313,7 +313,17 @@ export function EventForm({
             {endLabel && <span className="muted small">Окончание: {endLabel}</span>}
           </Field>
           <Field label="Длительность" error={form.formState.errors.duration_minutes?.message}>
-            <div className="dur-row">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Input
+                type="number"
+                min={1}
+                className="!w-24"
+                style={{ width: "6rem" }}
+                {...form.register("duration_minutes")}
+              />
+              <span className="muted small">мин</span>
+            </div>
+            <div className="dur-row" style={{ marginTop: 6 }}>
               {DURATION_PRESETS.map((p) => (
                 <button
                   key={p.value}
@@ -324,16 +334,6 @@ export function EventForm({
                   {p.label}
                 </button>
               ))}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-              <Input
-                type="number"
-                min={1}
-                className="!w-24"
-                style={{ width: "6rem" }}
-                {...form.register("duration_minutes")}
-              />
-              <span className="muted small">мин</span>
             </div>
           </Field>
         </div>
