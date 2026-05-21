@@ -35,6 +35,13 @@ router = APIRouter(
     dependencies=[Depends(require_auth)],
 )
 
+# Callback is a top-level navigation FROM Google, not an API call from
+# the SPA. Even when the user's session is fine, we don't want the
+# auth dependency to short-circuit before we can return a clean
+# RedirectResponse with status/reason — state validation handles
+# CSRF on this endpoint.
+callback_router = APIRouter(prefix="/api/google", tags=["google"])
+
 
 # ───────────────────────── helpers ─────────────────────────
 
@@ -108,7 +115,7 @@ def oauth_start(request: Request):
     return RedirectResponse(auth_url, status_code=302)
 
 
-@router.get("/oauth/callback")
+@callback_router.get("/oauth/callback")
 def oauth_callback(
     request: Request,
     code: str | None = Query(None),

@@ -18,7 +18,7 @@ from .routers.clients import router as clients_router
 from .routers.events import router as events_router
 from .routers.dashboard import router as dashboard_router
 from .routers.calendar import router as calendar_router
-from .routers.google import router as google_router
+from .routers.google import router as google_router, callback_router as google_callback_router
 from .routers.reports import router as reports_router
 
 
@@ -66,6 +66,7 @@ app.include_router(clients_router)
 app.include_router(events_router)
 app.include_router(reports_router)
 app.include_router(google_router)
+app.include_router(google_callback_router)
 
 
 @app.get("/healthz", include_in_schema=False)
