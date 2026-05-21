@@ -91,19 +91,29 @@ def _to_local_iso(dt: datetime) -> str:
 
 
 def event_to_google_body(event: Event) -> dict:
-    sub = event.subcategory
-    cat = sub.category
+    """Build the Google Calendar event payload.
+
+    Title  : "<Category> | <Client>" (drops the client side when absent).
+    Body   : notes verbatim, empty string when none — explicit so patch
+             clears it if the user removed the note later.
+    Guests : never invite anyone, never let invitees add more guests.
+    """
+    cat = event.subcategory.category
     end_at = event.start_at + timedelta(minutes=event.duration_minutes)
+    if event.client:
+        summary = f"{cat.name} | {event.client.full_name}"
+    else:
+        summary = cat.name
     body: dict = {
-        "summary": f"{cat.name} | {sub.name}",
+        "summary": summary,
+        "description": event.notes or "",
         "start": {"dateTime": _to_local_iso(event.start_at), "timeZone": settings.TIMEZONE},
         "end": {"dateTime": _to_local_iso(end_at), "timeZone": settings.TIMEZONE},
+        "attendees": [],
+        "guestsCanInviteOthers": False,
+        "guestsCanSeeOtherGuests": False,
         "extendedProperties": {"private": {"app_event_id": str(event.id)}},
     }
-    if event.notes:
-        body["description"] = event.notes
-    if event.client:
-        body["summary"] += f" · {event.client.full_name}"
     return body
 
 
@@ -205,7 +215,11 @@ def _apply_op(service, row: GoogleSyncOutbox, db: Session) -> tuple[bool, str | 
 
     try:
         if row.op == "create":
-            res = service.events().insert(calendarId=row.calendar_id, body=body).execute()
+            res = (
+                service.events()
+                .insert(calendarId=row.calendar_id, body=body, sendUpdates="none")
+                .execute()
+            )
             gid = res.get("id")
             if gid and row.event_id is not None:
                 ev = db.get(Event, row.event_id)
@@ -221,6 +235,7 @@ def _apply_op(service, row: GoogleSyncOutbox, db: Session) -> tuple[bool, str | 
                 calendarId=row.calendar_id,
                 eventId=row.google_event_id,
                 body=body,
+                sendUpdates="none",
             ).execute()
             # Snapshot fields stay in sync via creation row; here calendar_id is unchanged.
             return True, None
@@ -232,6 +247,7 @@ def _apply_op(service, row: GoogleSyncOutbox, db: Session) -> tuple[bool, str | 
                 service.events().delete(
                     calendarId=row.calendar_id,
                     eventId=row.google_event_id,
+                    sendUpdates="none",
                 ).execute()
             except HttpError as e:
                 if e.resp.status in (404, 410):
