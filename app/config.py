@@ -13,6 +13,23 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     COOKIE_SECURE: bool = False
 
+    # Google Calendar sync (per-category, app → Google only).
+    # When CLIENT_ID/SECRET/REDIRECT_URI are unset, the integration UI
+    # is exposed but no OAuth flow can complete — keeps the app usable
+    # without Google.
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None
+    GOOGLE_REDIRECT_URI: str | None = None
+    GOOGLE_SCOPES: list[str] = [
+        "https://www.googleapis.com/auth/calendar",
+        "openid",
+        "https://www.googleapis.com/auth/userinfo.email",
+    ]
+    GOOGLE_SYNC_POLL_SECONDS: int = 5
+    # An outbox row needs >= this many failed attempts before its event
+    # is marked sync_status=failed (otherwise it shows as pending).
+    GOOGLE_SYNC_FAIL_THRESHOLD: int = 5
+
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
 

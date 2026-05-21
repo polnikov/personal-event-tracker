@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_auth
 from ..database import get_db
+from ..google_sync import enqueue_for_event
+from ..google_sync_worker import kick_worker
 from ..models import Event, Subcategory
 from ..pricing import calc_total, get_price_at
 from ..schemas import (
@@ -14,7 +16,7 @@ from ..schemas import (
     EventUpdate,
     UpcomingEvent,
 )
-from ..serializers import event_to_schema
+from ..serializers import event_to_schema, event_to_schema_with_sync, hydrate_sync_status_map
 
 router = APIRouter(
     prefix="/api/events",
@@ -101,9 +103,10 @@ def list_events(
     future = sorted([e for e in events if e.start_at >= now], key=lambda e: e.start_at)
     past = [e for e in events if e.start_at < now]
 
+    sync_map = hydrate_sync_status_map(db, events)
     return EventListResponse(
-        future=[event_to_schema(e) for e in future],
-        past=[event_to_schema(e) for e in past],
+        future=[event_to_schema_with_sync(e, sync_map) for e in future],
+        past=[event_to_schema_with_sync(e, sync_map) for e in past],
     )
 
 
@@ -192,6 +195,9 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
         )
         .where(Event.id == e.id)
     ).scalar_one()
+    enqueue_for_event(db, e, op_hint="create")
+    db.commit()
+    kick_worker()
     return event_to_schema(e)
 
 
@@ -236,14 +242,28 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
         )
         .where(Event.id == event_id)
     ).scalar_one()
+    enqueue_for_event(db, e, op_hint="update")
+    db.commit()
+    kick_worker()
     return event_to_schema(e)
 
 
 @router.delete("/{event_id}")
 def delete_event(event_id: int, db: Session = Depends(get_db)):
-    e = db.get(Event, event_id)
+    e = db.execute(
+        select(Event)
+        .options(
+            selectinload(Event.subcategory).selectinload(Subcategory.category),
+            selectinload(Event.client),
+        )
+        .where(Event.id == event_id)
+    ).scalar_one_or_none()
     if not e:
         raise HTTPException(404)
+    # Enqueue the Google delete BEFORE removing the row, so the snapshot
+    # of (calendar_id, google_event_id) is captured for the worker.
+    enqueue_for_event(db, e, op_hint="delete")
     db.delete(e)
     db.commit()
+    kick_worker()
     return {"ok": True}

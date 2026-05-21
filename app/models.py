@@ -100,6 +100,10 @@ class Event(Base):
     royalty: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
 
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Snapshot of where the event lives in Google after a successful sync.
+    # Lets us detect "category changed → calendar changed" so we can issue
+    # delete-old + create-new instead of a futile patch on the wrong cal.
+    google_calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -113,3 +117,48 @@ class Event(Base):
     def end_at(self) -> datetime:
         from datetime import timedelta
         return self.start_at + timedelta(minutes=self.duration_minutes)
+
+
+class GoogleAccount(Base):
+    """Single-row table holding the connected Google account's credentials.
+    The app is single-user, so we don't index by user_id."""
+
+    __tablename__ = "google_account"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    refresh_token: Mapped[str] = mapped_column(Text, nullable=False)
+    access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    token_expiry: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    scopes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    connected_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class GoogleSyncOutbox(Base):
+    """Pending Google Calendar mutations, processed in order by the worker.
+    Rows persist after completion (completed_at != NULL) so the Debug UI
+    can show a history of past syncs and their errors."""
+
+    __tablename__ = "google_sync_outbox"
+    __table_args__ = (
+        Index("ix_outbox_pending", "completed_at", "next_attempt_at"),
+        Index("ix_outbox_event", "event_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event_id: Mapped[int | None] = mapped_column(
+        ForeignKey("events.id", ondelete="SET NULL"), nullable=True
+    )
+    op: Mapped[str] = mapped_column(String(16), nullable=False)  # create | update | delete
+    calendar_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    google_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    next_attempt_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, server_default=func.now()
+    )
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

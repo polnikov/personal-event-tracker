@@ -1,3 +1,5 @@
+import asyncio
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -9,16 +11,31 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from .config import settings
+from .google_sync_worker import run_sync_worker
 from .routers.auth_router import router as auth_router, limiter as auth_limiter
 from .routers.categories import router as categories_router
 from .routers.clients import router as clients_router
 from .routers.events import router as events_router
 from .routers.dashboard import router as dashboard_router
 from .routers.calendar import router as calendar_router
+from .routers.google import router as google_router
 from .routers.reports import router as reports_router
 
 
-app = FastAPI(title="Трекер событий API", debug=settings.DEBUG)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(run_sync_worker())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):
+            pass
+
+
+app = FastAPI(title="Трекер событий API", debug=settings.DEBUG, lifespan=lifespan)
 
 app.state.limiter = auth_limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -48,6 +65,7 @@ app.include_router(categories_router)
 app.include_router(clients_router)
 app.include_router(events_router)
 app.include_router(reports_router)
+app.include_router(google_router)
 
 
 @app.get("/healthz", include_in_schema=False)

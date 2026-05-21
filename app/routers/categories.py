@@ -44,11 +44,16 @@ def list_categories(db: Session = Depends(get_db)):
 
 @router.post("", response_model=CategoryRead, status_code=201)
 def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
-    cat = Category(name=payload.name.strip(), color=payload.color, icon=payload.icon)
+    cat = Category(
+        name=payload.name.strip(),
+        color=payload.color,
+        icon=payload.icon,
+        google_calendar_id=(payload.google_calendar_id or None),
+    )
     db.add(cat)
     db.commit()
     db.refresh(cat)
-    return CategoryRead(id=cat.id, name=cat.name, color=cat.color, icon=cat.icon, subcategories=[])
+    return category_to_schema(cat)
 
 
 @router.put("/{cat_id}", response_model=CategoryRead)
@@ -59,6 +64,7 @@ def update_category(cat_id: int, payload: CategoryUpdate, db: Session = Depends(
     cat.name = payload.name.strip()
     cat.color = payload.color
     cat.icon = payload.icon
+    cat.google_calendar_id = payload.google_calendar_id or None
     db.commit()
     db.refresh(cat)
     return category_to_schema(cat)

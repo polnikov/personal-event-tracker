@@ -10,6 +10,8 @@ import { ClientDetailPage } from "@/pages/ClientDetail";
 import { CategoriesPage } from "@/pages/Categories";
 import { CalendarPage } from "@/pages/Calendar";
 import { ReportPage } from "@/pages/Report";
+import { SettingsGooglePage } from "@/pages/SettingsGoogle";
+import { DebugPage } from "@/pages/Debug";
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="clients/:id" element={<ClientDetailPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="report" element={<ReportPage />} />
+        <Route path="settings/google" element={<SettingsGooglePage />} />
+        <Route path="debug" element={<DebugPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

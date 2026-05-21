@@ -38,6 +38,7 @@ export interface Category {
   name: string;
   color: string;
   icon: string | null;
+  google_calendar_id: string | null;
   subcategories: Subcategory[];
 }
 
@@ -68,6 +69,9 @@ export interface EventItem {
   notes: string | null;
   subcategory: EventSubcategoryRef;
   client: EventClientRef | null;
+  /** Server-computed sync state vs. Google Calendar (optional for now;
+   *  endpoints rolling this out: events.list, clients/detail, reports). */
+  sync_status?: "ok" | "pending" | "failed";
 }
 
 export interface EventListResponse {

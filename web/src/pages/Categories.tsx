@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Coins, Edit3, Plus, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Button,
   Card,
@@ -8,11 +9,12 @@ import {
   IconButton,
   Input,
   Modal,
+  SearchableSelect,
 } from "@/components/design";
 import { ColorPicker } from "@/components/ColorPicker";
 import { IconPicker } from "@/components/IconPicker";
 import { AppIcon } from "@/components/phosphor";
-import { categories as categoriesApi } from "@/lib/api";
+import { categories as categoriesApi, google as googleApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import type { Category, Subcategory } from "@/types/api";
 
@@ -181,10 +183,35 @@ function CategoryFormModal({
   const [name, setName] = useState(category?.name ?? "");
   const [color, setColor] = useState(category?.color ?? "#7BB661");
   const [icon, setIcon] = useState<string | null>(category?.icon ?? null);
+  const [googleCalendarId, setGoogleCalendarId] = useState<string>(
+    category?.google_calendar_id ?? "",
+  );
+
+  const googleStatus = useQuery({
+    queryKey: ["google", "status"],
+    queryFn: () => googleApi.status(),
+    staleTime: 60_000,
+  });
+  const calendars = useQuery({
+    queryKey: ["google", "calendars"],
+    queryFn: () => googleApi.listCalendars(),
+    enabled: !!googleStatus.data?.connected,
+    staleTime: 60_000,
+  });
+
+  const calendarOptions = (calendars.data ?? []).map((c) => ({
+    value: c.id,
+    label: c.primary ? `${c.summary} · основной` : c.summary,
+  }));
 
   const save = useMutation({
     mutationFn: () => {
-      const payload = { name: name.trim(), color, icon };
+      const payload = {
+        name: name.trim(),
+        color,
+        icon,
+        google_calendar_id: googleCalendarId || null,
+      };
       return isEdit
         ? categoriesApi.update(category!.id, payload)
         : categoriesApi.create(payload);
@@ -226,6 +253,21 @@ function CategoryFormModal({
         </Field>
         <Field label="Иконка">
           <IconPicker value={icon} onChange={setIcon} color={color} />
+        </Field>
+        <Field label="Синхронизация с Google Calendar">
+          {googleStatus.data?.connected ? (
+            <SearchableSelect
+              value={googleCalendarId}
+              onChange={setGoogleCalendarId}
+              placeholder="— без синхронизации —"
+              options={calendarOptions}
+            />
+          ) : (
+            <div className="muted small">
+              Google не подключён.{" "}
+              <Link to="/settings/google">Подключить</Link>
+            </div>
+          )}
         </Field>
       </div>
     </Modal>

@@ -1,7 +1,8 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
-import { ChatCircleDots } from "@phosphor-icons/react";
+import { ChatCircleDots, Warning as WarningIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { fmt, initials, stringToColor } from "@/lib/format";
 import type { EventItem } from "@/types/api";
@@ -845,8 +846,25 @@ export function EventLineRow({
   const catId = ev.subcategory.category_id;
   const catColor = icons.catColors.get(catId) || ev.subcategory.category_color;
   const subcatIcon = icons.subcatIcons.get(ev.subcategory.id);
+  const nav = useNavigate();
+  const syncFailed = ev.sync_status === "failed";
   return (
     <div className="events-row" onClick={onClick}>
+      {syncFailed && (
+        <span
+          className="events-row-sync-error"
+          role="button"
+          tabIndex={0}
+          aria-label="Ошибка синхронизации с Google. Открыть Отладку"
+          title="Ошибка синхронизации с Google"
+          onClick={(e) => {
+            e.stopPropagation();
+            nav(`/debug?status=failed&event=${ev.id}`);
+          }}
+        >
+          <WarningIcon size={14} weight="fill" />
+        </span>
+      )}
       {dateBadge ? (
         <span
           className="events-row-date-badge"

@@ -192,6 +192,20 @@
 .nav-item:hover { background: var(--bg-2); color: var(--ink); }
 .nav-item.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); }
 .nav-item.active .nav-icon { color: var(--accent); }
+.nav-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+}
 .nav-icon { display: grid; place-items: center; color: var(--muted); }
 
 .upcoming-section {
@@ -1347,6 +1361,7 @@ input[type="number"] { -moz-appearance: textfield; }
    (client's left edge aligns with cat; tend sits directly under tstart)
    ============================================================ */
 .events-row {
+  position: relative;
   display: flex;
   align-items: center;
   padding: 14px 20px;
@@ -1357,6 +1372,27 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .events-row:first-child { border-top: 0; }
 .events-row:hover { background: var(--bg-2); }
+
+/* Red warning pill in the top-right of an event row when its Google
+   sync ran past the failure threshold. Clicking opens the Debug page
+   filtered to this event. */
+.events-row-sync-error {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 14%, var(--surface));
+  border-radius: 999px;
+  cursor: pointer;
+  z-index: 3;
+}
+.events-row-sync-error:hover {
+  background: color-mix(in oklab, var(--danger) 22%, var(--surface));
+}
 
 .events-row-date {
   font-size: 13px;

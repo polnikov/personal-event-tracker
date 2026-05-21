@@ -95,6 +95,7 @@ class CategoryRead(BaseModel):
     name: str
     color: str
     icon: str | None = None
+    google_calendar_id: str | None = None
     subcategories: list[SubcategoryRead] = []
 
 
@@ -102,12 +103,14 @@ class CategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     color: str = "#0969da"
     icon: str | None = None
+    google_calendar_id: str | None = None
 
 
 class CategoryUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     color: str
     icon: str | None = None
+    google_calendar_id: str | None = None
 
 
 # ---------- Events ----------
@@ -141,6 +144,11 @@ class EventRead(BaseModel):
     notes: str | None
     subcategory: EventSubcategory
     client: EventClient | None = None
+    # Computed from open google_sync_outbox rows (see serializers.py).
+    # "ok" — no pending sync, or category isn't synced to Google.
+    # "pending" — at least one open outbox row with attempts < threshold.
+    # "failed" — at least one open outbox row with attempts ≥ threshold.
+    sync_status: str = "ok"
 
 
 class EventCreate(BaseModel):
@@ -289,3 +297,34 @@ class ClientDetailResponse(BaseModel):
     total_minutes: int
     total_cost: Decimal
     by_category: list[ClientStatsByCategory]
+
+
+# ---------- Google Calendar sync ----------
+
+
+class GoogleStatus(BaseModel):
+    connected: bool
+    email: str | None = None
+    pending: int = 0
+    failed: int = 0
+
+
+class GoogleCalendarOption(BaseModel):
+    id: str
+    summary: str
+    primary: bool = False
+    access_role: str | None = None
+
+
+class GoogleOutboxRow(BaseModel):
+    id: int
+    op: str
+    calendar_id: str
+    event_id: int | None
+    event_summary: str | None = None
+    google_event_id: str | None = None
+    attempts: int
+    last_error: str | None
+    created_at: datetime
+    completed_at: datetime | None
+    next_attempt_at: datetime

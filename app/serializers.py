@@ -1,11 +1,14 @@
 from datetime import timedelta
 from decimal import Decimal
+from typing import Iterable
+
+from sqlalchemy.orm import Session
 
 from .models import Event, Subcategory
 from .schemas import EventClient, EventRead, EventSubcategory, SubcategoryRead, CategoryRead, SubcategoryPriceRead
 
 
-def event_to_schema(e: Event) -> EventRead:
+def event_to_schema(e: Event, *, sync_status: str = "ok") -> EventRead:
     sub = e.subcategory
     cat = sub.category
     return EventRead(
@@ -28,7 +31,20 @@ def event_to_schema(e: Event) -> EventRead:
             category_color=cat.color,
         ),
         client=EventClient(id=e.client.id, full_name=e.client.full_name) if e.client else None,
+        sync_status=sync_status,
     )
+
+
+def hydrate_sync_status_map(db: Session, events: Iterable[Event]) -> dict[int, str]:
+    """Batch-load sync statuses for a list of events in a single query so
+    list endpoints stay O(1) extra queries instead of N+1."""
+    from .google_sync import get_event_sync_statuses
+    ids = [e.id for e in events]
+    return get_event_sync_statuses(db, ids)
+
+
+def event_to_schema_with_sync(e: Event, sync_map: dict[int, str]) -> EventRead:
+    return event_to_schema(e, sync_status=sync_map.get(e.id, "ok"))
 
 
 def subcategory_to_schema(s: Subcategory) -> SubcategoryRead:
@@ -49,5 +65,6 @@ def category_to_schema(c) -> CategoryRead:
         name=c.name,
         color=c.color,
         icon=c.icon,
+        google_calendar_id=c.google_calendar_id,
         subcategories=[subcategory_to_schema(s) for s in sorted(c.subcategories, key=lambda x: x.name)],
     )

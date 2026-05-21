@@ -91,11 +91,18 @@ export const clients = {
 
 // ---------- Categories ----------
 
+export interface CategoryPayload {
+  name: string;
+  color: string;
+  icon: string | null;
+  google_calendar_id?: string | null;
+}
+
 export const categories = {
   list: () => request<Category[]>("/categories"),
-  create: (payload: { name: string; color: string; icon: string | null }) =>
+  create: (payload: CategoryPayload) =>
     request<Category>("/categories", { method: "POST", body: JSON.stringify(payload) }),
-  update: (id: number, payload: { name: string; color: string; icon: string | null }) =>
+  update: (id: number, payload: CategoryPayload) =>
     request<Category>(`/categories/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   remove: (id: number) => request<{ ok: true }>(`/categories/${id}`, { method: "DELETE" }),
   createSubcategory: (
@@ -214,4 +221,49 @@ export const calendar = {
     if (clientId) q.set("client_id", String(clientId));
     return request<CalendarEvent[]>(`/calendar/feed?${q.toString()}`);
   },
+};
+
+// ---------- Google Calendar sync ----------
+
+export interface GoogleStatus {
+  connected: boolean;
+  email: string | null;
+  pending: number;
+  failed: number;
+}
+
+export interface GoogleCalendarOption {
+  id: string;
+  summary: string;
+  primary: boolean;
+  access_role: string | null;
+}
+
+export interface GoogleOutboxRow {
+  id: number;
+  op: "create" | "update" | "delete";
+  calendar_id: string;
+  event_id: number | null;
+  event_summary: string | null;
+  google_event_id: string | null;
+  attempts: number;
+  last_error: string | null;
+  created_at: string;
+  completed_at: string | null;
+  next_attempt_at: string;
+}
+
+export const google = {
+  status: () => request<GoogleStatus>("/google/status"),
+  startAuth: () => {
+    window.location.assign(`${API_BASE}/google/oauth/start`);
+  },
+  disconnect: () => request<{ ok: true }>("/google/disconnect", { method: "POST" }),
+  listCalendars: () => request<GoogleCalendarOption[]>("/google/calendars"),
+  outbox: (params: { status?: "all" | "pending" | "failed"; limit?: number; offset?: number } = {}) =>
+    request<GoogleOutboxRow[]>(`/google/outbox${buildQuery(params)}`),
+  retryOutbox: (id: number) =>
+    request<{ ok: true }>(`/google/outbox/${id}/retry`, { method: "POST" }),
+  dismissOutbox: (id: number) =>
+    request<{ ok: true }>(`/google/outbox/${id}/dismiss`, { method: "POST" }),
 };

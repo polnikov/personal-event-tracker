@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Menu } from "lucide-react";
 import {
+  Bug,
   CalendarDots,
   ChartPieSlice,
+  GearSix,
   GridFour,
   IdentificationCard,
   ListPlus,
   Tag,
 } from "@phosphor-icons/react";
 import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
+import { google as googleApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type NavItem = {
@@ -26,11 +30,21 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/clients", label: "Клиенты", Icon: IdentificationCard, end: false },
   { to: "/categories", label: "Категории", Icon: Tag, end: false },
   { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
+  { to: "/settings/google", label: "Настройки", Icon: GearSix, end: false },
+  { to: "/debug", label: "Отладка", Icon: Bug, end: false },
 ];
 
 export function Layout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Lightweight poll for the failed-sync badge in the "Отладка" nav item.
+  const googleStatus = useQuery({
+    queryKey: ["google", "status"],
+    queryFn: () => googleApi.status(),
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+  const failedCount = googleStatus.data?.failed ?? 0;
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
@@ -68,6 +82,9 @@ export function Layout() {
                   <Icon size={18} weight="fill" />
                 </span>
                 <span>{label}</span>
+                {to === "/debug" && failedCount > 0 && (
+                  <span className="nav-badge">{failedCount}</span>
+                )}
               </NavLink>
             );
           })}

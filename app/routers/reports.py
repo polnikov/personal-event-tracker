@@ -12,7 +12,7 @@ from ..schemas import (
     ReportResponse,
     ReportSubcatStat,
 )
-from ..serializers import event_to_schema
+from ..serializers import event_to_schema, event_to_schema_with_sync, hydrate_sync_status_map
 
 router = APIRouter(
     prefix="/api/reports",
@@ -139,9 +139,10 @@ def report(
     royalty_events = [e for e in period_events if e.royalty > 0]
     royalty_events.sort(key=lambda e: e.start_at, reverse=True)
 
+    sync_map = hydrate_sync_status_map(db, royalty_events)
     return ReportResponse(
         by_subcategory=by_subcategory,
         monthly=monthly,
         weekday_month=weekday_month,
-        events_with_royalty=[event_to_schema(e) for e in royalty_events],
+        events_with_royalty=[event_to_schema_with_sync(e, sync_map) for e in royalty_events],
     )

@@ -14,7 +14,7 @@ from ..schemas import (
     ClientStatsByCategory,
     ClientUpdate,
 )
-from ..serializers import event_to_schema
+from ..serializers import event_to_schema, event_to_schema_with_sync, hydrate_sync_status_map
 
 router = APIRouter(
     prefix="/api/clients",
@@ -173,10 +173,11 @@ def client_detail(client_id: int, db: Session = Depends(get_db)):
     future = sorted([e for e in events if e.start_at >= now], key=lambda e: e.start_at)
     past = [e for e in events if e.start_at < now]
 
+    sync_map = hydrate_sync_status_map(db, events)
     return ClientDetailResponse(
         client=_client_with_stats(client, total_events, total_cost),
-        future_events=[event_to_schema(e) for e in future],
-        past_events=[event_to_schema(e) for e in past],
+        future_events=[event_to_schema_with_sync(e, sync_map) for e in future],
+        past_events=[event_to_schema_with_sync(e, sync_map) for e in past],
         total_events=total_events,
         total_minutes=total_minutes,
         total_cost=total_cost,
