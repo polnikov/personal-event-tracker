@@ -221,7 +221,7 @@ export function DashboardPage() {
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["35%", "50%"] : ["35%", "65%"],
+          radius: isMobile ? ["35%", "60%"] : ["35%", "65%"],
           center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
@@ -232,7 +232,7 @@ export function DashboardPage() {
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
-            fontSize: isMobile ? 11 : 12.5,
+            fontSize: isMobile ? 12 : 12.5,
             fontWeight: 600,
             lineHeight: 13,
             backgroundColor: "#FFFFFF",
@@ -244,7 +244,7 @@ export function DashboardPage() {
               const it = p as { value: number; percent: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
-              return `${compact} ₽ | ${it.percent.toFixed(0)}%`;
+              return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
           },
           labelLine: {

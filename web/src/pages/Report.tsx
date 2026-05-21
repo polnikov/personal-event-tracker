@@ -160,7 +160,7 @@ export function ReportPage() {
         {
           name: "Часы",
           type: "pie" as const,
-          radius: isMobile ? ["35%", "50%"] : ["35%", "65%"],
+          radius: isMobile ? ["35%", "60%"] : ["35%", "65%"],
           center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
@@ -182,7 +182,7 @@ export function ReportPage() {
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
-              return `${hours} ч | ${it.percent.toFixed(0)}%`;
+              return `${hours} ч\n${it.percent.toFixed(0)}%`;
             },
           },
           labelLine: {
@@ -236,7 +236,7 @@ export function ReportPage() {
         {
           name: "Чистый доход",
           type: "pie" as const,
-          radius: isMobile ? ["35%", "50%"] : ["35%", "65%"],
+          radius: isMobile ? ["35%", "60%"] : ["35%", "65%"],
           center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
@@ -259,7 +259,7 @@ export function ReportPage() {
               const it = p as { value: number; percent: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
-              return `${compact} ₽ | ${it.percent.toFixed(0)}%`;
+              return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
           },
           labelLine: {
