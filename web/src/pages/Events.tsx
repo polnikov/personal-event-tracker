@@ -235,7 +235,24 @@ export function EventsPage() {
   // "Future" includes events whose end time is still ahead of now — that
   // covers tomorrow's events, today's not-yet-started events, and events
   // currently in progress. "Past" is the strict complement.
-  const isFuture = (e: EventItem) => new Date(e.end_at).getTime() > Date.now();
+  // A 10-second ticker re-runs the partitioning memos so finished events
+  // slide into "Прошедшие" automatically without a page reload. We also
+  // bump the tick whenever the tab regains visibility — background tabs
+  // throttle setInterval to ~1Hz and may have missed the transition.
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = () => setNowTick(Date.now());
+    const id = setInterval(tick, 10_000);
+    const onVis = () => { if (!document.hidden) tick(); };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", tick);
+    };
+  }, []);
+  const isFuture = (e: EventItem) => new Date(e.end_at).getTime() > nowTick;
 
   const counts = useMemo(() => {
     let future = 0, past = 0;
@@ -245,12 +262,12 @@ export function EventsPage() {
     }
     return { future, past };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered]);
+  }, [filtered, nowTick]);
 
   const slice = useMemo(() => {
     return filtered.filter((e) => (tab === "future" ? isFuture(e) : !isFuture(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, tab]);
+  }, [filtered, tab, nowTick]);
 
   // Future → ASC (closest day first), Past → DESC (newest day first)
   const groups = useMemo(
