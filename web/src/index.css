@@ -1673,10 +1673,14 @@ input[type="number"] { -moz-appearance: textfield; }
   }
   .events-row-notes-text { display: none; }
   .events-row-notes-pop {
-    /* Anchor popover to the right edge of the icon on mobile so it
-       doesn't shoot off-screen. */
+    /* Mobile: open horizontally to the LEFT of the icon, centred on
+       its vertical midline. The icon lives in the rightmost mobile
+       grid cell so a 260px popover fits comfortably to its left. */
+    top: 50%;
+    bottom: auto;
     left: auto;
-    right: 0;
+    right: calc(100% + 8px);
+    transform: translateY(-50%);
   }
 }
 
