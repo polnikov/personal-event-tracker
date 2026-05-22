@@ -366,7 +366,15 @@ export function EventForm({
 
         <div className="form-grid-2 tax-royalty-row">
           <div className="field">
-            <Toggle checked={taxEnabled} onChange={setTaxEnabled} label="Налог" />
+            <Toggle
+              checked={taxEnabled}
+              onChange={(next) => {
+                setTaxEnabled(next);
+                // Seed a sensible default 6% on activation.
+                if (next) form.setValue("tax", 6 as unknown as number);
+              }}
+              label="Налог"
+            />
             {taxEnabled && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                 <Input
@@ -383,7 +391,15 @@ export function EventForm({
           </div>
 
           <div className="field">
-            <Toggle checked={royaltyEnabled} onChange={setRoyaltyEnabled} label="Роялти" />
+            <Toggle
+              checked={royaltyEnabled}
+              onChange={(next) => {
+                setRoyaltyEnabled(next);
+                // Seed a sensible default 10% on activation.
+                if (next) form.setValue("royalty", 10 as unknown as number);
+              }}
+              label="Роялти"
+            />
             {royaltyEnabled && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
                 <Input
