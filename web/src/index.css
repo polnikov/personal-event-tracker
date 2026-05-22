@@ -975,12 +975,22 @@ input[type="number"] { -moz-appearance: textfield; }
 .form-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-top: 8px;
+  justify-content: flex-end;
+  padding-top: 14px;
   margin-top: 8px;
   border-top: 1px solid var(--line);
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* Modal-scoped: stretch the form-actions row beyond the body's padding so
+   the divider spans the full modal width — visually matches Modal's own
+   built-in `.modal-foot` slot (used by ClientFormModal). */
+.modal-body .form-actions {
+  margin: 16px -22px -22px;
+  padding: 14px 22px 22px;
+  background: var(--surface);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
 }
 
 /* Toggle (pill switch) */
@@ -2606,13 +2616,20 @@ input[type="number"] { -moz-appearance: textfield; }
   }
 
   /* Form actions — keep cancel + actions on one row */
-  .form-actions { flex-wrap: nowrap; gap: 6px; padding-top: 6px; }
-  .form-actions > div { gap: 6px !important; flex-wrap: nowrap !important; }
-  .form-actions .btn { padding: 8px 10px; font-size: 12.5px; white-space: nowrap; }
-  .form-actions .btn-icon svg { width: 13px; height: 13px; }
-  /* Collapse to icon-only on phones */
-  .btn-collapse-mobile > span:not(.btn-icon) { display: none; }
-  .btn-collapse-mobile { padding: 8px 10px; }
+  /* Mobile EventForm actions — big buttons that share the row evenly,
+     wrapping to a second row when there are 3+ of them (edit mode). */
+  .form-actions { gap: 8px; flex-wrap: wrap; }
+  .form-actions .btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .modal-body .form-actions {
+    margin: 12px -16px -18px;
+    padding: 12px 16px 18px;
+  }
 
   /* Datetime input — give the native picker chrome enough room on iOS */
   input[type="date"].input,

@@ -469,44 +469,38 @@ export function EventForm({
           <Button type="button" variant="danger" onClick={onCancel}>
             Отмена
           </Button>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {isEdit && eventId !== undefined && (
-              <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="btn-collapse-mobile"
-                  icon={<Copy size={14} />}
-                  onClick={() => onCopy?.(eventId)}
-                  aria-label="Копировать"
-                >
-                  Копировать
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  className="btn-collapse-mobile"
-                  icon={<Trash2 size={14} />}
-                  onClick={() => {
-                    if (confirm("Удалить событие?")) {
-                      remove.mutate(undefined, {
-                        onSuccess: () => {
-                          invalidateAfterEventMutation();
-                          onSaved();
-                        },
-                      });
-                    }
-                  }}
-                  aria-label="Удалить"
-                >
-                  Удалить
-                </Button>
-              </>
-            )}
-            <Button type="submit" disabled={create.isPending || update.isPending}>
-              {isEdit ? "Сохранить" : "Создать"}
-            </Button>
-          </div>
+          {isEdit && eventId !== undefined && (
+            <>
+              <Button
+                type="button"
+                variant="secondary"
+                icon={<Copy size={14} />}
+                onClick={() => onCopy?.(eventId)}
+              >
+                Копировать
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                icon={<Trash2 size={14} />}
+                onClick={() => {
+                  if (confirm("Удалить событие?")) {
+                    remove.mutate(undefined, {
+                      onSuccess: () => {
+                        invalidateAfterEventMutation();
+                        onSaved();
+                      },
+                    });
+                  }
+                }}
+              >
+                Удалить
+              </Button>
+            </>
+          )}
+          <Button type="submit" disabled={create.isPending || update.isPending}>
+            {isEdit ? "Сохранить" : "Создать"}
+          </Button>
         </div>
       </form>
     </>
