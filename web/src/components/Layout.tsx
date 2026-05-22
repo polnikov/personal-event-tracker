@@ -79,7 +79,7 @@ export function Layout() {
                 className={cn("nav-item", active && "active")}
               >
                 <span className="nav-icon">
-                  <Icon size={18} weight="fill" />
+                  <Icon size={24} weight="fill" />
                 </span>
                 <span>{label}</span>
                 {to === "/debug" && failedCount > 0 && (
