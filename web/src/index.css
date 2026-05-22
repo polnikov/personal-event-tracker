@@ -2284,12 +2284,15 @@ input[type="number"] { -moz-appearance: textfield; }
    with a faint outline on the secondary so it doesn't dissolve into
    the white card. */
 .client-detail-action.btn { font-weight: 500; }
-.client-detail-action--edit.btn-secondary {
+.client-detail-action--edit.btn-secondary,
+.btn-outline.btn-secondary {
   background: var(--surface);
   color: var(--ink);
   border: 1px solid color-mix(in oklab, var(--ink) 14%, transparent);
+  box-shadow: none;
 }
-.client-detail-action--edit.btn-secondary:hover {
+.client-detail-action--edit.btn-secondary:hover,
+.btn-outline.btn-secondary:hover {
   background: var(--bg-2);
   border-color: color-mix(in oklab, var(--ink) 22%, transparent);
 }

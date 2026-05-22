@@ -474,6 +474,7 @@ export function EventForm({
               <Button
                 type="button"
                 variant="secondary"
+                className="btn-outline"
                 icon={<Copy size={14} />}
                 onClick={() => onCopy?.(eventId)}
               >

@@ -476,6 +476,7 @@ function EventDetailModal({
           <>
             <Button
               variant="secondary"
+              className="btn-outline"
               icon={<ClockClockwise size={14} weight="fill" />}
               onClick={() => setRescheduleOpen(true)}
             >
@@ -483,6 +484,7 @@ function EventDetailModal({
             </Button>
             <Button
               variant="secondary"
+              className="btn-outline"
               icon={<CopyIcon size={14} weight="fill" />}
               onClick={() => onCopy(eventId)}
             >
