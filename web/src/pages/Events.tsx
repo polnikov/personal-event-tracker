@@ -409,8 +409,10 @@ export function EventsPage() {
               <span className="day-group-date muted">
                 {" · "}
                 {format(g.date, "d MMMM", { locale: ru })}
-                {g.key === todayKey ? " · сегодня" : ""}
               </span>
+              {g.key === todayKey && (
+                <span className="day-group-today"> · сегодня</span>
+              )}
             </div>
             {g.events.length >= 2 && (
               <div className="day-group-net mono">{fmt.money(g.net)} ₽</div>

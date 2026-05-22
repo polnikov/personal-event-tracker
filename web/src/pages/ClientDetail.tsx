@@ -130,9 +130,15 @@ function MonthGroupedEvents({
     }
   }
 
+  const todayDayKey = format(new Date(), "yyyy-MM-dd");
+
   return (
     <div className="stack-md">
-      {visibleGroups.map((g) => (
+      {visibleGroups.map((g) => {
+        const groupHasToday = g.events.some(
+          (e) => e.start_at.slice(0, 10) === todayDayKey,
+        );
+        return (
         <div key={g.key} className="day-group">
           <div className="day-group-head">
             <div>
@@ -143,6 +149,9 @@ function MonthGroupedEvents({
                 {" · "}
                 {g.events.length} {pluralize(g.events.length, "событие", "события", "событий")}
               </span>
+              {groupHasToday && (
+                <span className="day-group-today"> · сегодня</span>
+              )}
             </div>
             <div className="day-group-net mono">{RUB(g.net)}</div>
           </div>
@@ -168,7 +177,8 @@ function MonthGroupedEvents({
             </div>
           </Card>
         </div>
-      ))}
+        );
+      })}
       {limit < totalEvents && (
         <div style={{ display: "flex", justifyContent: "center" }}>
           <Button variant="secondary" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
@@ -204,12 +214,11 @@ export function ClientDetailPage() {
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
-  // "Будущие" starts strictly from tomorrow — today's events are dropped.
-  const tomorrowKey = useMemo(() => {
-    const t = new Date();
-    t.setDate(t.getDate() + 1);
-    return format(t, "yyyy-MM-dd");
-  }, []);
+  // "Будущие" includes today's not-yet-ended events too — matches Events
+  // page logic. Backend partitions on start_at vs now, so we re-partition
+  // client-side on end_at > now to capture in-progress and not-started.
+  const isFutureEvent = (e: EventItem) =>
+    new Date(e.end_at).getTime() > Date.now();
 
   // Years that have at least one event — chevron pager only navigates
   // between these. ASC order so prev/next neighbour lookups are simple.
@@ -355,7 +364,13 @@ export function ClientDetailPage() {
   if (isLoading) return <div className="muted small">Загрузка…</div>;
   if (!data) return <Card>Клиент не найден</Card>;
 
-  const { client, future_events, past_events } = data;
+  const { client } = data;
+  // Re-partition all events on end_at > now so today's in-progress and
+  // not-yet-started events surface under "Будущие" (the backend put them
+  // in past_events when start_at <= now).
+  const all = [...data.future_events, ...data.past_events];
+  const future_events = all.filter(isFutureEvent);
+  const past_events = all.filter((e) => !isFutureEvent(e));
 
   return (
     <div className="page">
@@ -503,7 +518,7 @@ export function ClientDetailPage() {
           {tab === "future" && (
             <MonthGroupedEvents
               events={filterByNotes(
-                future_events.filter((e) => e.start_at.slice(0, 10) >= tomorrowKey),
+                future_events,
                 notesQuery,
               )}
               emptyTitle="Будущих событий нет"
