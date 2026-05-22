@@ -178,12 +178,20 @@ export function ReportPage() {
             borderColor: "#ECEAE3",
             borderWidth: 1,
             borderRadius: 6,
-            padding: [2, 6, 2, 6],
+            padding: [2, 20, 2, 6],
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
               return `${hours} ч\n${it.percent.toFixed(0)}%`;
             },
+          },
+          rich: {
+            value: {
+              align: 'left'
+            },
+            percent: {
+              align: 'left'
+            }
           },
           labelLine: {
             show: true,
@@ -254,13 +262,21 @@ export function ReportPage() {
             borderColor: "#ECEAE3",
             borderWidth: 1,
             borderRadius: 6,
-            padding: [2, 6, 2, 6],
+            padding: [2, 20, 2, 6],
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
               return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
+          },
+          rich: {
+            value: {
+              align: 'left'
+            },
+            percent: {
+              align: 'left'
+            }
           },
           labelLine: {
             show: true,
