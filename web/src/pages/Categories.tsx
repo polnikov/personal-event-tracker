@@ -12,6 +12,7 @@ import {
   SearchableSelect,
 } from "@/components/design";
 import { ColorPicker } from "@/components/ColorPicker";
+import { DatePicker } from "@/components/DatePicker";
 import { IconPicker } from "@/components/IconPicker";
 import { AppIcon } from "@/components/phosphor";
 import { categories as categoriesApi, google as googleApi } from "@/lib/api";
@@ -337,10 +338,11 @@ function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => v
             />
           </Field>
           <Field label="Действует с">
-            <Input
-              type="date"
+            <DatePicker
               value={effectiveFrom}
-              onChange={(e) => setEffectiveFrom(e.target.value)}
+              onChange={setEffectiveFrom}
+              placeholder="Выберите дату"
+              allowClear={false}
             />
           </Field>
         </div>
@@ -475,10 +477,11 @@ function NewPriceModal({
             />
           </Field>
           <Field label="Действует с">
-            <Input
-              type="date"
+            <DatePicker
               value={effectiveFrom}
-              onChange={(e) => setEffectiveFrom(e.target.value)}
+              onChange={setEffectiveFrom}
+              placeholder="Выберите дату"
+              allowClear={false}
             />
           </Field>
         </div>
