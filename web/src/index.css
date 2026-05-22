@@ -1967,6 +1967,15 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-wrap: wrap;
   gap: 12px;
 }
+/* Search input sitting alongside ClientDetail tabs.
+   Desktop: clamps to a comfortable width and sits at the right.
+   Mobile: drops below the tabs and spans the full row. Input height
+   matches .view-switcher (38px) so the row reads as one band. */
+.client-detail-notes-search {
+  margin-left: auto;
+  width: clamp(220px, 28vw, 360px);
+}
+.client-detail-notes-search .input { min-height: 38px; }
 .view-switch-btn:hover { color: var(--ink); }
 .view-switch-btn.on {
   background: var(--ink);
@@ -2657,6 +2666,10 @@ input[type="number"] { -moz-appearance: textfield; }
   }
   .client-detail-tabs-row > .year-nav {
     align-self: flex-start;
+  }
+  .client-detail-tabs-row > .client-detail-notes-search {
+    width: 100%;
+    margin-left: 0;
   }
 
   /* Calendar month grid — rounded all four corners (was only top via Card) */

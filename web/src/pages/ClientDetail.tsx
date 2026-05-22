@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Edit3, Phone, Plus, Send, StickyNote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit3, Phone, Plus, Search, Send, StickyNote } from "lucide-react";
 import {
   Avatar,
   Button,
@@ -11,6 +11,7 @@ import {
   Empty,
   EventLineRow,
   IconButton,
+  Input,
   Tabs,
   buildEventLineIconMaps,
 } from "@/components/design";
@@ -27,6 +28,12 @@ import { EventFormModal } from "@/pages/EventForm";
 import { fmt, pluralize } from "@/lib/format";
 
 type TabKey = "future" | "past" | "analytics";
+
+function filterByNotes(events: EventItem[], query: string): EventItem[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return events;
+  return events.filter((e) => (e.notes || "").toLowerCase().includes(q));
+}
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
 const PAGE_SIZE = 10;
@@ -180,6 +187,7 @@ export function ClientDetailPage() {
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<TabKey>("future");
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
+  const [notesQuery, setNotesQuery] = useState("");
   const [formModal, setFormModal] = useState<
     | { kind: "new"; prefillClient?: string }
     | { kind: "edit"; eventId: number }
@@ -460,6 +468,17 @@ export function ClientDetailPage() {
                 { value: "analytics", label: "Аналитика" },
               ]}
             />
+            {(tab === "future" || tab === "past") && (
+              <div className="client-detail-notes-search">
+                <Input
+                  icon={<Search size={16} />}
+                  placeholder="Поиск..."
+                  value={notesQuery}
+                  onChange={(e) => setNotesQuery(e.target.value)}
+                  onClear={() => setNotesQuery("")}
+                />
+              </div>
+            )}
             {tab === "analytics" && hasAnyEvents && (
               <div className="year-nav">
                 <IconButton
@@ -483,7 +502,10 @@ export function ClientDetailPage() {
 
           {tab === "future" && (
             <MonthGroupedEvents
-              events={future_events.filter((e) => e.start_at.slice(0, 10) >= tomorrowKey)}
+              events={filterByNotes(
+                future_events.filter((e) => e.start_at.slice(0, 10) >= tomorrowKey),
+                notesQuery,
+              )}
               emptyTitle="Будущих событий нет"
               orderDesc={false}
               icons={icons}
@@ -494,7 +516,7 @@ export function ClientDetailPage() {
 
           {tab === "past" && (
             <MonthGroupedEvents
-              events={past_events}
+              events={filterByNotes(past_events, notesQuery)}
               emptyTitle="Завершённых событий нет"
               orderDesc
               icons={icons}
