@@ -1784,6 +1784,11 @@ input[type="number"] { -moz-appearance: textfield; }
      push the track wider than its 1/7 share — the full week always fits
      inside the card without a horizontal scrollbar. */
   grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* Clip the bottom row of cells to the card's rounded corners — the cells
+     themselves are square, so without this the lower-left/right corners
+     poke past the Card outline. */
+  border-radius: var(--r-lg);
+  overflow: hidden;
 }
 
 /* Calendar controls row — sits between the page-head (title + "+")
@@ -1806,7 +1811,7 @@ input[type="number"] { -moz-appearance: textfield; }
   background: var(--surface);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-2);
-  padding: 4px;
+  padding: 0;
 }
 .cal-controls-actions .view-switcher,
 .cal-controls-actions .cal-nav {
@@ -2190,6 +2195,11 @@ input[type="number"] { -moz-appearance: textfield; }
   height: 100%;
 }
 .client-card .client-card-foot { margin-top: auto; }
+/* Desktop: fixed 318px card width; mobile falls back to the default
+   .grid-3 auto-fit so cards still span the full row. */
+@media (min-width: 641px) {
+  .clients-grid { grid-template-columns: repeat(auto-fill, 318px); }
+}
 
 /* Chart cards inherit the default .p-6 padding (20px) — only the
    right-side "sum" pill in the head is monospaced for tnum alignment. */
@@ -2235,11 +2245,13 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .client-card-foot {
   display: flex;
+  justify-content: space-between;
   gap: 24px;
   margin-top: 16px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
+.client-card-foot > :last-child { text-align: right; }
 .client-stat-num { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
 .client-stat-lab { margin-top: 2px; }
 

@@ -78,7 +78,7 @@ export function ClientsPage() {
         placeholder="Поиск…"
       />
 
-      <div className="grid grid-3 gap-md">
+      <div className="grid grid-3 gap-md clients-grid">
         {visible.map((c) => (
           <Card
             key={c.id}
