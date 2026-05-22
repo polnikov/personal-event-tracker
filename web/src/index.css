@@ -1424,12 +1424,15 @@ input[type="number"] { -moz-appearance: textfield; }
   position: relative;
   display: flex;
   align-items: center;
-  padding: 14px 20px;
+  padding: 14px 20px 14px 2px;
   border-top: 1px solid var(--line);
   cursor: pointer;
   transition: background 0.12s;
   min-width: 0;
 }
+/* ClientDetail variant — the date badge sits at the left edge and needs
+   the original generous padding so it doesn't hug the card border. */
+.events-row:has(.events-row-date-badge) { padding-left: 20px; }
 .events-row:first-child { border-top: 0; }
 .events-row:hover { background: var(--bg-2); }
 
@@ -1637,9 +1640,10 @@ input[type="number"] { -moz-appearance: textfield; }
       "badge tend   client client notes";
     column-gap: 10px;
     row-gap: 4px;
-    padding: 12px 14px;
+    padding: 12px 14px 12px 2px;
     align-items: center;
   }
+  .events-row:has(.events-row-date-badge) { padding-left: 14px; }
   /* Drop all desktop margins/flex rules; grid handles placement. */
   .events-row > * { margin: 0; }
   .events-row-date-badge {
