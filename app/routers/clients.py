@@ -206,9 +206,16 @@ def client_monthly(
         )
     ).all()
     monthly: list[Decimal] = [Decimal(0)] * 12
+    # 7×12 event-count matrix (rows: Mon..Sun, cols: Jan..Dec).
+    weekday_month: list[list[int]] = [[0] * 12 for _ in range(7)]
     for start_at, total in rows:
         monthly[start_at.month - 1] += total
-    return {"year": year, "values": [float(v) for v in monthly]}
+        weekday_month[start_at.weekday()][start_at.month - 1] += 1
+    return {
+        "year": year,
+        "values": [float(v) for v in monthly],
+        "weekday_month": weekday_month,
+    }
 
 
 @router.put("/{client_id}", response_model=ClientRead)

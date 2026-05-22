@@ -26,6 +26,7 @@ import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
 import { fmt, pluralize } from "@/lib/format";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 type TabKey = "future" | "past" | "analytics";
 
@@ -194,6 +195,7 @@ export function ClientDetailPage() {
   const { id } = useParams();
   const nav = useNavigate();
   const clientId = Number(id);
+  const isMobile = useIsMobile();
   const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<TabKey>("future");
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
@@ -350,6 +352,83 @@ export function ClientDetailPage() {
       ],
     };
   }, [monthly.data, year]);
+
+  // Weekday × month heatmap — same shape & settings as the Report page,
+  // but scoped to the current client + selected year. Mobile rotates the
+  // axes (months become rows, weekdays become columns).
+  const heatmapOption: EChartsOption | null = useMemo(() => {
+    const matrix = monthly.data?.weekday_month;
+    if (!matrix || matrix.length !== 7) return null;
+    const monthLabels = [
+      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+    ];
+    const dowLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    const cells: [number, number, number][] = [];
+    let maxCount = 0;
+    for (let w = 0; w < 7; w++) {
+      for (let m = 0; m < 12; m++) {
+        const c = matrix[w]?.[m] || 0;
+        const x = isMobile ? w : m;
+        const y = isMobile ? 11 - m : 6 - w;
+        cells.push([x, y, c]);
+        if (c > maxCount) maxCount = c;
+      }
+    }
+    const xData = isMobile ? dowLabels : monthLabels;
+    const yData = isMobile
+      ? [...monthLabels].reverse()
+      : [...dowLabels].reverse();
+    return {
+      grid: { top: 16, right: 16, bottom: 28, left: 36 },
+      tooltip: { show: false },
+      visualMap: {
+        show: false,
+        type: "continuous",
+        min: 0,
+        max: Math.max(maxCount, 1),
+        calculable: false,
+        inRange: { color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"] },
+      },
+      xAxis: {
+        type: "category",
+        data: xData,
+        splitArea: { show: false },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      yAxis: {
+        type: "category",
+        data: yData,
+        splitArea: { show: false },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      series: [
+        {
+          type: "heatmap" as const,
+          data: cells,
+          label: {
+            show: true,
+            color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: 11,
+            formatter: (p: unknown) => {
+              const v = (p as { value: [number, number, number] }).value[2];
+              return v > 0 ? String(v) : "";
+            },
+          },
+          itemStyle: { borderColor: "#FFFFFF", borderWidth: 2, borderRadius: 4 },
+          emphasis: {
+            itemStyle: { shadowBlur: 8, shadowColor: "rgba(42, 42, 46, 0.15)" },
+          },
+        },
+      ],
+    };
+  }, [monthly.data, isMobile]);
 
   // Earliest event across past + future, used as "первое событие" subtitle.
   // MUST be declared before any early return so the hook order is stable.
@@ -550,26 +629,40 @@ export function ClientDetailPage() {
                 />
               </Card>
             ) : (
-              <Card className="chart-card">
-                <div className="card-head">
-                  <div>
-                    <div className="card-title">Доход по месяцам</div>
-                    <div className="muted small">{year}</div>
-                  </div>
-                  {monthly.data && (
-                    <div className="card-head-sum">
-                      {fmt.money(monthly.data.values.reduce((s, v) => s + v, 0))} ₽
+              <div className="stack-md">
+                <Card className="chart-card">
+                  <div className="card-head">
+                    <div>
+                      <div className="card-title">Доход по месяцам</div>
+                      <div className="muted small">{year}</div>
                     </div>
+                    {monthly.data && (
+                      <div className="card-head-sum">
+                        {fmt.money(monthly.data.values.reduce((s, v) => s + v, 0))} ₽
+                      </div>
+                    )}
+                  </div>
+                  {monthly.isLoading ? (
+                    <div className="muted small" style={{ marginTop: 16 }}>Загрузка…</div>
+                  ) : monthlyOption && monthly.data && monthly.data.values.some((v) => v > 0) ? (
+                    <Echart option={monthlyOption} height={240} />
+                  ) : (
+                    <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
                   )}
-                </div>
-                {monthly.isLoading ? (
-                  <div className="muted small" style={{ marginTop: 16 }}>Загрузка…</div>
-                ) : monthlyOption && monthly.data && monthly.data.values.some((v) => v > 0) ? (
-                  <Echart option={monthlyOption} height={240} />
-                ) : (
-                  <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
+                </Card>
+
+                {heatmapOption && (
+                  <Card className="chart-card">
+                    <div className="card-head">
+                      <div>
+                        <div className="card-title">События по дням недели</div>
+                        <div className="muted small">{year}</div>
+                      </div>
+                    </div>
+                    <Echart option={heatmapOption} height={isMobile ? 420 : 290} />
+                  </Card>
                 )}
-              </Card>
+              </div>
             )
           )}
         </div>
