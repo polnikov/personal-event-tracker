@@ -24,6 +24,11 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
 
+const MONTH_ABBR = [
+  "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+  "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+];
+
 function netOfEvent(e: EventItem): number {
   const gross = parseFloat(e.total_cost) || 0;
   const tax = (gross * (parseFloat(e.tax) || 0)) / 100;
@@ -272,8 +277,8 @@ export function DashboardPage() {
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data) return null;
-    const labels = data.chart.monthly_labels.map((m) =>
-      format(parse(m, "yyyy-MM", new Date()), "LLL", { locale: ru }),
+    const labels = data.chart.monthly_labels.map(
+      (m) => MONTH_ABBR[parseInt(m.slice(5, 7), 10) - 1] ?? m,
     );
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);

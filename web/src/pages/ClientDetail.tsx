@@ -259,9 +259,10 @@ export function ClientDetailPage() {
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!monthly.data) return null;
-    const labels = Array.from({ length: 12 }, (_, i) =>
-      format(parse(String(i + 1), "M", new Date()), "LLL", { locale: ru }),
-    );
+    const labels = [
+      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+    ];
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
     return {

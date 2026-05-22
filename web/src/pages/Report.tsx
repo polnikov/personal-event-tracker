@@ -287,9 +287,10 @@ export function ReportPage() {
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data.data) return null;
-    const labels = Array.from({ length: 12 }, (_, i) =>
-      format(parse(String(i + 1), "M", new Date()), "LLL", { locale: ru }),
-    );
+    const labels = [
+      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
+    ];
     const netSeries = data.data.monthly.map((m) => Math.round(m.net));
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
     const totalSeries = netSeries.map((n, i) => n + taxSeries[i]);
