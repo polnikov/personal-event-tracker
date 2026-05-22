@@ -59,12 +59,17 @@ function groupByMonth(events: EventItem[], orderDesc = true): MonthGroup[] {
   }
   const groups: MonthGroup[] = [];
   for (const [key, evs] of map.entries()) {
-    // Within a month: events sorted by start_at according to view direction.
-    evs.sort((a, b) =>
-      orderDesc
-        ? b.start_at.localeCompare(a.start_at)
-        : a.start_at.localeCompare(b.start_at),
-    );
+    // Within a month: days follow the view direction (past=DESC,
+    // future=ASC), but events on the same day are ALWAYS chronological
+    // (earliest first) — that's how the user reads a schedule.
+    evs.sort((a, b) => {
+      const dayA = a.start_at.slice(0, 10);
+      const dayB = b.start_at.slice(0, 10);
+      if (dayA !== dayB) {
+        return orderDesc ? dayB.localeCompare(dayA) : dayA.localeCompare(dayB);
+      }
+      return a.start_at.localeCompare(b.start_at);
+    });
     groups.push({
       key,
       date: parseISO(`${key}-01T00:00:00`),
