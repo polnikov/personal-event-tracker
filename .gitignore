@@ -86,3 +86,4 @@ $RECYCLE.BIN/
 # ─── Misc ───────────────────────────────────────────────────────────────────
 .specstory/
 .claude/
+google_credentials.json

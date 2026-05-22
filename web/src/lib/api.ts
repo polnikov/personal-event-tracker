@@ -258,6 +258,11 @@ export const google = {
   startAuth: () => {
     window.location.assign(`${API_BASE}/google/oauth/start`);
   },
+  manualConnect: (payload: { refresh_token: string; email?: string }) =>
+    request<{ ok: true; email: string | null }>("/google/manual-connect", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   disconnect: () => request<{ ok: true }>("/google/disconnect", { method: "POST" }),
   listCalendars: () => request<GoogleCalendarOption[]>("/google/calendars"),
   outbox: (params: { status?: "all" | "pending" | "failed"; limit?: number; offset?: number } = {}) =>

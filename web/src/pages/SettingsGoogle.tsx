@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card } from "@/components/design";
+import { Button, Card, Field, Input, Textarea } from "@/components/design";
 import { google as googleApi } from "@/lib/api";
 
 export function SettingsGooglePage() {
@@ -119,6 +119,95 @@ export function SettingsGooglePage() {
           </div>
         </div>
       </Card>
+
+      {!connected && <ManualConnectCard />}
     </div>
+  );
+}
+
+function ManualConnectCard() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = useMutation({
+    mutationFn: () =>
+      googleApi.manualConnect({
+        refresh_token: token.trim(),
+        email: email.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setToken("");
+      setEmail("");
+      setError(null);
+      setOpen(false);
+      qc.invalidateQueries({ queryKey: ["google", "status"] });
+      qc.invalidateQueries({ queryKey: ["google", "calendars"] });
+    },
+    onError: (err: Error) => setError(err.message),
+  });
+
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          background: "transparent",
+          border: 0,
+          padding: 0,
+          color: "var(--accent-ink)",
+          cursor: "pointer",
+          fontSize: 14,
+          fontWeight: 500,
+        }}
+      >
+        {open ? "Скрыть" : "Подключить вручную"}
+      </button>
+      {open && (
+        <div className="form" style={{ marginTop: 16 }}>
+          <div className="muted small">
+            Если OAuth через редирект не работает (например, из-за прокси/Funnel), получи{" "}
+            <code>refresh_token</code> локально:
+            <pre style={{ background: "var(--bg)", padding: 10, borderRadius: 8, marginTop: 8, overflow: "auto" }}>
+{`.venv\\Scripts\\python.exe scripts\\google_oauth_local.py \\
+    --client-id "<DESKTOP_CLIENT_ID>" \\
+    --client-secret "<DESKTOP_CLIENT_SECRET>"`}
+            </pre>
+            Создай в Google Cloud отдельный <strong>Desktop app</strong> OAuth client (типа Desktop позволяет
+            редиректы на любой <code>http://localhost</code> без регистрации), запусти скрипт у себя на ПК —
+            он отдаст <code>refresh_token</code> и email. Вставь их сюда.
+          </div>
+
+          {error && <div className="login-error">{error}</div>}
+
+          <Field label="refresh_token">
+            <Textarea
+              rows={3}
+              value={token}
+              onChange={(e) => setToken(e.target.value)}
+              placeholder="1//0g..."
+            />
+          </Field>
+          <Field label="Email (опционально, для отображения)">
+            <Input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@gmail.com"
+            />
+          </Field>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Button
+              onClick={() => token.trim() && submit.mutate()}
+              disabled={!token.trim() || submit.isPending}
+            >
+              {submit.isPending ? "Сохранение…" : "Сохранить"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }

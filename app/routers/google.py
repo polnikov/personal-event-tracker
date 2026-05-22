@@ -9,7 +9,10 @@ from typing import Literal
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from google.auth.transport.requests import Request as GoogleRequest
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
+from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -163,6 +166,58 @@ def oauth_callback(
     db.commit()
     kick_worker()
     return RedirectResponse("/settings/google?status=ok", status_code=302)
+
+
+class ManualConnectPayload(BaseModel):
+    refresh_token: str
+    email: str | None = None
+    scopes: list[str] | None = None
+
+
+@router.post("/manual-connect")
+def manual_connect(payload: ManualConnectPayload, db: Session = Depends(get_db)):
+    """Accept a pre-obtained refresh_token (e.g. produced by
+    scripts/google_oauth_local.py running on the user's dev machine).
+    Validates it by exchanging for an access_token, then saves.
+
+    Useful when the browser OAuth round-trip through the public Funnel
+    URL loses the session cookie — the user can run the local script
+    and paste the resulting token here without dealing with redirects."""
+    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
+        raise HTTPException(500, "Google OAuth env vars are not configured")
+    token = payload.refresh_token.strip()
+    if not token:
+        raise HTTPException(400, "refresh_token is empty")
+    scopes = payload.scopes or settings.GOOGLE_SCOPES
+    creds = Credentials(
+        token=None,
+        refresh_token=token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        scopes=scopes,
+    )
+    try:
+        creds.refresh(GoogleRequest())
+    except Exception as e:
+        logger.exception("Manual refresh_token validation failed")
+        raise HTTPException(400, f"Token is invalid: {type(e).__name__}: {e}")
+
+    email = payload.email or fetch_userinfo_email(creds)
+
+    acc = get_account(db)
+    if acc is None:
+        acc = GoogleAccount(refresh_token=token)
+        db.add(acc)
+    else:
+        acc.refresh_token = token
+    acc.access_token = creds.token
+    acc.token_expiry = creds.expiry
+    acc.scopes = " ".join(creds.scopes or scopes)
+    acc.connected_email = email
+    db.commit()
+    kick_worker()
+    return {"ok": True, "email": email}
 
 
 @router.post("/disconnect")
