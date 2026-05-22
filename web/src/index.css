@@ -1420,15 +1420,12 @@ input[type="number"] { -moz-appearance: textfield; }
   position: relative;
   display: flex;
   align-items: center;
-  padding: 14px 20px 14px 2px;
+  padding: 14px 20px;
   border-top: 1px solid var(--line);
   cursor: pointer;
   transition: background 0.12s;
   min-width: 0;
 }
-/* ClientDetail variant — the date badge sits at the left edge and needs
-   the original generous padding so it doesn't hug the card border. */
-.events-row:has(.events-row-date-badge) { padding-left: 20px; }
 .events-row:first-child { border-top: 0; }
 .events-row:hover { background: var(--bg-2); }
 
