@@ -393,20 +393,28 @@ export function ReportPage() {
     if (!matrix || matrix.length !== 7) return null;
     const monthLabels = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
     const dowLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-    // ECharts heatmap data: [x_index, y_index, value]. Y-axis is inverted by
-    // default (bottom→top), so we feed reversed weekday indices so Mon
-    // appears at the top and Sun at the bottom of the chart.
+    // ECharts heatmap data: [x_index, y_index, value]. Y-axis is inverted
+    // by default (bottom → top), so we reverse the lead axis to keep the
+    // expected reading order:
+    //   Desktop — X=months, Y=weekdays  → Mon at top, Sun at bottom.
+    //   Mobile  — X=weekdays, Y=months → Jan at top, Dec at bottom.
     const cells: [number, number, number][] = [];
     let maxCount = 0;
     for (let w = 0; w < 7; w++) {
       for (let m = 0; m < 12; m++) {
         const c = matrix[w][m] || 0;
-        cells.push([m, 6 - w, c]);
+        const x = isMobile ? w : m;
+        const y = isMobile ? 11 - m : 6 - w;
+        cells.push([x, y, c]);
         if (c > maxCount) maxCount = c;
       }
     }
+    const xData = isMobile ? dowLabels : monthLabels;
+    const yData = isMobile
+      ? [...monthLabels].reverse()
+      : [...dowLabels].reverse();
     return {
-      grid: { top: 16, right: 16, bottom: 28, left: 26 },
+      grid: { top: 16, right: 16, bottom: 28, left: 36 },
       tooltip: { show: false },
       visualMap: {
         show: false,
@@ -420,7 +428,7 @@ export function ReportPage() {
       },
       xAxis: {
         type: "category",
-        data: monthLabels,
+        data: xData,
         splitArea: { show: false },
         axisTick: { show: false },
         axisLine: { lineStyle: { color: "#ECEAE3" } },
@@ -428,7 +436,7 @@ export function ReportPage() {
       },
       yAxis: {
         type: "category",
-        data: [...dowLabels].reverse(),  // reversed: Mon at top
+        data: yData,
         splitArea: { show: false },
         axisTick: { show: false },
         axisLine: { lineStyle: { color: "#ECEAE3" } },
@@ -463,7 +471,7 @@ export function ReportPage() {
         },
       ],
     };
-  }, [data.data?.weekday_month]);
+  }, [data.data?.weekday_month, isMobile]);
 
   const royaltyEvents = data.data?.events_with_royalty ?? [];
   const royaltyGroups = useMemo(() => groupRoyaltyByDay(royaltyEvents), [royaltyEvents]);
@@ -585,7 +593,7 @@ export function ReportPage() {
         )}
       </Card>
 
-      {!isMobile && heatmapOption && (
+      {heatmapOption && (
         <Card className="chart-card">
           <div className="card-head">
             <div>
@@ -593,7 +601,7 @@ export function ReportPage() {
               <div className="muted small">{year}</div>
             </div>
           </div>
-          <Echart option={heatmapOption} height={290} />
+          <Echart option={heatmapOption} height={isMobile ? 420 : 290} />
         </Card>
       )}
 
