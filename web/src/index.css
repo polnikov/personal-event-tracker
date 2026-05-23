@@ -2248,8 +2248,8 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   justify-content: space-between;
   gap: 24px;
-  margin-top: 16px;
-  padding-top: 14px;
+  margin: 16px -20px 0;
+  padding: 14px 20px 0;
   border-top: 1px solid var(--line);
 }
 .client-card-foot > :last-child { text-align: right; }
