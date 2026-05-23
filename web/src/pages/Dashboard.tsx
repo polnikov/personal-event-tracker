@@ -104,9 +104,16 @@ export function DashboardPage() {
     const dates = data.chart.daily_dates;
     if (dates.length === 0) return null;
     const xLabels = dates.map((d) => parseInt(d.slice(8, 10), 10).toString());
+    const dailySeries = data.chart.daily_series;
+    const dailyTotals = dates.map((_, i) =>
+      dailySeries.reduce((s, srs) => s + (srs.values[i] || 0), 0),
+    );
+    const lastSeriesIdx = dailySeries.length - 1;
+    const fmtCompact = (v: number) =>
+      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
-      grid: { top: 24, right: 16, bottom: 44, left: 32 },
+      grid: { top: 72, right: 16, bottom: 44, left: 32 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -125,13 +132,14 @@ export function DashboardPage() {
             dataIndex: number;
           }>;
           if (!items.length) return "";
+          const total = items.reduce((s, it) => s + (it.value || 0), 0);
+          if (total === 0) return "";
           const idx = items[0].dataIndex;
           const dateLabel = format(
             parse(dates[idx], "yyyy-MM-dd", new Date()),
             "d MMMM",
             { locale: ru },
           );
-          const total = items.reduce((s, it) => s + (it.value || 0), 0);
           const rows = items
             .filter((it) => it.value)
             .map(
@@ -188,14 +196,55 @@ export function DashboardPage() {
             v === 0 ? "" : v >= 1000 ? `${v / 1000}k` : String(v),
         },
       },
-      series: data.chart.daily_series.map((s) => ({
+      series: dailySeries.map((s, srsIdx) => ({
         name: s.name,
         type: "bar" as const,
         stack: "total",
-        data: s.values,
+        // Suppress the total-label pill on days whose stack sums to 0 by
+        // injecting a per-point label override (only the top series carries
+        // the label, so this only matters on the last series).
+        data:
+          srsIdx === lastSeriesIdx
+            ? s.values.map((v, i) =>
+                dailyTotals[i] > 0 ? v : { value: v, label: { show: false } },
+              )
+            : s.values,
         itemStyle: { color: s.color, borderRadius: [3, 3, 0, 0] },
         emphasis: { focus: "series" as const },
         barMaxWidth: 24,
+        label:
+          srsIdx === lastSeriesIdx
+            ? {
+                show: true,
+                position: "top" as const,
+                rotate: 90,
+                align: "center" as const,
+                verticalAlign: "middle" as const,
+                // After 90° rotation the label's original width becomes its
+                // vertical extent. Push the anchor up by ~half the pill width
+                // plus an extra gap so the rotated pill sits clearly above
+                // the bar, centered on the column axis.
+                distance: 32,
+                color: "#2A2A2E",
+                fontFamily: "JetBrains Mono, ui-monospace, monospace",
+                fontFeatureSettings: "'tnum'",
+                fontSize: isMobile ? 11 : 12,
+                lineHeight: isMobile ? 11 : 12,
+                fontWeight: 600,
+                backgroundColor: "#FFFFFF",
+                borderColor: "#ECEAE3",
+                borderWidth: 1,
+                borderRadius: 6,
+                padding: [4, 6, 4, 6],
+                shadowColor: "rgba(0, 0, 0, 0.12)",
+                shadowBlur: 6,
+                shadowOffsetY: 2,
+                formatter: (p: unknown) => {
+                  const total = dailyTotals[(p as { dataIndex: number }).dataIndex];
+                  return total > 0 ? fmtCompact(total) : "";
+                },
+              }
+            : { show: false },
       })),
     };
   }, [data]);
@@ -308,7 +357,7 @@ export function DashboardPage() {
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (params: unknown) => {
           const items = params as Array<{ name: string; value: number; dataIndex: number }>;
-          if (!items.length) return "";
+          if (!items.length || !items[0].value) return "";
           const idx = items[0].dataIndex;
           const monthDate = parse(data.chart.monthly_labels[idx], "yyyy-MM", new Date());
           const label = format(monthDate, "LLLL yyyy", { locale: ru });
@@ -367,16 +416,23 @@ export function DashboardPage() {
           label: {
             show: true,
             position: "top",
+            distance: 12,
+            align: "center",
+            verticalAlign: "middle",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
             fontSize: isMobile ? 11 : 12,
+            lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,
             backgroundColor: "#FFFFFF",
             borderColor: "#ECEAE3",
             borderWidth: 1,
             borderRadius: 6,
-            padding: [2, 6, 2, 6],
+            padding: [4, 6, 4, 6],
+            shadowColor: "rgba(0, 0, 0, 0.12)",
+            shadowBlur: 6,
+            shadowOffsetY: 2,
             formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },

@@ -9,7 +9,7 @@ import {
   EventTableRow,
   Select,
 } from "@/components/design";
-import { Echart, type EChartsOption } from "@/components/echart";
+import { Echart, GRID_LEFT_FLUSH, type EChartsOption } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -59,6 +59,11 @@ const SUBCAT_PALETTE = [
   "#7BB661", "#D9A86C", "#6E8FB8", "#C26B6B", "#A855F7",
   "#EC4899", "#0EA5E9", "#F1416C", "#FACA15", "#5E6278",
   "#00BFA5", "#7239EA",
+];
+
+const MONTH_ABBR = [
+  "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+  "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
 ];
 
 const ECHART_BASE_TEXT = {
@@ -115,7 +120,7 @@ export function ReportPage() {
     return format(d, "LLLL yyyy", { locale: ru });
   }, [year, month]);
 
-  // Pie data with assigned colors
+  // Per-subcategory color assignment shared across charts.
   const subcatColored = useMemo(() => {
     if (!data.data) return [];
     return data.data.by_subcategory.map((s, i) => ({
@@ -124,70 +129,69 @@ export function ReportPage() {
     }));
   }, [data.data]);
 
-  const hoursPie: EChartsOption | null = useMemo(() => {
-    if (subcatColored.length === 0 || subcatColored.every((s) => s.hours === 0)) return null;
+  const hoursBar: EChartsOption | null = useMemo(() => {
+    const items = subcatColored.filter((s) => s.hours > 0);
+    if (items.length === 0) return null;
+    const sorted = [...items].sort((a, b) => b.hours - a.hours);
+    const total = sorted.reduce((s, x) => s + x.hours, 0);
     return {
+      grid: { top: 8, right: 110, bottom: 0, left: 4, containLabel: true },
       tooltip: {
         trigger: "item",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (p: unknown) => {
-          const it = p as { name: string; value: number; percent: number; color: string };
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${it.percent.toFixed(1)}%</div>`;
+          const it = p as { name: string; value: number; color: string };
+          const pct = total > 0 ? (it.value / total) * 100 : 0;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${pct.toFixed(1)}%</div>`;
         },
       },
-      legend: isMobile
-        ? {
-            orient: "horizontal",
-            bottom: 4,
-            left: "center",
-            textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-            itemWidth: 10,
-            itemHeight: 10,
-            itemGap: 12,
-            icon: "roundRect",
-          }
-        : {
-            orient: "vertical",
-            right: 8,
-            top: "center",
-            textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
-            itemWidth: 10,
-            itemHeight: 10,
-            icon: "roundRect",
-          },
+      xAxis: { type: "value", show: false, splitLine: { show: false } },
+      yAxis: {
+        type: "category",
+        data: sorted.map((s) => s.name),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 12 },
+      },
       series: [
         {
           name: "Часы",
-          type: "pie" as const,
-          radius: isMobile ? ["44%", "66%"] : ["52%", "78%"],
-          center: isMobile ? ["50%", "40%"] : ["32%", "50%"],
-          padAngle: 3,
-          itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
+          type: "bar" as const,
+          barMaxWidth: 18,
+          itemStyle: { borderRadius: 4 },
           label: {
             show: true,
-            position: "outside",
+            position: "right",
+            distance: 8,
+            align: "left",
+            verticalAlign: "middle",
             color: "#2A2A2E",
-            fontSize: 11,
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: isMobile ? 11 : 12,
+            lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,
-            lineHeight: 14,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: isMobile ? [3, 5, 3, 5] : [4, 6, 4, 6],
+            shadowColor: "rgba(0, 0, 0, 0.12)",
+            shadowBlur: 6,
+            shadowOffsetY: 2,
             formatter: (p: unknown) => {
-              const it = p as { value: number; percent: number };
-              if (it.percent < 3) return "";
+              const it = p as { value: number };
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
-              return `${hours} ч\n${it.percent.toFixed(0)}%`;
+              const pct = total > 0 ? (it.value / total) * 100 : 0;
+              return `${hours} ч · ${pct.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 6, length2: 4, smooth: true, lineStyle: { color: "#DFDCD3" } },
-          emphasis: {
-            scale: true,
-            scaleSize: 6,
-            itemStyle: { shadowBlur: 12, shadowColor: "rgba(42,42,46,0.15)" },
-          },
-          data: subcatColored.map((s) => ({
-            name: s.name,
+          data: sorted.map((s) => ({
             value: Number(s.hours.toFixed(2)),
             itemStyle: { color: s.color },
           })),
@@ -196,71 +200,69 @@ export function ReportPage() {
     };
   }, [subcatColored, isMobile]);
 
-  const netPie: EChartsOption | null = useMemo(() => {
-    if (subcatColored.length === 0 || subcatColored.every((s) => s.net === 0)) return null;
+  const netBar: EChartsOption | null = useMemo(() => {
+    const items = subcatColored.filter((s) => s.net > 0);
+    if (items.length === 0) return null;
+    const sorted = [...items].sort((a, b) => b.net - a.net);
+    const total = sorted.reduce((s, x) => s + x.net, 0);
     return {
+      grid: { top: 8, right: 110, bottom: 0, left: 4, containLabel: true },
       tooltip: {
         trigger: "item",
-        backgroundColor: "#FFFFFF",
-        borderColor: "#ECEAE3",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (p: unknown) => {
-          const it = p as { name: string; value: number; percent: number; color: string };
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${RUB(it.value)} · ${it.percent.toFixed(1)}%</div>`;
+          const it = p as { name: string; value: number; color: string };
+          const pct = total > 0 ? (it.value / total) * 100 : 0;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${RUB(it.value)} · ${pct.toFixed(1)}%</div>`;
         },
       },
-      legend: isMobile
-        ? {
-            orient: "horizontal",
-            bottom: 4,
-            left: "center",
-            textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-            itemWidth: 10,
-            itemHeight: 10,
-            itemGap: 12,
-            icon: "roundRect",
-          }
-        : {
-            orient: "vertical",
-            right: 8,
-            top: "center",
-            textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
-            itemWidth: 10,
-            itemHeight: 10,
-            icon: "roundRect",
-          },
+      xAxis: { type: "value", show: false, splitLine: { show: false } },
+      yAxis: {
+        type: "category",
+        data: sorted.map((s) => s.name),
+        axisTick: { show: false },
+        axisLine: { show: false },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 12 },
+      },
       series: [
         {
           name: "Чистый доход",
-          type: "pie" as const,
-          radius: isMobile ? ["44%", "66%"] : ["52%", "78%"],
-          center: isMobile ? ["50%", "40%"] : ["32%", "50%"],
-          padAngle: 3,
-          itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
+          type: "bar" as const,
+          barMaxWidth: 18,
+          itemStyle: { borderRadius: 4 },
           label: {
             show: true,
-            position: "outside",
+            position: "right",
+            distance: 8,
+            align: "left",
+            verticalAlign: "middle",
             color: "#2A2A2E",
-            fontSize: 11,
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: isMobile ? 11 : 12,
+            lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,
-            lineHeight: 14,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: isMobile ? [3, 5, 3, 5] : [4, 6, 4, 6],
+            shadowColor: "rgba(0, 0, 0, 0.12)",
+            shadowBlur: 6,
+            shadowOffsetY: 2,
             formatter: (p: unknown) => {
-              const it = p as { value: number; percent: number };
-              if (it.percent < 3) return "";
+              const it = p as { value: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
-              return `${compact} ₽\n${it.percent.toFixed(0)}%`;
+              const pct = total > 0 ? (v / total) * 100 : 0;
+              return `${compact} ₽ · ${pct.toFixed(0)}%`;
             },
           },
-          labelLine: { show: true, length: 6, length2: 4, smooth: true, lineStyle: { color: "#DFDCD3" } },
-          emphasis: {
-            scale: true,
-            scaleSize: 6,
-            itemStyle: { shadowBlur: 12, shadowColor: "rgba(42,42,46,0.15)" },
-          },
-          data: subcatColored.map((s) => ({
-            name: s.name,
+          data: sorted.map((s) => ({
             value: Math.round(s.net),
             itemStyle: { color: s.color },
           })),
@@ -271,53 +273,47 @@ export function ReportPage() {
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data.data) return null;
-    const labels = Array.from({ length: 12 }, (_, i) =>
-      format(parse(String(i + 1), "M", new Date()), "LLL", { locale: ru }),
-    );
+    const labels = MONTH_ABBR;
     const netSeries = data.data.monthly.map((m) => Math.round(m.net));
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
+    const totalSeries = netSeries.map((n, i) => n + taxSeries[i]);
 
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
+    const netColor = "oklch(0.62 0.13 145)";
+    const taxColor = "oklch(0.78 0.10 145)";
+
     return {
-      grid: { top: 28, right: 16, bottom: 56, left: 56 },
+      grid: { top: 72, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (params: unknown) => {
-          const items = params as Array<{
-            seriesName: string;
-            value: number;
-            color: string;
-            dataIndex: number;
-          }>;
+          const items = params as Array<{ dataIndex: number }>;
           if (!items.length) return "";
           const idx = items[0].dataIndex;
+          const net = netSeries[idx];
+          const tax = taxSeries[idx];
+          const total = net + tax;
+          if (total === 0) return "";
           const monthDate = parse(String(idx + 1), "M", new Date());
-          const label = format(monthDate, "LLLL yyyy", { locale: ru });
-          const total = items.reduce((s, it) => s + (it.value || 0), 0);
-          const rows = items
-            .map(
-              (it) =>
-                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${it.color}"></span><span style="flex:1">${it.seriesName}</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(it.value)}</span></div>`,
-            )
-            .join("");
-          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label.replace(/yyyy/, String(year))}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`;
+          const label = format(monthDate, "LLLL yyyy", { locale: ru }).replace(
+            /yyyy/, String(year),
+          );
+          return (
+            `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label}</div>` +
+            `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${netColor}"></span><span style="flex:1">Чистыми</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(net)}</span></div>` +
+            `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${taxColor}"></span><span style="flex:1">Налог</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(tax)}</span></div>` +
+            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`
+          );
         },
-      },
-      legend: {
-        bottom: 4,
-        left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 14,
-        icon: "roundRect",
       },
       xAxis: {
         type: "category",
@@ -331,58 +327,84 @@ export function ReportPage() {
       },
       yAxis: {
         type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
-          formatter: (v: number) => fmtCompact(v),
+          inside: true,
+          align: "left",
+          verticalAlign: "bottom",
+          padding: [0, 0, 4, 0],
+          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
         },
       },
       series: [
         {
-          name: "Чистыми",
-          type: "bar" as const,
-          stack: "total",
-          data: netSeries,
-          itemStyle: { color: "oklch(0.62 0.13 145)", borderRadius: [0, 0, 0, 0] },
-          barMaxWidth: 28,
-          label: isMobile
-            ? { show: false }
-            : {
-                show: true,
-                position: "insideTop",
-                color: "#FFFFFF",
-                fontSize: 10,
-                fontWeight: 600,
-                formatter: (p: unknown) => {
-                  const v = (p as { value: number }).value;
-                  return v > 0 ? fmtCompact(v) : "";
-                },
-              },
+          type: "line" as const,
+          smooth: 0.2,
+          // Per-point label.show=false on zero months so an empty pill
+          // doesn't sit on the baseline.
+          data: totalSeries.map((v) =>
+            v > 0 ? v : { value: v, label: { show: false } },
+          ),
+          symbol: "circle",
+          symbolSize: 6,
+          showSymbol: true,
+          itemStyle: { color: "rgb(123, 182, 97)" },
+          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
+          areaStyle: {
+            color: {
+              type: "linear" as const,
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: "rgba(123, 182, 97, 0.82)" },
+                { offset: 1, color: "rgba(123, 182, 97, 0)" },
+              ],
+            },
+          },
+          label: {
+            show: true,
+            position: "top" as const,
+            distance: 12,
+            align: "center" as const,
+            verticalAlign: "middle" as const,
+            color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: isMobile ? 11 : 12,
+            lineHeight: isMobile ? 11 : 12,
+            fontWeight: 600,
+            backgroundColor: "#FFFFFF",
+            borderColor: "#ECEAE3",
+            borderWidth: 1,
+            borderRadius: 6,
+            padding: [4, 6, 4, 6],
+            shadowColor: "rgba(0, 0, 0, 0.12)",
+            shadowBlur: 6,
+            shadowOffsetY: 2,
+            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
+          },
         },
         {
           name: "Налог",
-          type: "bar" as const,
-          stack: "total",
+          type: "line" as const,
+          smooth: 0.2,
           data: taxSeries,
-          itemStyle: { color: "oklch(0.78 0.10 145)", borderRadius: [4, 4, 0, 0] },
-          barMaxWidth: 28,
-          label: {
-            show: true,
-            position: "top",
-            color: "#2A2A2E",
-            fontSize: isMobile ? 9 : 10,
-            fontWeight: 600,
-            formatter: (p: unknown) => {
-              const item = p as { value: number; dataIndex: number };
-              const total = netSeries[item.dataIndex] + taxSeries[item.dataIndex];
-              return total > 0 ? fmtCompact(total) : "";
-            },
-          },
+          symbol: "circle",
+          symbolSize: 5,
+          itemStyle: { color: "#DC2626" },
+          lineStyle: { color: "#DC2626", width: 1.5 },
+          label: { show: false },
         },
       ],
     };
   }, [data.data, year, isMobile]);
+
+  const hoursRowCount = subcatColored.filter((s) => s.hours > 0).length;
+  const netRowCount = subcatColored.filter((s) => s.net > 0).length;
+  const barChartHeight = (rows: number) => Math.max(160, rows * 34 + 16);
 
   const royaltyEvents = data.data?.events_with_royalty ?? [];
   const royaltyGroups = useMemo(() => groupRoyaltyByDay(royaltyEvents), [royaltyEvents]);
@@ -401,11 +423,9 @@ export function ReportPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div>
-          <h1 className="h1">Отчёт</h1>
-          <div className="muted" style={{ textTransform: "capitalize" }}>
-            {periodLabel}
-          </div>
+        <h1 className="h1">Отчёт</h1>
+        <div className="muted" style={{ textTransform: "capitalize", marginBottom: 8 }}>
+          {periodLabel}
         </div>
       </div>
 
@@ -434,28 +454,24 @@ export function ReportPage() {
 
       <div className="grid grid-2 gap-md">
         <Card>
-          <div className="card-head">
-            <div>
-              <div className="card-title">Часы по подкатегориям</div>
-              <div className="muted small">{periodLabel}</div>
-            </div>
+          <div className="card-head" style={{ alignItems: "baseline" }}>
+            <div className="card-title">Часы по подкатегориям</div>
+            <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
           </div>
-          {hoursPie ? (
-            <Echart option={hoursPie} height={280} />
+          {hoursBar ? (
+            <Echart option={hoursBar} height={barChartHeight(hoursRowCount)} />
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}
         </Card>
 
         <Card>
-          <div className="card-head">
-            <div>
-              <div className="card-title">Чистый доход по подкатегориям</div>
-              <div className="muted small">{periodLabel}</div>
-            </div>
+          <div className="card-head" style={{ alignItems: "baseline" }}>
+            <div className="card-title">Чистый доход по подкатегориям</div>
+            <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
           </div>
-          {netPie ? (
-            <Echart option={netPie} height={280} />
+          {netBar ? (
+            <Echart option={netBar} height={barChartHeight(netRowCount)} />
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}
@@ -464,16 +480,15 @@ export function ReportPage() {
 
       <Card>
         <div className="report-monthly-head">
-          <div className="card-title">Доход по месяцам</div>
           <div className="report-monthly-meta-row">
-            <span className="muted small">{year}</span>
+            <div className="card-title">Доход по месяцам</div>
             <span className="muted small">
               <span style={{ marginRight: 4 }}>чистыми</span>
               <span className="mono">{fmt.money(yearTotal.net)} ₽</span>
             </span>
           </div>
           <div className="report-monthly-meta-row">
-            <span />
+            <span className="muted small">{year}</span>
             <span className="muted small">
               <span style={{ marginRight: 4 }}>налог</span>
               <span className="mono">{fmt.money(yearTotal.tax)} ₽</span>

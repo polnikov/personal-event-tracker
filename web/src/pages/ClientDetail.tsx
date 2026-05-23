@@ -272,13 +272,15 @@ export function ClientDetailPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (params: unknown) => {
           const items = params as Array<{ name: string; value: number; dataIndex: number }>;
-          if (!items.length) return "";
+          if (!items.length || !items[0].value) return "";
           const idx = items[0].dataIndex;
           const monthDate = parse(String(idx + 1), "M", new Date());
           const monthLabel = format(monthDate, "LLLL", { locale: ru });
@@ -328,7 +330,7 @@ export function ClientDetailPage() {
               type: "linear" as const,
               x: 0, y: 0, x2: 0, y2: 1,
               colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.42)" },
+                { offset: 0, color: "rgba(123, 182, 97, 0.82)" },
                 { offset: 1, color: "rgba(123, 182, 97, 0)" },
               ],
             },
@@ -336,22 +338,29 @@ export function ClientDetailPage() {
           label: {
             show: true,
             position: "top",
+            distance: 12,
+            align: "center",
+            verticalAlign: "middle",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
-            fontSize: 10,
+            fontSize: isMobile ? 11 : 12,
+            lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,
             backgroundColor: "#FFFFFF",
             borderColor: "#ECEAE3",
             borderWidth: 1,
             borderRadius: 6,
-            padding: [2, 6, 2, 6],
+            padding: [4, 6, 4, 6],
+            shadowColor: "rgba(0, 0, 0, 0.12)",
+            shadowBlur: 6,
+            shadowOffsetY: 2,
             formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },
       ],
     };
-  }, [monthly.data, year]);
+  }, [monthly.data, year, isMobile]);
 
   // Weekday × month heatmap — same shape & settings as the Report page,
   // but scoped to the current client + selected year. Mobile rotates the
