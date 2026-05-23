@@ -301,9 +301,11 @@ export function EventsPage() {
             {filtered.length} {pluralize(filtered.length, "событие", "события", "событий")}
           </div>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setModal({ kind: "new" })}>
-          Новое событие
-        </Button>
+        <div className="page-head-actions">
+          <Button icon={<Plus size={16} />} onClick={() => setModal({ kind: "new" })}>
+            Новое событие
+          </Button>
+        </div>
       </div>
 
       <div className="events-controls">

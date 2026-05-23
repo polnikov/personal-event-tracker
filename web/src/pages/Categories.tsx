@@ -45,9 +45,11 @@ export function CategoriesPage() {
           <h1 className="h1">Категории</h1>
           <div className="muted">Услуги и тарифы</div>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setCreatingCat(true)}>
-          Новая категория
-        </Button>
+        <div className="page-head-actions">
+          <Button icon={<Plus size={16} />} onClick={() => setCreatingCat(true)}>
+            Новая категория
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-2 gap-md">

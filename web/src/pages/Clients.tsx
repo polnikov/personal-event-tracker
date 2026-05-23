@@ -65,9 +65,11 @@ export function ClientsPage() {
           <h1 className="h1">Клиенты</h1>
           <div className="muted">{list.data?.length ?? 0} клиентов</div>
         </div>
-        <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-          Новый клиент
-        </Button>
+        <div className="page-head-actions">
+          <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+            Новый клиент
+          </Button>
+        </div>
       </div>
 
       <Input
