@@ -284,11 +284,17 @@ def outbox(
     out: list[GoogleOutboxRow] = []
     for row, event in rows:
         summary = None
+        client_name = None
+        subcategory_label = None
+        event_start_at = None
         if event is not None and event.subcategory is not None:
             cat = event.subcategory.category
             summary = f"{cat.name} | {event.subcategory.name}"
+            subcategory_label = f"{cat.name} · {event.subcategory.name}"
             if event.client is not None:
-                summary += f" · {event.client.full_name}"
+                client_name = event.client.full_name
+                summary += f" · {client_name}"
+            event_start_at = event.start_at
         out.append(
             GoogleOutboxRow(
                 id=row.id,
@@ -296,6 +302,9 @@ def outbox(
                 calendar_id=row.calendar_id,
                 event_id=row.event_id,
                 event_summary=summary,
+                client_name=client_name,
+                subcategory_label=subcategory_label,
+                event_start_at=event_start_at,
                 google_event_id=row.google_event_id,
                 attempts=row.attempts,
                 last_error=row.last_error,

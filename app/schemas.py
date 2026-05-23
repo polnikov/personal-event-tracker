@@ -322,6 +322,9 @@ class GoogleOutboxRow(BaseModel):
     calendar_id: str
     event_id: int | None
     event_summary: str | None = None
+    client_name: str | None = None
+    subcategory_label: str | None = None
+    event_start_at: datetime | None = None
     google_event_id: str | None = None
     attempts: int
     last_error: str | None

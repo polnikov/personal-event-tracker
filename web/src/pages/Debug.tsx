@@ -110,6 +110,18 @@ export function DebugPage() {
   );
 }
 
+const OP_LABEL: Record<GoogleOutboxRow["op"], string> = {
+  create: "Создание",
+  update: "Изменение",
+  delete: "Удаление",
+};
+
+const OP_COLOR: Record<GoogleOutboxRow["op"], { bg: string; fg: string }> = {
+  create: { bg: "rgba(123, 182, 97, 0.18)", fg: "#3F7A2A" },
+  update: { bg: "rgba(217, 168, 108, 0.22)", fg: "#8C5A1F" },
+  delete: { bg: "rgba(220, 38, 38, 0.14)", fg: "#B91C1C" },
+};
+
 function OutboxRow({
   row,
   expanded,
@@ -128,7 +140,21 @@ function OutboxRow({
   const done = !!row.completed_at;
   const failed = !done && row.attempts >= 5;
   const dot = done ? "var(--accent)" : failed ? "var(--danger)" : "var(--muted)";
-  const badgeStyle: React.CSSProperties = {
+
+  const opColors = OP_COLOR[row.op];
+  const opBadgeStyle: React.CSSProperties = {
+    display: "inline-grid",
+    placeItems: "center",
+    padding: "2px 8px",
+    borderRadius: 999,
+    fontSize: 11,
+    fontWeight: 600,
+    background: opColors.bg,
+    color: opColors.fg,
+    whiteSpace: "nowrap",
+  };
+
+  const attemptsBadgeStyle: React.CSSProperties = {
     display: "inline-grid",
     placeItems: "center",
     minWidth: 22,
@@ -143,7 +169,7 @@ function OutboxRow({
   };
 
   const eventClickable = row.event_id !== null;
-  const clientLabel = row.event_summary ?? "(событие удалено)";
+  const clientLabel = row.client_name ?? "(событие удалено)";
 
   return (
     <div className="debug-row">
@@ -153,8 +179,8 @@ function OutboxRow({
           style={{ background: dot }}
           title={done ? "Завершено" : failed ? "Ошибка" : "В очереди"}
         />
-        <span className="debug-row-when mono">
-          {format(parseISO(row.created_at), "d MMM HH:mm", { locale: ru })}
+        <span style={opBadgeStyle} title="Тип операции">
+          {OP_LABEL[row.op]}
         </span>
         <span
           className={`debug-row-client${eventClickable ? " is-link" : ""}`}
@@ -167,7 +193,7 @@ function OutboxRow({
         >
           {clientLabel}
         </span>
-        <span style={badgeStyle} title={`Попыток: ${row.attempts}`}>
+        <span style={attemptsBadgeStyle} title={`Попыток: ${row.attempts}`}>
           {row.attempts}
         </span>
         <ChevronDown
@@ -178,13 +204,29 @@ function OutboxRow({
       </div>
       {expanded && (
         <div className="debug-row-body">
+          {row.subcategory_label && (
+            <div className="meta-row">
+              <span className="muted small">Подкатегория:</span>
+              <span className="small">{row.subcategory_label}</span>
+            </div>
+          )}
+          {row.event_start_at && (
+            <div className="meta-row">
+              <span className="muted small">Дата события:</span>
+              <span className="mono small">
+                {format(parseISO(row.event_start_at), "d MMM yyyy, HH:mm", { locale: ru })}
+              </span>
+            </div>
+          )}
+          <div className="meta-row">
+            <span className="muted small">Дата операции:</span>
+            <span className="mono small">
+              {format(parseISO(row.created_at), "d MMM yyyy, HH:mm", { locale: ru })}
+            </span>
+          </div>
           <div className="meta-row">
             <span className="muted small">Календарь:</span>
             <span className="mono small">{row.calendar_id}</span>
-          </div>
-          <div className="meta-row">
-            <span className="muted small">Операция:</span>
-            <span className="small">{row.op}</span>
           </div>
           {row.google_event_id && (
             <div className="meta-row">

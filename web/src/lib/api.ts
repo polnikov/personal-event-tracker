@@ -247,6 +247,9 @@ export interface GoogleOutboxRow {
   calendar_id: string;
   event_id: number | null;
   event_summary: string | null;
+  client_name: string | null;
+  subcategory_label: string | null;
+  event_start_at: string | null;
   google_event_id: string | null;
   attempts: number;
   last_error: string | null;
