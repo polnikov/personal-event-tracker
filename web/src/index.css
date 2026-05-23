@@ -2221,6 +2221,9 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   flex-direction: column;
   height: 100%;
+  background: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--line);
 }
 .client-card .client-card-foot { margin-top: auto; }
 /* Desktop: fixed 318px card width; mobile falls back to the default
