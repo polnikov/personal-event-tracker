@@ -1036,7 +1036,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .modal-body .form-actions {
   margin: 16px -22px -22px;
   padding: 14px 22px 22px;
-  background: var(--surface);
+  background: transparent;
   border-radius: 0 0 var(--r-xl) var(--r-xl);
 }
 
@@ -2368,7 +2368,8 @@ input[type="number"] { -moz-appearance: textfield; }
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-3);
   width: calc(100% - 32px);
