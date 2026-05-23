@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Phone, Plus, Search, Send, Trash2 } from "lucide-react";
+import { UserPlus } from "@phosphor-icons/react";
 import {
   Avatar,
   Button,
@@ -155,6 +156,15 @@ export function ClientsPage() {
       {creating && (
         <ClientFormModal client={null} onClose={() => setCreating(false)} />
       )}
+
+      <button
+        type="button"
+        className="mobile-fab mobile-fab-client"
+        onClick={() => setCreating(true)}
+        aria-label="Новый клиент"
+      >
+        <UserPlus size={24} weight="duotone" />
+      </button>
     </div>
   );
 }

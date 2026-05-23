@@ -157,8 +157,9 @@
     color: var(--ink);
     cursor: pointer;
   }
-  .mobile-fab-menu { left: 16px; }
-  .mobile-fab-new  { left: 76px; }
+  .mobile-fab-menu   { left: 16px; }
+  .mobile-fab-new    { left: 76px; }
+  .mobile-fab-client { left: 136px; }
   .mobile-fab:active { transform: scale(0.96); }
   .app[data-mobile-open="true"] .mobile-fab { display: none; }
   .app[data-mobile-open="true"] .mobile-backdrop {
