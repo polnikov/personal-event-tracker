@@ -402,6 +402,92 @@ export function ReportPage() {
     };
   }, [data.data, year, isMobile]);
 
+  // Weekday × month heatmap.
+  // ECharts heatmap data: [x_index, y_index, value]. Y-axis is inverted by
+  // default (bottom → top), so we reverse the lead axis to keep the expected
+  // reading order:
+  //   Desktop — X=months, Y=weekdays  → Mon at top, Sun at bottom.
+  //   Mobile  — X=weekdays, Y=months → Jan at top, Dec at bottom.
+  const heatmapOption: EChartsOption | null = useMemo(() => {
+    const matrix = data.data?.weekday_month;
+    if (!matrix || matrix.length !== 7) return null;
+    const monthLabels = MONTH_ABBR;
+    const dowLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    const cells: [number, number, number][] = [];
+    let maxCount = 0;
+    for (let w = 0; w < 7; w++) {
+      for (let m = 0; m < 12; m++) {
+        const c = matrix[w][m] || 0;
+        const x = isMobile ? w : m;
+        const y = isMobile ? 11 - m : 6 - w;
+        cells.push([x, y, c]);
+        if (c > maxCount) maxCount = c;
+      }
+    }
+    const xData = isMobile ? dowLabels : monthLabels;
+    const yData = isMobile
+      ? [...monthLabels].reverse()
+      : [...dowLabels].reverse();
+    return {
+      grid: { top: 16, right: 16, bottom: 28, left: 36 },
+      tooltip: { show: false },
+      visualMap: {
+        show: false,
+        type: "continuous",
+        min: 0,
+        max: Math.max(maxCount, 1),
+        calculable: false,
+        inRange: {
+          color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"],
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: xData,
+        splitArea: { show: false },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      yAxis: {
+        type: "category",
+        data: yData,
+        splitArea: { show: false },
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      series: [
+        {
+          type: "heatmap" as const,
+          data: cells,
+          label: {
+            show: true,
+            color: "#2A2A2E",
+            fontFamily: "JetBrains Mono, ui-monospace, monospace",
+            fontFeatureSettings: "'tnum'",
+            fontSize: 11,
+            formatter: (p: unknown) => {
+              const v = (p as { value: [number, number, number] }).value[2];
+              return v > 0 ? String(v) : "";
+            },
+          },
+          itemStyle: {
+            borderColor: "#FFFFFF",
+            borderWidth: 2,
+            borderRadius: 4,
+          },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 8,
+              shadowColor: "rgba(42, 42, 46, 0.15)",
+            },
+          },
+        },
+      ],
+    };
+  }, [data.data?.weekday_month, isMobile]);
+
   const hoursRowCount = subcatColored.filter((s) => s.hours > 0).length;
   const netRowCount = subcatColored.filter((s) => s.net > 0).length;
   const barChartHeight = (rows: number) => Math.max(160, rows * 34 + 16);
@@ -501,6 +587,16 @@ export function ReportPage() {
           <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
         )}
       </Card>
+
+      {heatmapOption && (
+        <Card>
+          <div className="card-head" style={{ alignItems: "baseline" }}>
+            <div className="card-title">События по дням недели</div>
+            <div className="muted small">{year}</div>
+          </div>
+          <Echart option={heatmapOption} height={isMobile ? 420 : 290} />
+        </Card>
+      )}
 
       <div className="section">
         <div className="section-head">
