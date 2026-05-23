@@ -110,7 +110,9 @@ export function DashboardPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
@@ -143,7 +145,7 @@ export function DashboardPage() {
       legend: {
         bottom: 0,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
         itemWidth: 10,
         itemHeight: 10,
         itemGap: 14,
@@ -203,7 +205,9 @@ export function DashboardPage() {
     return {
       tooltip: {
         trigger: "item",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
@@ -214,9 +218,9 @@ export function DashboardPage() {
       },
       legend: {
         orient: "horizontal",
-        bottom: 4,
+        bottom: 0,
         left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
         itemWidth: 10,
         itemHeight: 10,
         itemGap: 14,
@@ -226,43 +230,44 @@ export function DashboardPage() {
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["35%", "60%"] : ["35%", "65%"],
+          radius: isMobile ? ["30%", "70%"] : ["35%", "65%"],
           center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
-            position: "outer",       // radial — label sits at end of leader line
+            position: "inside",       // radial — label sits at end of leader line
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
             fontSize: isMobile ? 12 : 12.5,
             fontWeight: 600,
-            lineHeight: 13,
-            backgroundColor: "#FFFFFF",
+            lineHeight: 15,
+            backgroundColor: "rgba(255, 255, 255, 0.6)",
+            extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
             borderColor: "#ECEAE3",
             borderWidth: 1,
             borderRadius: 6,
-            padding: [2, 20, 2, 6],
+            padding: [2, 6, 2, 6],
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
               return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
-          },
-          rich: {
-            value: {
-              align: 'left'
+            rich: {
+              value: {
+                align: 'left'
+              },
+              percent: {
+                align: 'left'
+              }
             },
-            percent: {
-              align: 'left'
-            }
           },
           labelLine: {
             show: true,
-            length: isMobile ? 4 : 10,
+            length: isMobile ? 8 : 10,
             length2: isMobile ? 4 : 10,
             smooth: true,
             lineStyle: { color: "#DFDCD3" },
@@ -295,7 +300,9 @@ export function DashboardPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
@@ -352,7 +359,7 @@ export function DashboardPage() {
               type: "linear" as const,
               x: 0, y: 0, x2: 0, y2: 1,
               colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.42)" },
+                { offset: 0, color: "rgba(123, 182, 97, 0.82)" },
                 { offset: 1, color: "rgba(123, 182, 97, 0)" },
               ],
             },
@@ -363,7 +370,7 @@ export function DashboardPage() {
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'tnum'",
-            fontSize: 10,
+            fontSize: isMobile ? 11 : 12,
             fontWeight: 600,
             backgroundColor: "#FFFFFF",
             borderColor: "#ECEAE3",

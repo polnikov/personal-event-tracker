@@ -6,18 +6,11 @@ import { ru } from "date-fns/locale";
 import {
   Card,
   Empty,
-  EventLineRow,
+  EventTableRow,
   Select,
-  buildEventLineIconMaps,
 } from "@/components/design";
-import {
-  Echart,
-  ECHART_BASE_TEXT,
-  GRID_LEFT_FLUSH,
-  type EChartsOption,
-} from "@/components/echart";
+import { Echart, type EChartsOption } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
-import { EventFormModal } from "@/pages/EventForm";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import type { EventItem } from "@/types/api";
@@ -68,6 +61,11 @@ const SUBCAT_PALETTE = [
   "#00BFA5", "#7239EA",
 ];
 
+const ECHART_BASE_TEXT = {
+  fontFamily: "Inter, system-ui, sans-serif",
+  color: "#807A72",
+};
+
 export function ReportPage() {
   const nav = useNavigate();
   const isMobile = useIsMobile();
@@ -75,14 +73,8 @@ export function ReportPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [categoryId, setCategoryId] = useState<string>("");
-  const [formModal, setFormModal] = useState<
-    | { kind: "edit"; eventId: number }
-    | { kind: "copy"; copyId: number }
-    | null
-  >(null);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
-  const icons = useMemo(() => buildEventLineIconMaps(cats.data), [cats.data]);
 
   const yearsQuery = useQuery({
     queryKey: ["report", "years"],
@@ -146,61 +138,49 @@ export function ReportPage() {
           return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${it.percent.toFixed(1)}%</div>`;
         },
       },
-      legend: {
-        orient: "horizontal",
-        bottom: 4,
-        left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 14,
-        icon: "circle",
-      },
+      legend: isMobile
+        ? {
+            orient: "horizontal",
+            bottom: 4,
+            left: "center",
+            textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+            itemWidth: 10,
+            itemHeight: 10,
+            itemGap: 12,
+            icon: "roundRect",
+          }
+        : {
+            orient: "vertical",
+            right: 8,
+            top: "center",
+            textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
+            itemWidth: 10,
+            itemHeight: 10,
+            icon: "roundRect",
+          },
       series: [
         {
           name: "Часы",
           type: "pie" as const,
-          radius: isMobile ? ["35%", "60%"] : ["35%", "65%"],
-          center: ["50%", "40%"],
-          padAngle: 2,
-          avoidLabelOverlap: true,
+          radius: isMobile ? ["44%", "66%"] : ["52%", "78%"],
+          center: isMobile ? ["50%", "40%"] : ["32%", "50%"],
+          padAngle: 3,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
-            position: "outer",
+            position: "outside",
             color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
-            fontSize: isMobile ? 11 : 12.5,
+            fontSize: 11,
             fontWeight: 600,
-            lineHeight: 13,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [2, 20, 2, 6],
+            lineHeight: 14,
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
+              if (it.percent < 3) return "";
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
               return `${hours} ч\n${it.percent.toFixed(0)}%`;
             },
           },
-          rich: {
-            value: {
-              align: 'left'
-            },
-            percent: {
-              align: 'left'
-            }
-          },
-          labelLine: {
-            show: true,
-            length: isMobile ? 4 : 10,
-            length2: isMobile ? 4 : 10,
-            smooth: true,
-            lineStyle: { color: "#DFDCD3" },
-          },
-          labelLayout: { hideOverlap: false },
+          labelLine: { show: true, length: 6, length2: 4, smooth: true, lineStyle: { color: "#DFDCD3" } },
           emphasis: {
             scale: true,
             scaleSize: 6,
@@ -230,62 +210,50 @@ export function ReportPage() {
           return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${RUB(it.value)} · ${it.percent.toFixed(1)}%</div>`;
         },
       },
-      legend: {
-        orient: "horizontal",
-        bottom: 4,
-        left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 14,
-        icon: "circle",
-      },
+      legend: isMobile
+        ? {
+            orient: "horizontal",
+            bottom: 4,
+            left: "center",
+            textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+            itemWidth: 10,
+            itemHeight: 10,
+            itemGap: 12,
+            icon: "roundRect",
+          }
+        : {
+            orient: "vertical",
+            right: 8,
+            top: "center",
+            textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
+            itemWidth: 10,
+            itemHeight: 10,
+            icon: "roundRect",
+          },
       series: [
         {
           name: "Чистый доход",
           type: "pie" as const,
-          radius: isMobile ? ["35%", "60%"] : ["35%", "65%"],
-          center: ["50%", "40%"],
-          padAngle: 2,
-          avoidLabelOverlap: true,
+          radius: isMobile ? ["44%", "66%"] : ["52%", "78%"],
+          center: isMobile ? ["50%", "40%"] : ["32%", "50%"],
+          padAngle: 3,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
-            position: "outer",
+            position: "outside",
             color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
-            fontSize: isMobile ? 11 : 12.5,
+            fontSize: 11,
             fontWeight: 600,
-            lineHeight: 13,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [2, 20, 2, 6],
+            lineHeight: 14,
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
+              if (it.percent < 3) return "";
               const v = it.value;
               const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
               return `${compact} ₽\n${it.percent.toFixed(0)}%`;
             },
           },
-          rich: {
-            value: {
-              align: 'left'
-            },
-            percent: {
-              align: 'left'
-            }
-          },
-          labelLine: {
-            show: true,
-            length: isMobile ? 4 : 10,
-            length2: isMobile ? 4 : 10,
-            smooth: true,
-            lineStyle: { color: "#DFDCD3" },
-          },
-          labelLayout: { hideOverlap: false },
+          labelLine: { show: true, length: 6, length2: 4, smooth: true, lineStyle: { color: "#DFDCD3" } },
           emphasis: {
             scale: true,
             scaleSize: 6,
@@ -303,205 +271,121 @@ export function ReportPage() {
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data.data) return null;
-    const labels = [
-      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
-      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
-    ];
+    const labels = Array.from({ length: 12 }, (_, i) =>
+      format(parse(String(i + 1), "M", new Date()), "LLL", { locale: ru }),
+    );
     const netSeries = data.data.monthly.map((m) => Math.round(m.net));
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
-    const totalSeries = netSeries.map((n, i) => n + taxSeries[i]);
 
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
-      grid: { top: 32, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
+      grid: { top: 28, right: 16, bottom: 56, left: 56 },
       tooltip: {
         trigger: "axis",
+        axisPointer: { type: "shadow" },
         backgroundColor: "#FFFFFF",
         borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (params: unknown) => {
-          const items = params as Array<{ dataIndex: number }>;
+          const items = params as Array<{
+            seriesName: string;
+            value: number;
+            color: string;
+            dataIndex: number;
+          }>;
           if (!items.length) return "";
           const idx = items[0].dataIndex;
           const monthDate = parse(String(idx + 1), "M", new Date());
-          const label = format(monthDate, "LLLL yyyy", { locale: ru }).replace(
-            /yyyy/, String(year),
-          );
-          const net = netSeries[idx];
-          const tax = taxSeries[idx];
-          const total = net + tax;
-          return (
-            `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label}</div>` +
-            `<div style="display:flex;justify-content:space-between;gap:14px;font-size:12px;margin-top:4px"><span>Чистыми</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(net)}</span></div>` +
-            `<div style="display:flex;justify-content:space-between;gap:14px;font-size:12px;margin-top:2px"><span>Налог</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(tax)}</span></div>` +
-            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`
-          );
+          const label = format(monthDate, "LLLL yyyy", { locale: ru });
+          const total = items.reduce((s, it) => s + (it.value || 0), 0);
+          const rows = items
+            .map(
+              (it) =>
+                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${it.color}"></span><span style="flex:1">${it.seriesName}</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(it.value)}</span></div>`,
+            )
+            .join("");
+          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label.replace(/yyyy/, String(year))}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`;
         },
+      },
+      legend: {
+        bottom: 4,
+        left: "center",
+        textStyle: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        itemWidth: 10,
+        itemHeight: 10,
+        itemGap: 14,
+        icon: "roundRect",
       },
       xAxis: {
         type: "category",
         data: labels,
         axisTick: { show: false },
         axisLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+        axisLabel: {
+          ...ECHART_BASE_TEXT,
+          fontSize: 11,
+        },
       },
       yAxis: {
         type: "value",
-        axisLine: { show: false },
-        axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
-          inside: true,
-          align: "left",
-          verticalAlign: "bottom",
-          padding: [0, 0, 4, 0],
-          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
+          formatter: (v: number) => fmtCompact(v),
         },
       },
       series: [
         {
-          type: "line" as const,
-          smooth: 0.2,
-          data: totalSeries.map((v) =>
-            v > 0 ? v : { value: v, label: { show: false } },
-          ),
-          symbol: "circle",
-          symbolSize: 6,
-          showSymbol: true,
-          itemStyle: { color: "rgb(123, 182, 97)" },
-          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
-          areaStyle: {
-            color: {
-              type: "linear" as const,
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.42)" },
-                { offset: 1, color: "rgba(123, 182, 97, 0)" },
-              ],
-            },
-          },
+          name: "Чистыми",
+          type: "bar" as const,
+          stack: "total",
+          data: netSeries,
+          itemStyle: { color: "oklch(0.62 0.13 145)", borderRadius: [0, 0, 0, 0] },
+          barMaxWidth: 28,
+          label: isMobile
+            ? { show: false }
+            : {
+                show: true,
+                position: "insideTop",
+                color: "#FFFFFF",
+                fontSize: 10,
+                fontWeight: 600,
+                formatter: (p: unknown) => {
+                  const v = (p as { value: number }).value;
+                  return v > 0 ? fmtCompact(v) : "";
+                },
+              },
+        },
+        {
+          name: "Налог",
+          type: "bar" as const,
+          stack: "total",
+          data: taxSeries,
+          itemStyle: { color: "oklch(0.78 0.10 145)", borderRadius: [4, 4, 0, 0] },
+          barMaxWidth: 28,
           label: {
             show: true,
             position: "top",
             color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
             fontSize: isMobile ? 9 : 10,
             fontWeight: 600,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [2, 6, 2, 6],
-            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
+            formatter: (p: unknown) => {
+              const item = p as { value: number; dataIndex: number };
+              const total = netSeries[item.dataIndex] + taxSeries[item.dataIndex];
+              return total > 0 ? fmtCompact(total) : "";
+            },
           },
         },
       ],
     };
   }, [data.data, year, isMobile]);
 
-  const heatmapOption: EChartsOption | null = useMemo(() => {
-    const matrix = data.data?.weekday_month;
-    if (!matrix || matrix.length !== 7) return null;
-    const monthLabels = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
-    const dowLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-    // ECharts heatmap data: [x_index, y_index, value]. Y-axis is inverted
-    // by default (bottom → top), so we reverse the lead axis to keep the
-    // expected reading order:
-    //   Desktop — X=months, Y=weekdays  → Mon at top, Sun at bottom.
-    //   Mobile  — X=weekdays, Y=months → Jan at top, Dec at bottom.
-    const cells: [number, number, number][] = [];
-    let maxCount = 0;
-    for (let w = 0; w < 7; w++) {
-      for (let m = 0; m < 12; m++) {
-        const c = matrix[w][m] || 0;
-        const x = isMobile ? w : m;
-        const y = isMobile ? 11 - m : 6 - w;
-        cells.push([x, y, c]);
-        if (c > maxCount) maxCount = c;
-      }
-    }
-    const xData = isMobile ? dowLabels : monthLabels;
-    const yData = isMobile
-      ? [...monthLabels].reverse()
-      : [...dowLabels].reverse();
-    return {
-      grid: { top: 16, right: 16, bottom: 28, left: 36 },
-      tooltip: { show: false },
-      visualMap: {
-        show: false,
-        type: "continuous",
-        min: 0,
-        max: Math.max(maxCount, 1),
-        calculable: false,
-        inRange: {
-          color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"],
-        },
-      },
-      xAxis: {
-        type: "category",
-        data: xData,
-        splitArea: { show: false },
-        axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
-      },
-      yAxis: {
-        type: "category",
-        data: yData,
-        splitArea: { show: false },
-        axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
-      },
-      series: [
-        {
-          type: "heatmap" as const,
-          data: cells,
-          label: {
-            show: true,
-            color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
-            fontSize: 11,
-            formatter: (p: unknown) => {
-              const v = (p as { value: [number, number, number] }).value[2];
-              return v > 0 ? String(v) : "";
-            },
-          },
-          itemStyle: {
-            borderColor: "#FFFFFF",
-            borderWidth: 2,
-            borderRadius: 4,
-          },
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 8,
-              shadowColor: "rgba(42, 42, 46, 0.15)",
-            },
-          },
-        },
-      ],
-    };
-  }, [data.data?.weekday_month, isMobile]);
-
   const royaltyEvents = data.data?.events_with_royalty ?? [];
   const royaltyGroups = useMemo(() => groupRoyaltyByDay(royaltyEvents), [royaltyEvents]);
-
-  const hoursTotal = useMemo(
-    () => subcatColored.reduce((s, x) => s + (x.hours || 0), 0),
-    [subcatColored],
-  );
-  const netTotal = useMemo(
-    () => subcatColored.reduce((s, x) => s + (x.net || 0), 0),
-    [subcatColored],
-  );
-
   const yearTotal = useMemo(
     () =>
       (data.data?.monthly ?? []).reduce(
@@ -549,54 +433,47 @@ export function ReportPage() {
       </Card>
 
       <div className="grid grid-2 gap-md">
-        <Card className="chart-card">
+        <Card>
           <div className="card-head">
             <div>
               <div className="card-title">Часы по подкатегориям</div>
               <div className="muted small">{periodLabel}</div>
             </div>
-            {hoursPie && (
-              <div className="card-head-sum">
-                {hoursTotal.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч
-              </div>
-            )}
           </div>
           {hoursPie ? (
-            <Echart option={hoursPie} height={380} />
+            <Echart option={hoursPie} height={280} />
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}
         </Card>
 
-        <Card className="chart-card">
+        <Card>
           <div className="card-head">
             <div>
               <div className="card-title">Чистый доход по подкатегориям</div>
               <div className="muted small">{periodLabel}</div>
             </div>
-            {netPie && (
-              <div className="card-head-sum">{fmt.money(netTotal)} ₽</div>
-            )}
           </div>
           {netPie ? (
-            <Echart option={netPie} height={380} />
+            <Echart option={netPie} height={280} />
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}
         </Card>
       </div>
 
-      <Card className="chart-card">
+      <Card>
         <div className="report-monthly-head">
+          <div className="card-title">Доход по месяцам</div>
           <div className="report-monthly-meta-row">
-            <div className="card-title">Доход по месяцам</div>
+            <span className="muted small">{year}</span>
             <span className="muted small">
               <span style={{ marginRight: 4 }}>чистыми</span>
               <span className="mono">{fmt.money(yearTotal.net)} ₽</span>
             </span>
           </div>
           <div className="report-monthly-meta-row">
-            <span className="muted small">{year}</span>
+            <span />
             <span className="muted small">
               <span style={{ marginRight: 4 }}>налог</span>
               <span className="mono">{fmt.money(yearTotal.tax)} ₽</span>
@@ -609,18 +486,6 @@ export function ReportPage() {
           <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
         )}
       </Card>
-
-      {heatmapOption && (
-        <Card className="chart-card">
-          <div className="card-head">
-            <div>
-              <div className="card-title">События по дням недели</div>
-              <div className="muted small">{year}</div>
-            </div>
-          </div>
-          <Echart option={heatmapOption} height={isMobile ? 420 : 290} />
-        </Card>
-      )}
 
       <div className="section">
         <div className="section-head">
@@ -647,12 +512,12 @@ export function ReportPage() {
               <Card padding="p-0">
                 <div className="event-table">
                   {g.events.map((e) => (
-                    <EventLineRow
+                    <EventTableRow
                       key={e.id}
                       ev={e}
-                      icons={icons}
+                      showDate={false}
                       costOverride={royaltyOfEvent(e)}
-                      onClick={() => setFormModal({ kind: "edit", eventId: e.id })}
+                      onClick={() => nav(`/events/${e.id}/edit`)}
                       onClient={(id) => nav(`/clients/${id}`)}
                     />
                   ))}
@@ -669,15 +534,6 @@ export function ReportPage() {
           </Card>
         )}
       </div>
-
-      <EventFormModal
-        open={formModal !== null}
-        eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
-        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
-        onClose={() => setFormModal(null)}
-        onSaved={() => setFormModal(null)}
-        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
-      />
     </div>
   );
 }
