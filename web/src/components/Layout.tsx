@@ -5,6 +5,7 @@ import { Menu } from "lucide-react";
 import {
   Bug,
   CalendarDots,
+  CalendarPlus,
   ChartPieSlice,
   GearSix,
   GridFour,
@@ -15,6 +16,7 @@ import {
 import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
 import { google as googleApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { EventFormModal } from "@/pages/EventForm";
 
 type NavItem = {
   to: string;
@@ -37,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
 export function Layout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [newEventOpen, setNewEventOpen] = useState(false);
   // Lightweight poll for the failed-sync badge in the "Отладка" nav item.
   const googleStatus = useQuery({
     queryKey: ["google", "status"],
@@ -94,21 +97,31 @@ export function Layout() {
 
       <div className="mobile-backdrop" onClick={() => setMobileOpen(false)} />
 
+      <button
+        type="button"
+        className="mobile-fab mobile-fab-new"
+        onClick={() => setNewEventOpen(true)}
+        aria-label="Новое событие"
+      >
+        <CalendarPlus size={24} weight="duotone" />
+      </button>
+
+      <button
+        type="button"
+        className="mobile-fab mobile-fab-menu"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Меню"
+      >
+        <Menu size={24} />
+      </button>
+
+      <EventFormModal
+        open={newEventOpen}
+        onClose={() => setNewEventOpen(false)}
+        onSaved={() => setNewEventOpen(false)}
+      />
+
       <main className="main">
-        <div className="mobile-trigger">
-          <button
-            type="button"
-            className="mobile-trigger-btn"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Меню"
-          >
-            <Menu size={24} />
-          </button>
-          <div className="mobile-trigger-brand">
-            <img src="/icon.png" alt="" className="brand-mark" style={{ width: 24, height: 24 }} />
-            <span>Tracker</span>
-          </div>
-        </div>
         <Outlet />
       </main>
     </div>

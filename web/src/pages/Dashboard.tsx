@@ -97,6 +97,10 @@ export function DashboardPage() {
   const today = useMemo(() => new Date(), []);
   const todayKey = useMemo(() => format(today, "yyyy-MM-dd"), [today]);
   const todayLabel = fmt.todayHeader(today);
+  const todayShort = useMemo(
+    () => format(today, "EEEE, d MMMM", { locale: ru }),
+    [today],
+  );
   const data = dash.data;
 
   const dailyOption: EChartsOption | null = useMemo(() => {
@@ -463,10 +467,20 @@ export function DashboardPage() {
       <div className="page-head">
         <div>
           <h1 className="h1">Дашборд</h1>
-          <div className="muted" style={{ textTransform: "lowercase" }}>{todayLabel}</div>
+          <div className="muted mobile-hide" style={{ textTransform: "lowercase" }}>{todayLabel}</div>
         </div>
         <div className="page-head-actions">
-          <Button icon={<Plus size={16} />} onClick={() => setFormModal({ kind: "new" })}>
+          <div
+            className="muted mobile-only page-head-mobile-meta"
+            style={{ textTransform: "lowercase" }}
+          >
+            {todayShort}
+          </div>
+          <Button
+            className="mobile-hide"
+            icon={<Plus size={16} />}
+            onClick={() => setFormModal({ kind: "new" })}
+          >
             Новое событие
           </Button>
         </div>

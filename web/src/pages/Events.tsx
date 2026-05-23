@@ -297,12 +297,19 @@ export function EventsPage() {
       <div className="page-head">
         <div>
           <h1 className="h1">События</h1>
-          <div className="muted">
+          <div className="muted mobile-hide">
             {filtered.length} {pluralize(filtered.length, "событие", "события", "событий")}
           </div>
         </div>
         <div className="page-head-actions">
-          <Button icon={<Plus size={16} />} onClick={() => setModal({ kind: "new" })}>
+          <div className="muted mobile-only page-head-mobile-meta">
+            {filtered.length} {pluralize(filtered.length, "событие", "события", "событий")}
+          </div>
+          <Button
+            className="mobile-hide"
+            icon={<Plus size={16} />}
+            onClick={() => setModal({ kind: "new" })}
+          >
             Новое событие
           </Button>
         </div>

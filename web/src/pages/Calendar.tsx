@@ -107,12 +107,13 @@ export function CalendarPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <div>
-          <h1 className="h1">Календарь</h1>
-          <div className="muted">Расписание событий</div>
-        </div>
+        <h1 className="h1">Календарь</h1>
         <div className="page-head-actions">
-          <Button icon={<Plus size={16} />} onClick={() => setFormModal({ kind: "new" })}>
+          <Button
+            className="mobile-hide"
+            icon={<Plus size={16} />}
+            onClick={() => setFormModal({ kind: "new" })}
+          >
             Событие
           </Button>
         </div>
