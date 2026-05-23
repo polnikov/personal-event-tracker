@@ -2548,8 +2548,14 @@ input[type="number"] { -moz-appearance: textfield; }
   }
   .modal-head { padding: 14px 16px 8px; }
   .modal-body { padding: 4px 16px 18px; }
-  .modal-foot { padding: 12px 16px; flex-wrap: wrap; }
-  .modal-foot .btn { flex: 1; justify-content: center; }
+  .modal-foot { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+  .modal-foot .btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
   /* Close icon's right edge aligns with the footer button right edge (16px). */
   .modal-close-floating { top: 16px; right: 16px; }
   .modal-body-cal-detail .form { margin-top: 20px; }
