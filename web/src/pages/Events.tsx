@@ -331,12 +331,7 @@ export function EventsPage() {
             },
             {
               value: "past",
-              label: (
-                <>
-                  Прошедшие
-                  {counts.past > 0 && <span className="tab-badge">{counts.past}</span>}
-                </>
-              ),
+              label: "Прошедшие",
             },
           ]}
         />

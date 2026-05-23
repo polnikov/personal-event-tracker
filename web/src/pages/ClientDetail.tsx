@@ -558,17 +558,7 @@ export function ClientDetailPage() {
                     </>
                   ),
                 },
-                {
-                  value: "past",
-                  label: (
-                    <>
-                      Прошедшие
-                      {past_events.length > 0 && (
-                        <span className="tab-badge">{past_events.length}</span>
-                      )}
-                    </>
-                  ),
-                },
+                { value: "past", label: "Прошедшие" },
                 { value: "analytics", label: "Аналитика" },
               ]}
             />
