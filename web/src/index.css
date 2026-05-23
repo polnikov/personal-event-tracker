@@ -2586,6 +2586,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
   /* Client detail */
   .client-detail-stats { padding: 12px; gap: 8px; }
+  .client-detail-stats > :last-child { text-align: right; }
   .ds-num { font-size: 18px; }
   .meta-row { font-size: 13px; flex-wrap: wrap; }
   .client-detail-actions .btn { flex: 1; justify-content: center; }
