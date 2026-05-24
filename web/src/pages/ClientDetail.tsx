@@ -25,6 +25,7 @@ import {
 import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
+import { EventDetailModal } from "@/components/EventDetailModal";
 import { fmt, pluralize } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -206,6 +207,7 @@ export function ClientDetailPage() {
     | { kind: "copy"; copyId: number }
     | null
   >(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["clients", "detail", clientId],
@@ -603,7 +605,7 @@ export function ClientDetailPage() {
               emptyTitle="Будущих событий нет"
               orderDesc={false}
               icons={icons}
-              onEventClick={(id) => setFormModal({ kind: "edit", eventId: id })}
+              onEventClick={(id) => setDetailId(id)}
               onClientClick={(id) => nav(`/clients/${id}`)}
             />
           )}
@@ -614,7 +616,7 @@ export function ClientDetailPage() {
               emptyTitle="Завершённых событий нет"
               orderDesc
               icons={icons}
-              onEventClick={(id) => setFormModal({ kind: "edit", eventId: id })}
+              onEventClick={(id) => setDetailId(id)}
               onClientClick={(id) => nav(`/clients/${id}`)}
             />
           )}
@@ -676,6 +678,9 @@ export function ClientDetailPage() {
         onSaved={() => setFormModal(null)}
         onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
       />
+      {detailId !== null && (
+        <EventDetailModal eventId={detailId} onClose={() => setDetailId(null)} />
+      )}
     </div>
   );
 }

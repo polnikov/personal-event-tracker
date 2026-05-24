@@ -19,6 +19,7 @@ import {
 } from "@/components/echart";
 import { categories as categoriesApi, dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
+import { EventDetailModal } from "@/components/EventDetailModal";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -79,6 +80,7 @@ export function DashboardPage() {
     | { kind: "copy"; copyId: number }
     | null
   >(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const isMobile = useIsMobile();
 
   const dash = useQuery({
@@ -521,7 +523,7 @@ export function DashboardPage() {
                           key={e.id}
                           ev={e}
                           icons={icons}
-                          onClick={() => setFormModal({ kind: "edit", eventId: e.id })}
+                          onClick={() => setDetailId(e.id)}
                           onClient={(id) => nav(`/clients/${id}`)}
                         />
                       ))}
@@ -594,6 +596,9 @@ export function DashboardPage() {
         onSaved={() => setFormModal(null)}
         onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
       />
+      {detailId !== null && (
+        <EventDetailModal eventId={detailId} onClose={() => setDetailId(null)} />
+      )}
     </div>
   );
 }

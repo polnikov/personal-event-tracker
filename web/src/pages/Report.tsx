@@ -1,59 +1,17 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { format, parse, parseISO } from "date-fns";
+import { format, parse } from "date-fns";
 import { ru } from "date-fns/locale";
 import {
   Card,
-  Empty,
-  EventTableRow,
   Select,
 } from "@/components/design";
 import { Echart, GRID_LEFT_FLUSH, type EChartsOption } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import type { EventItem } from "@/types/api";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
-
-function royaltyOfEvent(e: EventItem): number {
-  const gross = parseFloat(e.total_cost) || 0;
-  return (gross * (parseFloat(e.royalty) || 0)) / 100;
-}
-
-interface RoyaltyDayGroup {
-  key: string;
-  date: Date;
-  events: EventItem[];
-  royalty: number;
-}
-
-function groupRoyaltyByDay(events: EventItem[]): RoyaltyDayGroup[] {
-  const map = new Map<string, EventItem[]>();
-  for (const e of events) {
-    const k = e.start_at.slice(0, 10);
-    const list = map.get(k) ?? [];
-    list.push(e);
-    map.set(k, list);
-  }
-  const groups: RoyaltyDayGroup[] = [];
-  for (const [k, evs] of map.entries()) {
-    evs.sort((a, b) => b.start_at.localeCompare(a.start_at));
-    groups.push({
-      key: k,
-      date: parseISO(`${k}T00:00:00`),
-      events: evs,
-      royalty: evs.reduce((s, e) => s + royaltyOfEvent(e), 0),
-    });
-  }
-  groups.sort((a, b) => b.key.localeCompare(a.key));
-  return groups;
-}
-
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
 
 const SUBCAT_PALETTE = [
   "#7BB661", "#D9A86C", "#6E8FB8", "#C26B6B", "#A855F7",
@@ -72,7 +30,6 @@ const ECHART_BASE_TEXT = {
 };
 
 export function ReportPage() {
-  const nav = useNavigate();
   const isMobile = useIsMobile();
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear());
@@ -492,8 +449,6 @@ export function ReportPage() {
   const netRowCount = subcatColored.filter((s) => s.net > 0).length;
   const barChartHeight = (rows: number) => Math.max(160, rows * 34 + 16);
 
-  const royaltyEvents = data.data?.events_with_royalty ?? [];
-  const royaltyGroups = useMemo(() => groupRoyaltyByDay(royaltyEvents), [royaltyEvents]);
   const yearTotal = useMemo(
     () =>
       (data.data?.monthly ?? []).reduce(
@@ -598,53 +553,6 @@ export function ReportPage() {
         </Card>
       )}
 
-      <div className="section">
-        <div className="section-head">
-          <div className="section-title">События с роялти</div>
-          <div className="section-meta muted small">{royaltyEvents.length}</div>
-        </div>
-        {royaltyGroups.length > 0 ? (
-          royaltyGroups.map((g) => (
-            <div key={g.key} className="day-group">
-              <div className="day-group-head">
-                <div>
-                  <span className="day-group-weekday">
-                    {capitalize(format(g.date, "EEEE", { locale: ru }))}
-                  </span>
-                  <span className="day-group-date muted">
-                    {" · "}
-                    {format(g.date, "d MMMM", { locale: ru })}
-                  </span>
-                </div>
-                {g.events.length >= 2 && (
-                  <div className="day-group-net mono">{fmt.money(g.royalty)} ₽</div>
-                )}
-              </div>
-              <Card padding="p-0">
-                <div className="event-table">
-                  {g.events.map((e) => (
-                    <EventTableRow
-                      key={e.id}
-                      ev={e}
-                      showDate={false}
-                      costOverride={royaltyOfEvent(e)}
-                      onClick={() => nav(`/events/${e.id}/edit`)}
-                      onClient={(id) => nav(`/clients/${id}`)}
-                    />
-                  ))}
-                </div>
-              </Card>
-            </div>
-          ))
-        ) : (
-          <Card>
-            <Empty
-              title="Событий с роялти нет"
-              hint="Включите роялти при создании события — они появятся здесь"
-            />
-          </Card>
-        )}
-      </div>
     </div>
   );
 }

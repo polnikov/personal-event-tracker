@@ -2433,6 +2433,13 @@ input[type="number"] { -moz-appearance: textfield; }
   margin: -22px -22px 0;
   font-family: var(--font-sans);
 }
+.cd2-loading {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  color: var(--muted);
+  font-size: 13px;
+}
 .cd2-hero {
   padding: 18px 22px 12px;
   border-radius: var(--r-xl) var(--r-xl) 0 0;

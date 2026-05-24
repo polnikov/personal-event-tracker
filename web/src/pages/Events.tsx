@@ -19,6 +19,7 @@ import { categories as categoriesApi, clients as clientsApi, events as eventsApi
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
 import { EventFormModal } from "@/pages/EventForm";
+import { EventDetailModal } from "@/components/EventDetailModal";
 import { DatePicker } from "@/components/DatePicker";
 
 type TabKey = "future" | "past";
@@ -114,6 +115,7 @@ export function EventsPage() {
     | { kind: "copy"; copyId: number }
     | null
   >(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const activeFilterCount =
     (catFilter ? 1 : 0) +
@@ -446,7 +448,7 @@ export function EventsPage() {
                   key={e.id}
                   ev={e}
                   icons={icons}
-                  onClick={() => setModal({ kind: "edit", eventId: e.id })}
+                  onClick={() => setDetailId(e.id)}
                   onClient={(id) => nav(`/clients/${id}`)}
                 />
               ))}
@@ -485,6 +487,9 @@ export function EventsPage() {
         onSaved={() => setModal(null)}
         onCopy={(srcId) => setModal({ kind: "copy", copyId: srcId })}
       />
+      {detailId !== null && (
+        <EventDetailModal eventId={detailId} onClose={() => setDetailId(null)} />
+      )}
     </div>
   );
 }

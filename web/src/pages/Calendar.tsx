@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addDays, addMinutes, format, parseISO, startOfWeek } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { addDays, format, startOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Copy, History, Pencil, Plus } from "lucide-react";
-import { Button, Card, IconButton, Modal, SearchableSelect } from "@/components/design";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Button, Card, IconButton, SearchableSelect } from "@/components/design";
 import { EventFormModal } from "@/pages/EventForm";
-import { DateTimePicker } from "@/components/DateTimePicker";
-import { calendar as calendarApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
+import { EventDetailModal } from "@/components/EventDetailModal";
+import { calendar as calendarApi, clients as clientsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/api";
@@ -24,7 +23,7 @@ export function CalendarPage() {
   const today = useMemo(() => new Date(), []);
   const [view, setView] = useState<View>("week");
   const [cursor, setCursor] = useState(() => new Date());
-  const [openEvent, setOpenEvent] = useState<CalendarEvent | null>(null);
+  const [openEventId, setOpenEventId] = useState<number | null>(null);
   const [clientFilter, setClientFilter] = useState("");
   const [formModal, setFormModal] = useState<
     | { kind: "new" }
@@ -138,7 +137,7 @@ export function CalendarPage() {
           cursor={cursor}
           today={today}
           eventsByDay={eventsByDay}
-          onEvent={(e) => setOpenEvent(e)}
+          onEvent={(id) => setOpenEventId(id)}
           onDay={handleMonthDayClick}
         />
       )}
@@ -147,21 +146,13 @@ export function CalendarPage() {
           cursor={cursor}
           today={today}
           eventsByDay={eventsByDay}
-          onEvent={(e) => setOpenEvent(e)}
+          onEvent={(id) => setOpenEventId(id)}
         />
       )}
-      {openEvent && (
+      {openEventId !== null && (
         <EventDetailModal
-          event={openEvent}
-          onClose={() => setOpenEvent(null)}
-          onEdit={(id) => {
-            setOpenEvent(null);
-            setFormModal({ kind: "edit", eventId: id });
-          }}
-          onCopy={(id) => {
-            setOpenEvent(null);
-            setFormModal({ kind: "copy", copyId: id });
-          }}
+          eventId={openEventId}
+          onClose={() => setOpenEventId(null)}
         />
       )}
 
@@ -226,7 +217,7 @@ function MonthView({
   cursor: Date;
   today: Date;
   eventsByDay: Map<string, CalendarEvent[]>;
-  onEvent: (e: CalendarEvent) => void;
+  onEvent: (id: number) => void;
   onDay: (d: Date) => void;
 }) {
   const grid = useMemo(() => {
@@ -264,7 +255,7 @@ function MonthView({
                     style={{ "--cat": e.backgroundColor } as React.CSSProperties}
                     onClick={(ev) => {
                       ev.stopPropagation();
-                      onEvent(e);
+                      onEvent(Number(e.id));
                     }}
                   >
                     <div className="cal-event-name">
@@ -294,7 +285,7 @@ function WeekView({
   cursor: Date;
   today: Date;
   eventsByDay: Map<string, CalendarEvent[]>;
-  onEvent: (e: CalendarEvent) => void;
+  onEvent: (id: number) => void;
 }) {
   const start = startOfWeek(cursor, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
@@ -358,7 +349,7 @@ function WeekView({
                           height,
                           "--cat": e.backgroundColor,
                         } as React.CSSProperties}
-                        onClick={() => onEvent(e)}
+                        onClick={() => onEvent(Number(e.id))}
                       >
                         <div className="week-time-ev-name">
                           {e.extendedProps.category}
@@ -378,195 +369,5 @@ function WeekView({
         </div>
       </div>
     </Card>
-  );
-}
-
-function EventDetailModal({
-  event,
-  onClose,
-  onEdit,
-  onCopy,
-}: {
-  event: CalendarEvent;
-  onClose: () => void;
-  onEdit: (id: number) => void;
-  onCopy: (id: number) => void;
-}) {
-  const qc = useQueryClient();
-  const eventId = Number(event.id);
-  const detail = useQuery({
-    queryKey: ["events", "detail", eventId],
-    queryFn: () => eventsApi.detail(eventId),
-  });
-
-  const [rescheduleOpen, setRescheduleOpen] = useState(false);
-  const [newStart, setNewStart] = useState(format(parseISO(event.start), "yyyy-MM-dd'T'HH:mm"));
-
-  const reschedule = useMutation({
-    mutationFn: () => {
-      if (!detail.data) throw new Error("Загрузка");
-      const local = newStart.length === 16 ? `${newStart}:00` : newStart;
-      return eventsApi.update(eventId, {
-        subcategory_id: detail.data.subcategory_id,
-        client_id: detail.data.client_id,
-        start_at: local,
-        duration_minutes: detail.data.duration_minutes,
-        notes: detail.data.notes,
-        recalculate_price: false,
-        price_per_hour: parseFloat(detail.data.hourly_rate_snapshot) || 0,
-        tax: parseFloat(detail.data.tax) || 0,
-        royalty: parseFloat(detail.data.royalty) || 0,
-      });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["calendar"] });
-      qc.invalidateQueries({ queryKey: ["events"] });
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["report"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      onClose();
-    },
-  });
-
-  const newEndPreview = useMemo(() => {
-    if (!newStart || !detail.data) return null;
-    try {
-      const d = parseISO(newStart);
-      if (Number.isNaN(d.getTime())) return null;
-      return format(addMinutes(d, detail.data.duration_minutes), "d MMMM, HH:mm", { locale: ru });
-    } catch {
-      return null;
-    }
-  }, [newStart, detail.data]);
-
-  const dateLine = useMemo(() => {
-    const s = parseISO(event.start);
-    const dateStr = format(s, "d MMMM", { locale: ru });
-    return `${dateStr} | ${fmt.time(event.start)} – ${fmt.time(event.end)}`;
-  }, [event.start, event.end]);
-
-  const dateBadge = useMemo(() => {
-    const d = parseISO(event.start);
-    return { day: format(d, "d"), weekday: format(d, "EEEEEE", { locale: ru }) };
-  }, [event.start]);
-
-  const costFmt = useMemo(
-    () =>
-      event.extendedProps.cost.toLocaleString("ru-RU", {
-        maximumFractionDigits: 0,
-      }),
-    [event.extendedProps.cost],
-  );
-
-  return (
-    <Modal
-      open
-      onOpenChange={(o) => !o && onClose()}
-      ariaLabel={event.title}
-      hideTitle
-      noFooterBorder
-      footer={
-        rescheduleOpen ? (
-          <>
-            <Button variant="secondary" onClick={() => setRescheduleOpen(false)}>
-              Назад
-            </Button>
-            <Button
-              icon={<History size={14} />}
-              onClick={() => reschedule.mutate()}
-              disabled={reschedule.isPending}
-            >
-              {reschedule.isPending ? "Перенос…" : "Перенести"}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              className="cd2-btn"
-              variant="secondary"
-              icon={<History size={14} />}
-              onClick={() => setRescheduleOpen(true)}
-            >
-              Перенести
-            </Button>
-            <Button
-              className="cd2-btn"
-              variant="secondary"
-              icon={<Copy size={14} />}
-              onClick={() => onCopy(eventId)}
-            >
-              Копировать
-            </Button>
-            <Button
-              className="cd2-btn"
-              icon={<Pencil size={14} />}
-              onClick={() => onEdit(eventId)}
-            >
-              Редактировать
-            </Button>
-          </>
-        )
-      }
-    >
-      {!rescheduleOpen ? (
-        <div className="cd2" style={{ "--cat": event.backgroundColor } as React.CSSProperties}>
-          <div className="cd2-hero">
-            <div className="cd2-hero-head">
-              <div className="cd2-tag">
-                <span
-                  className="cd2-tag-dot"
-                  style={{ background: event.backgroundColor }}
-                />
-                <span className="cd2-tag-text">
-                  {event.extendedProps.category} · {event.extendedProps.subcategory}
-                </span>
-              </div>
-            </div>
-            <div className="cd2-ticket">
-              <span className="cd2-datebox">
-                <span className="cd2-datebox-day">{dateBadge.day}</span>
-                <span className="cd2-datebox-wd">{dateBadge.weekday}</span>
-              </span>
-              <span className="cd2-time">{fmt.time(event.start)}</span>
-              <span className="cd2-dash" aria-hidden="true" />
-              <span className="cd2-time">{fmt.time(event.end)}</span>
-            </div>
-          </div>
-          <div className="cd2-row">
-            <div className="cd2-nameline">
-              {event.extendedProps.client ? (
-                detail.data?.client_id ? (
-                  <Link
-                    className="cd2-name"
-                    to={`/clients/${detail.data.client_id}`}
-                  >
-                    {event.extendedProps.client}
-                  </Link>
-                ) : (
-                  <span className="cd2-name">{event.extendedProps.client}</span>
-                )
-              ) : (
-                <span className="cd2-name" />
-              )}
-              <span className="cd2-price">{costFmt} ₽</span>
-            </div>
-            {detail.data?.notes && (
-              <div className="cd2-note">{detail.data.notes}</div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="form">
-          <div className="muted small">Текущее: {dateLine}</div>
-          <label className="field">
-            <div className="field-label">Новое время</div>
-            <DateTimePicker value={newStart} onChange={setNewStart} />
-            {newEndPreview && (
-              <span className="muted small">Окончание: {newEndPreview}</span>
-            )}
-          </label>
-        </div>
-      )}
-    </Modal>
   );
 }
