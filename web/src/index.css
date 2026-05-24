@@ -2426,6 +2426,160 @@ input[type="number"] { -moz-appearance: textfield; }
   flex: 0 0 auto;
   justify-content: center;
 }
+
+/* Calendar detail modal v2 — ticket layout */
+.cd2 {
+  --cat: var(--ink);
+  margin: -22px -22px 0;
+  font-family: var(--font-sans);
+}
+.cd2-hero {
+  padding: 18px 22px 12px;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--cat) 34%, transparent) 0%,
+    color-mix(in srgb, var(--cat) 10%, transparent) 55%,
+    transparent 100%
+  );
+}
+.cd2-hero-head {
+  display: flex;
+  align-items: center;
+  /* leave room on the right so a long category never runs under the close button */
+  padding-top: 5px;
+  padding-right: 30px;
+  margin-bottom: 16px;
+}
+.cd2-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--cat) 65%, #1a1a1a);
+}
+.cd2-tag-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cd2-tag-dot {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+.cd2-ticket {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.04),
+    0 8px 20px -8px rgba(0, 0, 0, 0.12);
+}
+.cd2-time {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: var(--ink);
+}
+.cd2-dash {
+  flex: 1;
+  margin: 0 14px;
+  border-top: 2px dotted color-mix(in srgb, var(--cat) 45%, #fff);
+}
+.cd2-datebox {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  margin-right: 14px;
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--cat) 18%, var(--surface));
+  color: color-mix(in oklab, var(--cat) 55%, var(--ink));
+  line-height: 1;
+  user-select: none;
+}
+.cd2-datebox-day {
+  font-size: 16px;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+}
+.cd2-datebox-wd {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: lowercase;
+  opacity: 0.85;
+}
+.cd2-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 22px 8px;
+}
+.cd2-nameline {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cd2-name {
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.cd2-name:hover {
+  color: var(--accent);
+}
+.cd2-price {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.cd2-note {
+  font-size: 13px;
+  color: var(--ink-2);
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.modal-content:has(.cd2) .modal-body {
+  padding-bottom: 10px;
+}
+.modal-content:has(.cd2) .modal-foot {
+  border-top: 0;
+  padding: 0 22px 22px;
+  gap: 6px;
+  justify-content: stretch;
+}
+.modal-content:has(.cd2) .modal-foot > .btn {
+  flex: 1 1 0;
+  justify-content: center;
+  font-family: var(--font-sans);
+  padding: 10px 6px;
+}
 .modal-head {
   display: flex;
   align-items: center;
@@ -2520,6 +2674,9 @@ input[type="number"] { -moz-appearance: textfield; }
    Mobile responsive overrides
    ============================================================ */
 @media (max-width: 640px) {
+  /* Mobile rounds one step larger so the modal corners match the cd2 hero. */
+  :root { --r-lg: 22px; }
+
   /* Prevent iOS auto-zoom on focused inputs. Explicit line-height so the
      native <select> (subcategory) renders at the same visual rhythm as
      the <input> used by the SearchableSelect (client). */
@@ -2583,6 +2740,26 @@ input[type="number"] { -moz-appearance: textfield; }
   .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn:nth-child(2) { grid-area: copy; }
   .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn:nth-child(3) { grid-area: edit; }
   .modal-content:has(.modal-body-cal-detail) .modal-foot > .btn { width: 100%; flex: initial; }
+
+  /* Calendar event card (cd2) on phones: keep the desktop card design,
+     just full-width. The hero bleeds to the edges via .cd2's -22px margin,
+     so restore the 22px body/footer padding the generic mobile rules shrink
+     (otherwise the hero over-bleeds past the rounded corners). Footer stacks
+     into two rows: Перенести + Копировать, then Редактировать full width. */
+  .modal-content:has(.cd2) .modal-body {
+    padding: 22px 22px 10px;
+  }
+  .modal-content:has(.cd2) .modal-foot {
+    flex-wrap: wrap;
+    padding: 0 22px 22px;
+  }
+  .modal-content:has(.cd2) .modal-foot > .btn {
+    flex: 1 1 calc(50% - 3px);
+    padding: 10px 6px;
+  }
+  .modal-content:has(.cd2) .modal-foot > .btn:nth-child(3) {
+    flex-basis: 100%;
+  }
 
   /* Event table rows fit phone width. Client/notes drop to row 2 under
      the subcategory badge instead of getting hidden. */

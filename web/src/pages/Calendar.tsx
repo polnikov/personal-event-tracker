@@ -1,18 +1,9 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addDays, addMinutes, format, parseISO, startOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import {
-  ClockClockwise,
-  Clock as ClockIcon,
-  Copy as CopyIcon,
-  CurrencyRub,
-  Hourglass as HourglassIcon,
-  Note,
-  PencilSimple,
-  User as UserIcon,
-} from "@phosphor-icons/react";
+import { ChevronLeft, ChevronRight, Copy, History, Pencil, Plus } from "lucide-react";
 import { Button, Card, IconButton, Modal, SearchableSelect } from "@/components/design";
 import { EventFormModal } from "@/pages/EventForm";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -454,13 +445,26 @@ function EventDetailModal({
     return `${dateStr} | ${fmt.time(event.start)} – ${fmt.time(event.end)}`;
   }, [event.start, event.end]);
 
+  const dateBadge = useMemo(() => {
+    const d = parseISO(event.start);
+    return { day: format(d, "d"), weekday: format(d, "EEEEEE", { locale: ru }) };
+  }, [event.start]);
+
+  const costFmt = useMemo(
+    () =>
+      event.extendedProps.cost.toLocaleString("ru-RU", {
+        maximumFractionDigits: 0,
+      }),
+    [event.extendedProps.cost],
+  );
+
   return (
     <Modal
       open
       onOpenChange={(o) => !o && onClose()}
       ariaLabel={event.title}
+      hideTitle
       noFooterBorder
-      bodyClassName="modal-body-cal-detail"
       footer={
         rescheduleOpen ? (
           <>
@@ -468,7 +472,7 @@ function EventDetailModal({
               Назад
             </Button>
             <Button
-              icon={<ClockClockwise size={14} weight="fill" />}
+              icon={<History size={14} />}
               onClick={() => reschedule.mutate()}
               disabled={reschedule.isPending}
             >
@@ -478,23 +482,24 @@ function EventDetailModal({
         ) : (
           <>
             <Button
+              className="cd2-btn"
               variant="secondary"
-              className="btn-outline"
-              icon={<ClockClockwise size={14} weight="fill" />}
+              icon={<History size={14} />}
               onClick={() => setRescheduleOpen(true)}
             >
               Перенести
             </Button>
             <Button
+              className="cd2-btn"
               variant="secondary"
-              className="btn-outline"
-              icon={<CopyIcon size={14} weight="fill" />}
+              icon={<Copy size={14} />}
               onClick={() => onCopy(eventId)}
             >
               Копировать
             </Button>
             <Button
-              icon={<PencilSimple size={14} weight="fill" />}
+              className="cd2-btn"
+              icon={<Pencil size={14} />}
               onClick={() => onEdit(eventId)}
             >
               Редактировать
@@ -504,40 +509,51 @@ function EventDetailModal({
       }
     >
       {!rescheduleOpen ? (
-        <div className="form">
-          <div className="meta-row">
-            <span
-              className="cat-dot"
-              style={{ width: 10, height: 10, background: event.backgroundColor }}
-            />
-            <span>{event.extendedProps.category} | {event.extendedProps.subcategory}</span>
-          </div>
-          <div className="meta-row">
-            <span className="meta-icon"><ClockIcon size={14} weight="fill" /></span>
-            <span className="mono">{dateLine}</span>
-          </div>
-          <div className="meta-row">
-            <span className="meta-icon"><HourglassIcon size={14} weight="fill" /></span>
-            <span>{fmt.duration(event.extendedProps.duration)}</span>
-          </div>
-          {event.extendedProps.client && (
-            <div className="meta-row">
-              <span className="meta-icon"><UserIcon size={14} weight="fill" /></span>
-              <span>{event.extendedProps.client}</span>
+        <div className="cd2" style={{ "--cat": event.backgroundColor } as React.CSSProperties}>
+          <div className="cd2-hero">
+            <div className="cd2-hero-head">
+              <div className="cd2-tag">
+                <span
+                  className="cd2-tag-dot"
+                  style={{ background: event.backgroundColor }}
+                />
+                <span className="cd2-tag-text">
+                  {event.extendedProps.category} · {event.extendedProps.subcategory}
+                </span>
+              </div>
             </div>
-          )}
-          <div className="meta-row">
-            <span className="meta-icon"><CurrencyRub size={14} weight="fill" /></span>
-            <span className="mono">
-              {event.extendedProps.cost.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽
-            </span>
-          </div>
-          {detail.data?.notes && (
-            <div className="meta-note">
-              <span className="meta-icon"><Note size={14} weight="fill" /></span>
-              <span>{detail.data.notes}</span>
+            <div className="cd2-ticket">
+              <span className="cd2-datebox">
+                <span className="cd2-datebox-day">{dateBadge.day}</span>
+                <span className="cd2-datebox-wd">{dateBadge.weekday}</span>
+              </span>
+              <span className="cd2-time">{fmt.time(event.start)}</span>
+              <span className="cd2-dash" aria-hidden="true" />
+              <span className="cd2-time">{fmt.time(event.end)}</span>
             </div>
-          )}
+          </div>
+          <div className="cd2-row">
+            <div className="cd2-nameline">
+              {event.extendedProps.client ? (
+                detail.data?.client_id ? (
+                  <Link
+                    className="cd2-name"
+                    to={`/clients/${detail.data.client_id}`}
+                  >
+                    {event.extendedProps.client}
+                  </Link>
+                ) : (
+                  <span className="cd2-name">{event.extendedProps.client}</span>
+                )
+              ) : (
+                <span className="cd2-name" />
+              )}
+              <span className="cd2-price">{costFmt} ₽</span>
+            </div>
+            {detail.data?.notes && (
+              <div className="cd2-note">{detail.data.notes}</div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="form">
