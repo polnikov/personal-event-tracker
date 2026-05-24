@@ -146,12 +146,13 @@
     place-items: center;
     position: fixed;
     bottom: 16px;
-    z-index: 60;
-    width: 48px;
-    height: 48px;
+    /* above everything, incl. chart tooltips */
+    z-index: 2147483647;
+    width: 50px;
+    height: 50px;
     border: 1px solid var(--line);
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.6);
+    background: color-mix(in srgb, var(--accent) 25%, rgba(255, 255, 255, 0.7));
     backdrop-filter: blur(8px);
     box-shadow: var(--shadow-3);
     color: var(--ink);
@@ -162,6 +163,8 @@
   .mobile-fab-client { left: 136px; }
   .mobile-fab:active { transform: scale(0.96); }
   .app[data-mobile-open="true"] .mobile-fab { display: none; }
+  /* don't float over an open modal (its overlay is portaled to <body>) */
+  body:has(.modal-overlay) .mobile-fab { display: none; }
   .app[data-mobile-open="true"] .mobile-backdrop {
     display: block;
     position: fixed;
