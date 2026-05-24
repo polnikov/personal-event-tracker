@@ -467,7 +467,7 @@
    Inputs
    ============================================================ */
 .input-wrap { position: relative; display: flex; align-items: center; }
-.input-wrap.has-icon .input { padding-left: 38px; }
+.input-wrap.has-icon .input { padding-left: 38px; background: var(--surface); }
 .input-wrap.has-clear .input { padding-right: 34px; }
 .input-clear {
   position: absolute;
@@ -2230,6 +2230,8 @@ input[type="number"] { -moz-appearance: textfield; }
    .grid-3 auto-fit so cards still span the full row. */
 @media (min-width: 641px) {
   .clients-grid { grid-template-columns: repeat(auto-fill, 318px); }
+  /* Search bar matches one client card width on desktop. */
+  .clients-search { width: 318px; }
 }
 
 /* Chart cards inherit the default .p-6 padding (20px) — only the

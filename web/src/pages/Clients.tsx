@@ -80,13 +80,15 @@ export function ClientsPage() {
         </div>
       </div>
 
-      <Input
-        icon={<Search size={16} />}
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onClear={() => setQ("")}
-        placeholder="Поиск…"
-      />
+      <div className="clients-search">
+        <Input
+          icon={<Search size={16} />}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onClear={() => setQ("")}
+          placeholder="Поиск…"
+        />
+      </div>
 
       <div className="grid grid-3 gap-md clients-grid">
         {visible.map((c) => (
