@@ -64,10 +64,17 @@ export function ClientsPage() {
       <div className="page-head">
         <div>
           <h1 className="h1">Клиенты</h1>
-          <div className="muted">{list.data?.length ?? 0} клиентов</div>
+          <div className="muted mobile-hide">{list.data?.length ?? 0} клиентов</div>
         </div>
         <div className="page-head-actions">
-          <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+          <div className="muted mobile-only page-head-mobile-meta">
+            {list.data?.length ?? 0} клиентов
+          </div>
+          <Button
+            className="mobile-hide"
+            icon={<Plus size={16} />}
+            onClick={() => setCreating(true)}
+          >
             Новый клиент
           </Button>
         </div>
