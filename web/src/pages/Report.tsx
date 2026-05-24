@@ -447,6 +447,8 @@ export function ReportPage() {
 
   const hoursRowCount = subcatColored.filter((s) => s.hours > 0).length;
   const netRowCount = subcatColored.filter((s) => s.net > 0).length;
+  const netTotal = subcatColored.reduce((sum, s) => sum + (s.net || 0), 0);
+  const hoursTotal = subcatColored.reduce((sum, s) => sum + (s.hours || 0), 0);
   const barChartHeight = (rows: number) => Math.max(160, rows * 34 + 16);
 
   const yearTotal = useMemo(
@@ -497,7 +499,16 @@ export function ReportPage() {
         <Card>
           <div className="card-head" style={{ alignItems: "baseline" }}>
             <div className="card-title">Часы по подкатегориям</div>
-            <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
+            <div style={{ textAlign: "right" }}>
+              <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
+              {hoursBar && (
+                <div className="muted small" style={{ marginTop: 2 }}>
+                  <span className="mono">
+                    {hoursTotal.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
           {hoursBar ? (
             <Echart option={hoursBar} height={barChartHeight(hoursRowCount)} />
@@ -509,7 +520,14 @@ export function ReportPage() {
         <Card>
           <div className="card-head" style={{ alignItems: "baseline" }}>
             <div className="card-title">Чистый доход по подкатегориям</div>
-            <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
+            <div style={{ textAlign: "right" }}>
+              <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
+              {netBar && (
+                <div className="muted small" style={{ marginTop: 2 }}>
+                  <span className="mono">{fmt.money(netTotal)} ₽</span>
+                </div>
+              )}
+            </div>
           </div>
           {netBar ? (
             <Echart option={netBar} height={barChartHeight(netRowCount)} />
