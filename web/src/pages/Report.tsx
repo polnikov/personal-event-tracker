@@ -38,6 +38,7 @@ const ECHART_BASE_TEXT = {
 function weekdayMonthHeatmap(
   matrix: number[][] | null | undefined,
   isMobile: boolean,
+  groupThousands = false,
 ) {
   if (!matrix || matrix.length !== 7) return null;
   const monthLabels = MONTH_ABBR;
@@ -96,7 +97,10 @@ function weekdayMonthHeatmap(
           fontSize: 11,
           formatter: (p: unknown) => {
             const v = (p as { value: [number, number, number] }).value[2];
-            return v > 0 ? String(v) : "";
+            if (v <= 0) return "";
+            return groupThousands
+              ? v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })
+              : String(v);
           },
         },
         itemStyle: {
@@ -456,6 +460,7 @@ export function ReportPage() {
       weekdayMonthHeatmap(
         data.data?.weekday_month_net?.map((row) => row.map((v) => Math.round(v))),
         isMobile,
+        true,
       ),
     [data.data?.weekday_month_net, isMobile],
   );
