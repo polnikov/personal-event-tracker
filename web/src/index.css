@@ -2562,6 +2562,12 @@ input[type="number"] { -moz-appearance: textfield; }
 a.cd2-name:hover {
   color: var(--accent);
 }
+.cd2-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
 .cd2-price {
   flex: 0 0 auto;
   font-family: var(--font-mono);
@@ -2569,6 +2575,10 @@ a.cd2-name:hover {
   font-weight: 400;
   color: var(--ink);
   white-space: nowrap;
+}
+.cd2-flag {
+  flex: 0 0 auto;
+  color: color-mix(in oklab, var(--cat) 60%, var(--ink));
 }
 .cd2-note {
   font-size: 13px;

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Copy, History, Pencil } from "lucide-react";
+import { HandCoins, SealPercent } from "@phosphor-icons/react";
 import { Button, Modal } from "@/components/design";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { EventFormModal } from "@/pages/EventForm";
@@ -93,6 +94,9 @@ export function EventDetailModal({
     () => (ev ? Number(ev.total_cost).toLocaleString("ru-RU", { maximumFractionDigits: 0 }) : ""),
     [ev?.total_cost],
   );
+
+  const taxPct = ev ? parseFloat(ev.tax) || 0 : 0;
+  const royaltyPct = ev ? parseFloat(ev.royalty) || 0 : 0;
 
   // Edit / copy hand off to the shared event form, layered over this modal.
   if (form) {
@@ -201,7 +205,29 @@ export function EventDetailModal({
               ) : (
                 <span className="cd2-name" />
               )}
-              <span className="cd2-price">{costFmt} ₽</span>
+              <span className="cd2-meta">
+                <span className="cd2-price">{costFmt} ₽</span>
+                {taxPct > 0 && (
+                  <HandCoins
+                    className="cd2-flag"
+                    size={16}
+                    weight="duotone"
+                    aria-label={`Налог ${taxPct}%`}
+                  >
+                    <title>{`Налог ${taxPct}%`}</title>
+                  </HandCoins>
+                )}
+                {royaltyPct > 0 && (
+                  <SealPercent
+                    className="cd2-flag"
+                    size={16}
+                    weight="duotone"
+                    aria-label={`Роялти ${royaltyPct}%`}
+                  >
+                    <title>{`Роялти ${royaltyPct}%`}</title>
+                  </SealPercent>
+                )}
+              </span>
             </div>
             {ev.notes && <div className="cd2-note">{ev.notes}</div>}
           </div>
