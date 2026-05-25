@@ -161,8 +161,9 @@ export interface ReportMonthly {
 export interface ReportResponse {
   by_subcategory: ReportSubcatStat[];
   monthly: ReportMonthly[];
-  /** 7×12 event-count matrix; rows: Mon..Sun, cols: Jan..Dec. */
-  weekday_month: number[][];
+  /** 7×12 matrices; rows: Mon..Sun, cols: Jan..Dec. */
+  weekday_month: number[][]; // event counts
+  weekday_month_net: number[][]; // net income
   events_with_royalty: EventItem[];
 }
 

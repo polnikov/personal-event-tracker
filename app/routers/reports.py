@@ -129,11 +129,19 @@ def report(
         for m in range(1, 13)
     ]
 
-    # Weekday × month heatmap (whole year, filtered by category if any).
+    # Weekday × month heatmaps (whole year, filtered by category if any).
     # Rows: Mon=0..Sun=6; Cols: Jan=0..Dec=11.
+    # weekday_month = event counts; weekday_month_net = net income.
     weekday_month = [[0 for _ in range(12)] for _ in range(7)]
+    weekday_month_net_dec = [[Decimal(0) for _ in range(12)] for _ in range(7)]
     for e in year_events:
-        weekday_month[e.start_at.weekday()][e.start_at.month - 1] += 1
+        w = e.start_at.weekday()
+        m = e.start_at.month - 1
+        weekday_month[w][m] += 1
+        weekday_month_net_dec[w][m] += e.total_cost * (
+            Decimal(1) - e.tax / Decimal(100) - e.royalty / Decimal(100)
+        )
+    weekday_month_net = [[float(v) for v in row] for row in weekday_month_net_dec]
 
     # Events with royalty (period)
     royalty_events = [e for e in period_events if e.royalty > 0]
@@ -144,5 +152,6 @@ def report(
         by_subcategory=by_subcategory,
         monthly=monthly,
         weekday_month=weekday_month,
+        weekday_month_net=weekday_month_net,
         events_with_royalty=[event_to_schema_with_sync(e, sync_map) for e in royalty_events],
     )
