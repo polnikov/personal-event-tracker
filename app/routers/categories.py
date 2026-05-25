@@ -150,3 +150,15 @@ def add_price(sub_id: int, payload: SubcategoryPriceCreate, db: Session = Depend
     db.commit()
     db.refresh(p)
     return SubcategoryPriceRead.model_validate(p)
+
+
+@router.put("/prices/{price_id}", response_model=SubcategoryPriceRead)
+def update_price(price_id: int, payload: SubcategoryPriceCreate, db: Session = Depends(get_db)):
+    p = db.get(SubcategoryPrice, price_id)
+    if not p:
+        raise HTTPException(404)
+    p.price_per_hour = payload.price_per_hour
+    p.effective_from = payload.effective_from
+    db.commit()
+    db.refresh(p)
+    return SubcategoryPriceRead.model_validate(p)

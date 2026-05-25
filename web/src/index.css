@@ -2575,6 +2575,15 @@ input[type="number"] { -moz-appearance: textfield; }
 .subcat-row:hover { background: var(--bg-2); }
 .subcat-name { font-size: 13.5px; }
 .subcat-price { font-size: 13px; font-weight: 500; }
+/* Inline editor for a price-history row: amount + date + save/cancel. */
+.price-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.price-edit-row .input-wrap { flex: 2; min-width: 0; }
+.price-edit-row > .datepicker-trigger { flex: 3; min-width: 0; }
 
 .add-sub-btn {
   display: inline-flex;

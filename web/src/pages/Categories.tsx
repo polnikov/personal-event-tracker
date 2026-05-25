@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Coins, Edit3, Plus, Trash2 } from "lucide-react";
+import { Check, Coins, Edit3, Plus, Trash2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -17,7 +17,7 @@ import { IconPicker } from "@/components/IconPicker";
 import { AppIcon } from "@/components/phosphor";
 import { categories as categoriesApi, google as googleApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
-import type { Category, Subcategory } from "@/types/api";
+import type { Category, Subcategory, SubcategoryPrice } from "@/types/api";
 
 export function CategoriesPage() {
   const qc = useQueryClient();
@@ -433,6 +433,11 @@ function NewPriceModal({
   const [effectiveFrom, setEffectiveFrom] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
+  // Inline edit of an existing price row (amount + effective date).
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [editDate, setEditDate] = useState("");
+
   const create = useMutation({
     mutationFn: () =>
       categoriesApi.addPrice(sub.id, {
@@ -445,6 +450,26 @@ function NewPriceModal({
     },
   });
   const canSubmit = !!price && Number(price) > 0 && !!effectiveFrom && !create.isPending;
+
+  const update = useMutation({
+    mutationFn: () =>
+      categoriesApi.updatePrice(editingId!, {
+        price_per_hour: Number(editPrice),
+        effective_from: `${editDate}T00:00:00`,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      setEditingId(null);
+    },
+  });
+  const canSaveEdit =
+    !!editPrice && Number(editPrice) > 0 && !!editDate && !update.isPending;
+
+  const startEdit = (p: SubcategoryPrice) => {
+    setEditingId(p.id);
+    setEditPrice(String(Number(p.price_per_hour)));
+    setEditDate(p.effective_from.slice(0, 10));
+  };
   return (
     <Modal
       open
@@ -491,13 +516,53 @@ function NewPriceModal({
           <div>
             <div className="field-label" style={{ marginBottom: 8 }}>История цен</div>
             <div className="subcat-list">
-              {sub.prices.map((p) => (
-                <div key={p.id} className="subcat-row" style={{ margin: 0, padding: "6px 0" }}>
-                  <span className="subcat-name">{fmt.fullDate(p.effective_from)}</span>
-                  <span className="subcat-price mono">{fmt.money(p.price_per_hour)} ₽</span>
-                  <span />
-                </div>
-              ))}
+              {sub.prices.map((p) =>
+                editingId === p.id ? (
+                  <div key={p.id} className="price-edit-row">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      autoFocus
+                    />
+                    <DatePicker
+                      value={editDate}
+                      onChange={setEditDate}
+                      placeholder="Дата"
+                      allowClear={false}
+                    />
+                    <IconButton
+                      small
+                      onClick={() => canSaveEdit && update.mutate()}
+                      disabled={!canSaveEdit}
+                      aria-label="Сохранить цену"
+                    >
+                      <Check size={14} />
+                    </IconButton>
+                    <IconButton
+                      small
+                      onClick={() => setEditingId(null)}
+                      aria-label="Отмена"
+                    >
+                      <X size={14} />
+                    </IconButton>
+                  </div>
+                ) : (
+                  <div key={p.id} className="subcat-row" style={{ margin: 0, padding: "6px 0" }}>
+                    <span className="subcat-name">{fmt.fullDate(p.effective_from)}</span>
+                    <span className="subcat-price mono">{fmt.money(p.price_per_hour)} ₽</span>
+                    <IconButton
+                      small
+                      onClick={() => startEdit(p)}
+                      aria-label="Редактировать цену"
+                    >
+                      <Edit3 size={13} />
+                    </IconButton>
+                  </div>
+                ),
+              )}
             </div>
           </div>
         )}

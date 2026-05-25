@@ -135,6 +135,11 @@ export const categories = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  updatePrice: (priceId: number, payload: { price_per_hour: number; effective_from: string }) =>
+    request<SubcategoryPrice>(`/categories/prices/${priceId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 };
 
 // ---------- Events ----------
