@@ -1241,7 +1241,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; }
-@media (max-width: 800px) { .filter-row { grid-template-columns: 1fr; } }
+@media (max-width: 800px) {
+  .filter-row { grid-template-columns: 1fr; }
+  /* Report filter text/placeholders at 13.5px, matching the other filters. */
+  .filter-row .select-trigger { font-size: 13.5px; }
+}
 
 /* Events page: row 1 holds all seven filters on one line (cat, subcat, year,
    month, client, начало, конец); royalty toggle sits in a footer row below. */
@@ -1297,6 +1301,11 @@ input[type="number"] { -moz-appearance: textfield; }
   background: var(--bg-2);
 }
 .events-filter-clear:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Toolbar wraps controls + filters. On desktop it's display:contents (no box),
+   leaving the original page layout; on mobile it becomes a flex column so the
+   blocks can be reordered (search → filters → tabs). */
+.events-toolbar { display: contents; }
 
 /* Tabs + search live on a single row on desktop (search right-aligned);
    stack as full-width search above a collapsible filters card on mobile. */
@@ -1357,11 +1366,30 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 @media (max-width: 800px) {
-  /* Tighter rhythm: page-level gap matches the inner events-controls gap
-     so tabs ↔ search ↔ Фильтры button all sit 12px apart. */
+  /* Tighter rhythm: page-level gap matches the toolbar gap so the blocks all
+     sit 12px apart. */
   .page { gap: 12px; }
-  .events-controls { flex-direction: column; align-items: stretch; gap: 12px; }
-  .events-search { margin-left: 0; width: 100%; }
+
+  /* Flatten controls into the toolbar so search / filters / tabs can be
+     reordered as independent flex items. */
+  .events-toolbar { display: flex; flex-direction: column; gap: 12px; }
+  .events-controls { display: contents; }
+  .events-search { margin-left: 0; width: 100%; order: 1; }
+  .events-filters { order: 2; }
+  .events-tabs { order: 3; }
+
+  /* The filters card matches the event cards' radius; the search input and
+     tab radius are now handled app-wide (see the .view-switcher mobile
+     block near the view-switcher styles). */
+  .card.events-filters { border-radius: var(--r-lg); }
+
+  /* All filter placeholders at 13.5px (match the date pickers). Select /
+     multiselect triggers are buttons (no iOS zoom), so their text shrinks
+     directly; the client + search inputs keep 16px text to avoid focus-zoom,
+     so only the placeholder shrinks. */
+  .filter-row-events-7 .select-trigger { font-size: 13.5px; }
+  .filter-row-events-7 .input::placeholder { font-size: 13.5px; }
+  .events-search .input::placeholder { font-size: 13.5px; }
 
   /* Card padding is dropped so the toggle becomes a tab-shaped button
      of the same height as .view-switcher (38px). The body restores its
@@ -2120,6 +2148,22 @@ input[type="number"] { -moz-appearance: textfield; }
 .view-switch-btn:first-child { border-top-left-radius: var(--r-md); border-bottom-left-radius: var(--r-md); }
 .view-switch-btn:last-child  { border-top-right-radius: var(--r-md); border-bottom-right-radius: var(--r-md); }
 
+/* Mobile: tab switchers and search inputs app-wide adopt the card radius
+   (same as the Events search/tabs). Placed after the base radius rules so
+   these equal-specificity overrides win by source order. */
+@media (max-width: 800px) {
+  .view-switcher { border-radius: var(--r-lg); }
+  .view-switch-btn:first-child {
+    border-top-left-radius: var(--r-lg);
+    border-bottom-left-radius: var(--r-lg);
+  }
+  .view-switch-btn:last-child {
+    border-top-right-radius: var(--r-lg);
+    border-bottom-right-radius: var(--r-lg);
+  }
+  .input-wrap.has-icon .input { border-radius: var(--r-lg); }
+}
+
 /* Reverse paint order: earlier tabs stack above later ones. A corner
    badge on tab N spills into tab N+1's left edge by ~half its width;
    the higher z-index keeps that overflow visible above tab N+1's
@@ -2388,6 +2432,8 @@ input[type="number"] { -moz-appearance: textfield; }
   background: rgba(255, 255, 255, 0.55) !important;
   backdrop-filter: blur(8px);
   border: 1px solid var(--line);
+  /* Tighter bottom than the .p-6 padding (defined earlier, so this wins). */
+  padding-bottom: 10px;
 }
 .client-card .client-card-foot { margin-top: auto; }
 /* Desktop: fixed 318px card width; mobile falls back to the default
@@ -3094,6 +3140,7 @@ a.cd2-name:hover {
   .client-detail-tabs-row > .client-detail-notes-search {
     width: 100%;
     margin-left: 0;
+    order: -1; /* lift the search above the tabs on mobile */
   }
 
   /* Calendar month grid — rounded all four corners (was only top via Card) */

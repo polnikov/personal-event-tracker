@@ -334,8 +334,10 @@ export function EventsPage() {
         </div>
       </div>
 
+      <div className="events-toolbar">
       <div className="events-controls">
         <Tabs<TabKey>
+          className="events-tabs"
           value={tab}
           onChange={setTab}
           options={[
@@ -474,6 +476,7 @@ export function EventsPage() {
           </div>
         </div>
       </Card>
+      </div>
 
       {paginated.groups.map((g) => (
         <div key={g.key} className="day-group">
