@@ -2266,7 +2266,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .week-time-head {
   display: grid;
-  grid-template-columns: 56px repeat(7, 1fr);
+  grid-template-columns: 56px repeat(var(--cal-days, 7), 1fr);
   border-bottom: 1px solid var(--line);
 }
 .week-time-corner { background: var(--surface); }
@@ -2281,7 +2281,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .week-time-grid {
   display: grid;
-  grid-template-columns: 56px repeat(7, 1fr);
+  grid-template-columns: 56px repeat(var(--cal-days, 7), 1fr);
   position: relative;
 }
 .week-time-hours {
@@ -3122,6 +3122,19 @@ a.cd2-name:hover {
   }
   .cal-controls .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
   .cal-controls .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
+
+  /* Equal height across the client filter, view switcher and nav, all with a
+     22px (pill) radius. */
+  .cal-controls-filter .input,
+  .cal-controls-actions .view-switcher,
+  .cal-controls-actions .cal-nav {
+    height: 44px;
+    border-radius: var(--r-xl);
+  }
+  /* Client filter: white field + 13.5px placeholder (the input itself stays
+     16px to avoid iOS focus-zoom). */
+  .cal-controls-filter .input { background: var(--surface); }
+  .cal-controls-filter .input::placeholder { font-size: 13.5px; }
 
   /* Mobile: top-level Tabs<> live as a direct child of .page (Events,
      ClientDetail tabs row). On phones they stretch full width and the

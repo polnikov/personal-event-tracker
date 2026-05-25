@@ -12,7 +12,10 @@ import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/api";
 
 const DOW = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-type View = "month" | "week";
+type View = "month" | "week" | "3days";
+
+/** Local midnight of a date — start of the "3 дня" window. */
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 const HOUR_HEIGHT = 56;
 const START_HOUR = 6;
@@ -45,8 +48,22 @@ export function CalendarPage() {
       const end = addDays(start, 42);
       return { start, end };
     }
+    if (view === "3days") {
+      const start = startOfDay(cursor);
+      return { start, end: addDays(start, 3) };
+    }
     const start = startOfWeek(cursor, { weekStartsOn: 1 });
     return { start, end: addDays(start, 7) };
+  }, [view, cursor]);
+
+  // Day columns for the time-grid views (week = 7 from Monday, 3 дня = cursor + 2).
+  const gridDays = useMemo(() => {
+    if (view === "3days") {
+      const start = startOfDay(cursor);
+      return Array.from({ length: 3 }, (_, i) => addDays(start, i));
+    }
+    const start = startOfWeek(cursor, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [view, cursor]);
 
   const feed = useQuery({
@@ -76,8 +93,8 @@ export function CalendarPage() {
 
   const headerLabel = useMemo(() => {
     if (view === "month") return fmt.monthYear(cursor);
-    const start = startOfWeek(cursor, { weekStartsOn: 1 });
-    const end = addDays(start, 6);
+    const start = view === "3days" ? startOfDay(cursor) : startOfWeek(cursor, { weekStartsOn: 1 });
+    const end = addDays(start, view === "3days" ? 2 : 6);
     return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM", { locale: ru })}`;
   }, [view, cursor]);
 
@@ -85,7 +102,7 @@ export function CalendarPage() {
     if (view === "month") {
       setCursor((d) => new Date(d.getFullYear(), d.getMonth() + dir, 1));
     } else {
-      setCursor((d) => addDays(d, 7 * dir));
+      setCursor((d) => addDays(d, (view === "3days" ? 3 : 7) * dir));
     }
   };
 
@@ -141,9 +158,9 @@ export function CalendarPage() {
           onDay={handleMonthDayClick}
         />
       )}
-      {view === "week" && (
+      {(view === "week" || view === "3days") && (
         <WeekView
-          cursor={cursor}
+          days={gridDays}
           today={today}
           eventsByDay={eventsByDay}
           onEvent={(id) => setOpenEventId(id)}
@@ -180,6 +197,7 @@ function ViewSwitcher({
   const opts: { value: View; label: string }[] = [
     { value: "month", label: "Месяц" },
     { value: "week", label: "Неделя" },
+    { value: "3days", label: "3 дня" },
   ];
   return (
     <div className="view-switcher">
@@ -277,24 +295,22 @@ function MonthView({
 }
 
 function WeekView({
-  cursor,
+  days,
   today,
   eventsByDay,
   onEvent,
 }: {
-  cursor: Date;
+  days: Date[];
   today: Date;
   eventsByDay: Map<string, CalendarEvent[]>;
   onEvent: (id: number) => void;
 }) {
-  const start = startOfWeek(cursor, { weekStartsOn: 1 });
-  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const todayKey = today.toDateString();
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => START_HOUR + i);
 
   return (
     <Card padding="p-0">
-      <div className="week-time">
+      <div className="week-time" style={{ "--cal-days": days.length } as React.CSSProperties}>
         <div className="week-time-head">
           <div className="week-time-corner" />
           {days.map((d) => {
