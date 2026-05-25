@@ -321,18 +321,23 @@ export function ReportPage() {
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data.data) return null;
     const labels = MONTH_ABBR;
+    const fmtCompact = (v: number) =>
+      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
+
     const netSeries = data.data.monthly.map((m) => Math.round(m.net));
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
     const totalSeries = netSeries.map((n, i) => n + taxSeries[i]);
 
-    const fmtCompact = (v: number) =>
-      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
+    // "Все категории": add a net line per category alongside the total/tax
+    // lines (no value labels); the tooltip gains a per-category breakdown.
+    const cats =
+      categoryId === "" ? data.data.monthly_by_category ?? [] : [];
 
     const netColor = "oklch(0.62 0.13 145)";
     const taxColor = "oklch(0.78 0.10 145)";
 
     return {
-      grid: { top: 72, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
+      grid: { top: 25, right: 16, bottom: 28, left: GRID_LEFT_FLUSH, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -351,11 +356,28 @@ export function ReportPage() {
           const total = net + tax;
           if (total === 0) return "";
           const monthDate = parse(String(idx + 1), "M", new Date());
-          const label = format(monthDate, "LLLL yyyy", { locale: ru }).replace(
-            /yyyy/, String(year),
-          );
+          const label = format(monthDate, "LLLL", { locale: ru });
+          // Per-category breakdown (only in "Все категории" mode); the rows
+          // sum to "Чистыми". A separator divides them from the totals.
+          const catRows = cats
+            .map((c) => ({
+              name: c.name,
+              color: c.color || "#807A72",
+              val: Math.round(c.net[idx] || 0),
+            }))
+            .filter((c) => c.val)
+            .sort((a, b) => b.val - a.val)
+            .map(
+              (c) =>
+                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c.color}"></span><span style="flex:1">${c.name}</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(c.val)}</span></div>`,
+            )
+            .join("");
+          const catBlock = catRows
+            ? `${catRows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3"></div>`
+            : "";
           return (
-            `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label}</div>` +
+            `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label} ${year}</div>` +
+            catBlock +
             `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${netColor}"></span><span style="flex:1">Чистыми</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(net)}</span></div>` +
             `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${taxColor}"></span><span style="flex:1">Налог</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(tax)}</span></div>` +
             `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`
@@ -445,9 +467,22 @@ export function ReportPage() {
           lineStyle: { color: "#DC2626", width: 1.5 },
           label: { show: false },
         },
+        ...cats.map((c) => ({
+          name: c.name,
+          type: "line" as const,
+          smooth: 0.2,
+          data: c.net.map((v) => Math.round(v)),
+          symbol: "circle",
+          symbolSize: 5,
+          showSymbol: false,
+          emphasis: { focus: "series" as const },
+          itemStyle: { color: c.color || "#807A72" },
+          lineStyle: { color: c.color || "#807A72", width: 1.5 },
+          label: { show: false },
+        })),
       ],
-    };
-  }, [data.data, year, isMobile]);
+    } as EChartsOption;
+  }, [data.data, year, isMobile, categoryId]);
 
   const heatmapOption: EChartsOption | null = useMemo(
     () => weekdayMonthHeatmap(data.data?.weekday_month, isMobile),

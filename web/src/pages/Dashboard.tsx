@@ -119,7 +119,7 @@ export function DashboardPage() {
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
-      grid: { top: 72, right: 16, bottom: 44, left: 32 },
+      grid: { top: 20, right: 16, bottom: 44, left: 20, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -351,7 +351,7 @@ export function DashboardPage() {
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
     return {
-      grid: { top: 32, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
+      grid: { top: 20, right: 5, bottom: 10, left: GRID_LEFT_FLUSH, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },

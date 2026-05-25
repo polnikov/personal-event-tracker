@@ -158,9 +158,19 @@ export interface ReportMonthly {
   tax_amount: number;
 }
 
+export interface ReportMonthlyCategory {
+  category_id: number;
+  name: string;
+  color: string;
+  net: number[]; // 12 monthly net values (Jan..Dec)
+}
+
 export interface ReportResponse {
   by_subcategory: ReportSubcatStat[];
   monthly: ReportMonthly[];
+  /** Per-category monthly net — drives the multi-line monthly chart when
+   *  no single category is selected. */
+  monthly_by_category: ReportMonthlyCategory[];
   /** 7×12 matrices; rows: Mon..Sun, cols: Jan..Dec. */
   weekday_month: number[][]; // event counts
   weekday_month_net: number[][]; // net income

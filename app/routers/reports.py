@@ -9,6 +9,7 @@ from ..database import get_db
 from ..models import Event, Subcategory
 from ..schemas import (
     ReportMonthly,
+    ReportMonthlyCategory,
     ReportResponse,
     ReportSubcatStat,
 )
@@ -129,6 +130,30 @@ def report(
         for m in range(1, 13)
     ]
 
+    # Per-category monthly net (whole year) for the multi-line monthly chart
+    # shown when no single category is selected.
+    cat_monthly: dict[int, dict] = {}
+    for e in year_events:
+        cat = e.subcategory.category
+        c = cat_monthly.setdefault(
+            cat.id,
+            {"name": cat.name, "color": cat.color, "net": [Decimal(0)] * 12},
+        )
+        m = e.start_at.month - 1
+        c["net"][m] += e.total_cost * (
+            Decimal(1) - e.tax / Decimal(100) - e.royalty / Decimal(100)
+        )
+    monthly_by_category = [
+        ReportMonthlyCategory(
+            category_id=cid,
+            name=v["name"],
+            color=v["color"],
+            net=[float(x) for x in v["net"]],
+        )
+        for cid, v in cat_monthly.items()
+    ]
+    monthly_by_category.sort(key=lambda c: -sum(c.net))
+
     # Weekday × month heatmaps (whole year, filtered by category if any).
     # Rows: Mon=0..Sun=6; Cols: Jan=0..Dec=11.
     # weekday_month = event counts; weekday_month_net = net income.
@@ -151,6 +176,7 @@ def report(
     return ReportResponse(
         by_subcategory=by_subcategory,
         monthly=monthly,
+        monthly_by_category=monthly_by_category,
         weekday_month=weekday_month,
         weekday_month_net=weekday_month_net,
         events_with_royalty=[event_to_schema_with_sync(e, sync_map) for e in royalty_events],

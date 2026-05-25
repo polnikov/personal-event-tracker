@@ -259,9 +259,19 @@ class ReportMonthly(BaseModel):
     tax_amount: float
 
 
+class ReportMonthlyCategory(BaseModel):
+    category_id: int
+    name: str
+    color: str
+    net: list[float] = []  # 12 monthly net values (Jan..Dec)
+
+
 class ReportResponse(BaseModel):
     by_subcategory: list[ReportSubcatStat]
     monthly: list[ReportMonthly]
+    # Per-category monthly net for the year (multi-line monthly chart shown
+    # when no single category is selected).
+    monthly_by_category: list[ReportMonthlyCategory] = []
     # 7×12 matrices (rows: Mon..Sun, cols: Jan..Dec) for the year.
     weekday_month: list[list[int]] = []  # event counts
     weekday_month_net: list[list[float]] = []  # net income
