@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, Plus, Search } from "lucide-react";
+import { ChevronDown, FilterX, Plus, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -127,6 +127,17 @@ export function EventsPage() {
     (royaltyOnly ? 1 : 0) +
     (dateFrom ? 1 : 0) +
     (dateTo ? 1 : 0);
+
+  const clearAllFilters = () => {
+    setCatFilter("");
+    setSubcatFilter([]);
+    setYearFilter("");
+    setMonthFilter("");
+    setClientFilter("");
+    setRoyaltyOnly(false);
+    setDateFrom("");
+    setDateTo("");
+  };
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
@@ -365,6 +376,28 @@ export function EventsPage() {
           {activeFilterCount > 0 && (
             <span className="events-filters-count">{activeFilterCount}</span>
           )}
+          {activeFilterCount > 0 && (
+            <span
+              role="button"
+              tabIndex={0}
+              className="events-filters-clear-mobile"
+              aria-label="Очистить все фильтры"
+              title="Очистить всё"
+              onClick={(e) => {
+                e.stopPropagation();
+                clearAllFilters();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  clearAllFilters();
+                }
+              }}
+            >
+              <FilterX size={15} />
+            </span>
+          )}
           <ChevronDown
             size={16}
             className="events-filters-caret"
@@ -372,6 +405,7 @@ export function EventsPage() {
           />
         </button>
         <div className="events-filters-body" data-open={filtersOpen ? "true" : "false"}>
+          <div className="events-filters-row">
           <div className="filter-row-events-7">
             <Select
               value={catFilter}
@@ -415,6 +449,17 @@ export function EventsPage() {
               placeholder="Конец"
               ariaLabel="Конец"
             />
+          </div>
+            <button
+              type="button"
+              className="events-filter-clear"
+              onClick={clearAllFilters}
+              disabled={activeFilterCount === 0}
+              aria-label="Очистить все фильтры"
+              title="Очистить всё"
+            >
+              <FilterX size={16} />
+            </button>
           </div>
           <div className="events-filter-foot">
             <Toggle

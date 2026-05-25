@@ -1259,6 +1259,45 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: center;
 }
 
+/* Filter row + the desktop "clear all" icon sit side by side; the grid takes
+   the room and the clear button hangs off its right edge (past Конец). */
+.events-filters-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.events-filters-row .filter-row-events-7 {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Uniform 38px height across every filter control so the row lines up. */
+.filter-row-events-7 .input,
+.filter-row-events-7 .select-trigger,
+.filter-row-events-7 .datepicker-trigger,
+.events-filter-clear {
+  height: 38px;
+}
+
+.events-filter-clear {
+  flex-shrink: 0;
+  width: 38px;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.events-filter-clear:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: color-mix(in oklab, var(--danger) 40%, var(--line));
+  background: var(--bg-2);
+}
+.events-filter-clear:disabled { opacity: 0.4; cursor: not-allowed; }
+
 /* Tabs + search live on a single row on desktop (search right-aligned);
    stack as full-width search above a collapsible filters card on mobile. */
 .events-controls { display: flex; align-items: center; gap: 12px; }
@@ -1294,6 +1333,19 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 600;
   font-feature-settings: 'tnum';
 }
+/* Mobile-only clear-all, rendered inside the toggle (which is hidden on
+   desktop), right of the count badge. */
+.events-filters-clear-mobile {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.events-filters-clear-mobile:hover { color: var(--danger); background: var(--bg-2); }
 
 /* Below full desktop width seven columns get too cramped — wrap them. */
 @media (max-width: 1200px) {
@@ -1341,6 +1393,10 @@ input[type="number"] { -moz-appearance: textfield; }
     border-top: 1px solid var(--line);
   }
   .events-filters-body[data-open="true"] { display: block; }
+
+  /* On mobile the clear-all moves into the toggle header (next to the count
+     badge); the in-row desktop button is hidden. */
+  .events-filter-clear { display: none; }
 }
 
 @media (max-width: 480px) {
