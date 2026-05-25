@@ -755,6 +755,35 @@ input[type="number"] { -moz-appearance: textfield; }
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+/* MultiSelect — checkbox dropdown over a Popover, sharing the select look.
+   Compound selector outranks the later `.popover-content` padding rule. */
+.popover-content.multiselect-pop {
+  min-width: var(--radix-popover-trigger-width);
+  padding: 4px;
+}
+.select-item.is-multi { justify-content: flex-start; gap: 10px; }
+.select-item.is-multi.is-on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+.select-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line-2);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+.select-check[data-on] { background: var(--accent); border-color: var(--accent); }
+.select-item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .select-chev {
   position: absolute;
   right: 10px;
@@ -1242,8 +1271,16 @@ input[type="number"] { -moz-appearance: textfield; }
 .events-filter-foot {
   margin-top: 12px;
   display: flex;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
+.events-filter-net {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.events-filter-net .mono { font-size: 14px; font-weight: 500; }
 .events-filters-count {
   display: inline-grid;
   place-items: center;

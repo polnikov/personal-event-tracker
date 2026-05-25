@@ -9,6 +9,7 @@ import {
   Card,
   EventLineRow,
   Input,
+  MultiSelect,
   SearchableSelect,
   Select,
   Tabs,
@@ -98,7 +99,7 @@ export function EventsPage() {
   const nav = useNavigate();
   const [tab, setTab] = useState<TabKey>("future");
   const [catFilter, setCatFilter] = useState<string>("");
-  const [subcatFilter, setSubcatFilter] = useState<string>("");
+  const [subcatFilter, setSubcatFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<string>("");
   const [monthFilter, setMonthFilter] = useState<string>("");
   const [clientFilter, setClientFilter] = useState<string>("");
@@ -119,7 +120,7 @@ export function EventsPage() {
 
   const activeFilterCount =
     (catFilter ? 1 : 0) +
-    (subcatFilter ? 1 : 0) +
+    (subcatFilter.length ? 1 : 0) +
     (yearFilter ? 1 : 0) +
     (monthFilter ? 1 : 0) +
     (clientFilter ? 1 : 0) +
@@ -182,10 +183,8 @@ export function EventsPage() {
 
   // Reset dependent filters that fell out of range.
   useEffect(() => {
-    if (subcatFilter && !subcatOptions.find((o) => o.value === subcatFilter)) {
-      setSubcatFilter("");
-    }
-  }, [subcatOptions, subcatFilter]);
+    setSubcatFilter((prev) => prev.filter((v) => subcatOptions.some((o) => o.value === v)));
+  }, [subcatOptions]);
   useEffect(() => {
     if (monthFilter && !availableMonths.includes(Number(monthFilter))) {
       setMonthFilter("");
@@ -205,7 +204,7 @@ export function EventsPage() {
       const d = parseISO(e.start_at);
       const dKey = dayKey(e.start_at);
       if (catFilter && e.subcategory.category_id !== Number(catFilter)) return false;
-      if (subcatFilter && e.subcategory.id !== Number(subcatFilter)) return false;
+      if (subcatFilter.length && !subcatFilter.includes(String(e.subcategory.id))) return false;
       if (yearFilter && d.getFullYear() !== Number(yearFilter)) return false;
       if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) return false;
       if (clientFilter && (e.client?.id ?? -1) !== Number(clientFilter)) return false;
@@ -280,6 +279,13 @@ export function EventsPage() {
   const paginated = useMemo(
     () => paginateGroups(groups, limit),
     [groups, limit],
+  );
+
+  // Net income across everything matching the current filters (both tabs),
+  // shown next to the royalty toggle in the filters block.
+  const netTotal = useMemo(
+    () => filtered.reduce((s, e) => s + netOf(e), 0),
+    [filtered],
   );
 
   // --- Select options ---
@@ -373,7 +379,7 @@ export function EventsPage() {
               placeholder="Все категории"
               options={catOptions}
             />
-            <Select
+            <MultiSelect
               value={subcatFilter}
               onChange={setSubcatFilter}
               placeholder="Все подкатегории"
@@ -416,6 +422,10 @@ export function EventsPage() {
               onChange={setRoyaltyOnly}
               label="Роялти"
             />
+            <div className="events-filter-net">
+              <span className="muted small">Чистыми</span>
+              <span className="mono">{fmt.money(netTotal)} ₽</span>
+            </div>
           </div>
         </div>
       </Card>
