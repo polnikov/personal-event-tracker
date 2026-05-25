@@ -140,6 +140,8 @@ export const categories = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
+  removePrice: (priceId: number) =>
+    request<{ ok: true }>(`/categories/prices/${priceId}`, { method: "DELETE" }),
 };
 
 // ---------- Events ----------

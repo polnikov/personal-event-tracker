@@ -162,3 +162,16 @@ def update_price(price_id: int, payload: SubcategoryPriceCreate, db: Session = D
     db.commit()
     db.refresh(p)
     return SubcategoryPriceRead.model_validate(p)
+
+
+@router.delete("/prices/{price_id}")
+def delete_price(price_id: int, db: Session = Depends(get_db)):
+    # Safe for events: they snapshot the rate at creation and hold no link to
+    # a price row. Removing the last price just leaves the subcategory with no
+    # current price (auto-pricing then errors until a new one is added).
+    p = db.get(SubcategoryPrice, price_id)
+    if not p:
+        raise HTTPException(404)
+    db.delete(p)
+    db.commit()
+    return {"ok": True}

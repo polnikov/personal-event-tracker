@@ -438,6 +438,14 @@ function NewPriceModal({
   const [editPrice, setEditPrice] = useState("");
   const [editDate, setEditDate] = useState("");
 
+  // The `sub` prop is a snapshot from when the modal opened; render the price
+  // list from the live categories query so add/edit/delete reflect instantly.
+  const catsQuery = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
+  const prices =
+    catsQuery.data
+      ?.find((c) => c.id === cat.id)
+      ?.subcategories.find((s) => s.id === sub.id)?.prices ?? sub.prices;
+
   const create = useMutation({
     mutationFn: () =>
       categoriesApi.addPrice(sub.id, {
@@ -446,7 +454,9 @@ function NewPriceModal({
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
-      onClose();
+      // Keep the modal open so the new price shows in the live history list;
+      // clear the amount so it's ready for another entry.
+      setPrice("");
     },
   });
   const canSubmit = !!price && Number(price) > 0 && !!effectiveFrom && !create.isPending;
@@ -470,6 +480,11 @@ function NewPriceModal({
     setEditPrice(String(Number(p.price_per_hour)));
     setEditDate(p.effective_from.slice(0, 10));
   };
+
+  const remove = useMutation({
+    mutationFn: (priceId: number) => categoriesApi.removePrice(priceId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+  });
   return (
     <Modal
       open
@@ -512,11 +527,11 @@ function NewPriceModal({
             />
           </Field>
         </div>
-        {sub.prices.length > 0 && (
+        {prices.length > 0 && (
           <div>
             <div className="field-label" style={{ marginBottom: 8 }}>История цен</div>
             <div className="subcat-list">
-              {sub.prices.map((p) =>
+              {prices.map((p) =>
                 editingId === p.id ? (
                   <div key={p.id} className="price-edit-row">
                     <Input
@@ -553,13 +568,27 @@ function NewPriceModal({
                   <div key={p.id} className="subcat-row" style={{ margin: 0, padding: "6px 0" }}>
                     <span className="subcat-name">{fmt.fullDate(p.effective_from)}</span>
                     <span className="subcat-price mono">{fmt.money(p.price_per_hour)} ₽</span>
-                    <IconButton
-                      small
-                      onClick={() => startEdit(p)}
-                      aria-label="Редактировать цену"
-                    >
-                      <Edit3 size={13} />
-                    </IconButton>
+                    <span style={{ display: "flex", gap: 4 }}>
+                      <IconButton
+                        small
+                        onClick={() => startEdit(p)}
+                        aria-label="Редактировать цену"
+                      >
+                        <Edit3 size={13} />
+                      </IconButton>
+                      <IconButton
+                        small
+                        danger
+                        onClick={() => {
+                          if (confirm(`Удалить цену от ${fmt.fullDate(p.effective_from)}?`)) {
+                            remove.mutate(p.id);
+                          }
+                        }}
+                        aria-label="Удалить цену"
+                      >
+                        <Trash2 size={13} strokeWidth={1.6} />
+                      </IconButton>
+                    </span>
                   </div>
                 ),
               )}
