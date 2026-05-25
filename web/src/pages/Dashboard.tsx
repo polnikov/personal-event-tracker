@@ -285,7 +285,7 @@ export function DashboardPage() {
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["30%", "70%"] : ["35%", "65%"],
+          radius: isMobile ? ["30%", "80%"] : ["35%", "75%"],
           center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
