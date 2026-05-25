@@ -1135,18 +1135,18 @@ input[type="number"] { -moz-appearance: textfield; }
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; }
 @media (max-width: 800px) { .filter-row { grid-template-columns: 1fr; } }
 
-/* Events page: row 1 has four equal-width selects (cat, subcat, year, month);
-   row 2 client + date range; royalty toggle in a footer row below. */
-.filter-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.filter-row-2 {
+/* Events page: row 1 holds all seven filters on one line (cat, subcat, year,
+   month, client, начало, конец); royalty toggle sits in a footer row below. */
+.filter-row-events-7 {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 12px;
-  margin-top: 12px;
-}
-.filter-row-events-3 {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  /* cat · subcat · year · month · client · начало · конец. Every filter but
+     the client shrinks to just fit its longest text — native <select>s size
+     to their widest option via `auto`; the date pickers get a fixed width
+     that fits the full "d MMMM yyyy" label. Client takes all the rest. */
+  grid-template-columns:
+    auto auto auto auto
+    minmax(0, 1fr)
+    180px 180px;
   gap: 12px;
   align-items: center;
 }
@@ -1160,7 +1160,6 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .events-filters-toggle { display: none; }
 .events-filters-body { display: block; }
-.events-filters-body > .filter-row-events-3 { margin-top: 12px; }
 .events-filter-foot {
   margin-top: 12px;
   display: flex;
@@ -1180,18 +1179,13 @@ input[type="number"] { -moz-appearance: textfield; }
   font-feature-settings: 'tnum';
 }
 
+/* Below full desktop width seven columns get too cramped — wrap them. */
+@media (max-width: 1200px) {
+  .filter-row-events-7 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
 @media (max-width: 900px) {
-  .filter-row-4 { grid-template-columns: 1fr 1fr; }
-  .filter-row-2 { grid-template-columns: 1fr; }
-  .filter-row-events-3 {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "client client"
-      "from   to";
-  }
-  .filter-row-events-3 > :nth-child(1) { grid-area: client; }
-  .filter-row-events-3 > :nth-child(2) { grid-area: from; }
-  .filter-row-events-3 > :nth-child(3) { grid-area: to; }
+  .filter-row-events-7 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 800px) {
@@ -1234,12 +1228,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 
 @media (max-width: 480px) {
-  .filter-row-4 { grid-template-columns: 1fr; }
-  .filter-row-events-3 {
-    grid-template-columns: 1fr;
-    grid-template-areas: none;
-  }
-  .filter-row-events-3 > * { grid-area: auto !important; }
+  .filter-row-events-7 { grid-template-columns: 1fr; }
 }
 
 /* ============================================================

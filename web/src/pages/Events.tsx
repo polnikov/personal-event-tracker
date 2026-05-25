@@ -366,7 +366,7 @@ export function EventsPage() {
           />
         </button>
         <div className="events-filters-body" data-open={filtersOpen ? "true" : "false"}>
-          <div className="filter-row-4">
+          <div className="filter-row-events-7">
             <Select
               value={catFilter}
               onChange={setCatFilter}
@@ -391,8 +391,6 @@ export function EventsPage() {
               placeholder="Все месяцы"
               options={monthOptions}
             />
-          </div>
-          <div className="filter-row-events-3">
             <SearchableSelect
               value={clientFilter}
               onChange={setClientFilter}
@@ -402,21 +400,21 @@ export function EventsPage() {
             <DatePicker
               value={dateFrom}
               onChange={setDateFrom}
-              placeholder="С"
-              ariaLabel="С"
+              placeholder="Начало"
+              ariaLabel="Начало"
             />
             <DatePicker
               value={dateTo}
               onChange={setDateTo}
-              placeholder="По"
-              ariaLabel="По"
+              placeholder="Конец"
+              ariaLabel="Конец"
             />
           </div>
           <div className="events-filter-foot">
             <Toggle
               checked={royaltyOnly}
               onChange={setRoyaltyOnly}
-              label="Только с роялти"
+              label="Роялти"
             />
           </div>
         </div>
