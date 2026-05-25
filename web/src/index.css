@@ -497,7 +497,7 @@
   display: grid;
   place-items: center;
 }
-.input, .textarea, .select {
+.input, .textarea {
   width: 100%;
   background: var(--bg);
   border: 1px solid var(--line);
@@ -508,8 +508,8 @@
   outline: none;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
-.input:hover, .textarea:hover, .select:hover { border-color: var(--line-2); }
-.input:focus, .textarea:focus, .select:focus {
+.input:hover, .textarea:hover { border-color: var(--line-2); }
+.input:focus, .textarea:focus {
   background: var(--surface);
   border-color: var(--ink);
   box-shadow: 0 0 0 3px rgba(42,42,46,0.06);
@@ -554,7 +554,7 @@ input[type="color"].color-round::-moz-color-swatch { border: 0; border-radius: 9
 }
 .color-picker-pop {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 6px);
   left: 0;
   z-index: 110;
   background: var(--surface);
@@ -563,7 +563,8 @@ input[type="color"].color-round::-moz-color-swatch { border: 0; border-radius: 9
   box-shadow: var(--shadow-3);
   padding: 12px;
   min-width: 220px;
-  animation: fadeIn 0.12s ease;
+  transform-origin: top center;
+  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .color-picker-label {
   font-size: 11px;
@@ -663,22 +664,97 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 input[type="number"] { -moz-appearance: textfield; }
 
-.select-wrap { position: relative; }
-.select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  padding-right: 32px;
-  cursor: pointer;
-}
-.select optgroup,
-.select option {
-  font-style: normal;
-  font-weight: 500;
+/* Select — Radix dropdown: trigger button + portalled content.
+   Styled to match the app's inputs (trigger) and Popover dropdowns (content),
+   reusing the shared `dropdownIn` open animation. */
+.select-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 9px 34px 9px 12px;
+  font-size: 13.5px;
+  line-height: 1.3;
   color: var(--ink);
-  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
 }
-.select optgroup option { font-weight: 400; padding-left: 12px; }
+.select-trigger:hover { border-color: var(--line-2); }
+.select-trigger:focus-visible,
+.select-trigger[data-state="open"] {
+  outline: none;
+  background: var(--surface);
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(42, 42, 46, 0.06);
+}
+.select-trigger[data-placeholder] .select-value { color: var(--muted); }
+.select-trigger[data-disabled] { opacity: 0.55; cursor: not-allowed; }
+/* In-flow but invisible: reserves the trigger's width for the widest option
+   so the closed control never resizes on selection (like a native select). */
+.select-sizer { visibility: hidden; white-space: nowrap; pointer-events: none; }
+.select-value {
+  position: absolute;
+  left: 12px;
+  right: 34px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.select-content {
+  z-index: 130;
+  min-width: var(--radix-select-trigger-width);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-3);
+  padding: 4px;
+  transform-origin: var(--radix-select-content-transform-origin, top center);
+  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.select-viewport { max-height: 300px; overflow-y: auto; }
+.select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.select-item[data-highlighted] { background: var(--bg-2); }
+.select-item[data-state="checked"] {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+.select-item-check { display: grid; place-items: center; color: var(--accent-ink); flex-shrink: 0; }
+.select-group-label {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 .select-chev {
   position: absolute;
   right: 10px;
@@ -704,7 +780,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .searchable-select-list {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
   right: 0;
   z-index: 100;
@@ -715,6 +791,8 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: var(--r-md);
   box-shadow: var(--shadow-3);
   padding: 4px;
+  transform-origin: top center;
+  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .searchable-select-item {
   display: block;
@@ -747,7 +825,8 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: var(--shadow-3);
   padding: 6px;
   z-index: 120;
-  animation: fadeIn 0.12s ease;
+  transform-origin: var(--radix-popover-content-transform-origin, top center);
+  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .datepicker-trigger {
@@ -2636,6 +2715,16 @@ a.cd2-name:hover {
 
 @keyframes fadeIn { from { opacity: 0; } }
 @keyframes popIn { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } }
+/* Shared dropdown open: gentle fade + settle, eased out so it never jerks. */
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popover-content,
+  .searchable-select-list,
+  .color-picker-pop { animation-duration: 0.01ms; }
+}
 
 /* ============================================================
    Empty
@@ -2688,10 +2777,9 @@ a.cd2-name:hover {
   /* Mobile rounds one step larger so the modal corners match the cd2 hero. */
   :root { --r-lg: 22px; }
 
-  /* Prevent iOS auto-zoom on focused inputs. Explicit line-height so the
-     native <select> (subcategory) renders at the same visual rhythm as
-     the <input> used by the SearchableSelect (client). */
-  .input, .textarea, .select {
+  /* Prevent iOS auto-zoom on focused inputs and keep the Select trigger at the
+     same visual rhythm as the <input> used by the SearchableSelect (client). */
+  .input, .textarea, .select-trigger {
     font-size: 16px;
     line-height: 1.4;
   }
