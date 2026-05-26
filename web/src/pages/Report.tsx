@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format, parse } from "date-fns";
 import { ru } from "date-fns/locale";
+import { ChevronDown, FilterX } from "lucide-react";
 import {
   Card,
   Select,
@@ -125,6 +126,12 @@ export function ReportPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [categoryId, setCategoryId] = useState<string>("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Только categoryId — это «фильтр». Year/Month — это навигация по периоду,
+  // их сброс по кнопке «очистить» сбивал бы пользователя, поэтому не учитываем.
+  const activeFilterCount = categoryId ? 1 : 0;
+  const clearAllFilters = () => setCategoryId("");
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
 
@@ -157,7 +164,11 @@ export function ReportPage() {
     () =>
       Array.from({ length: 12 }, (_, i) => {
         const d = parse(String(i + 1), "M", new Date());
-        return { value: String(i + 1), label: format(d, "LLLL", { locale: ru }) };
+        const name = format(d, "LLLL", { locale: ru });
+        return {
+          value: String(i + 1),
+          label: name.charAt(0).toUpperCase() + name.slice(1),
+        };
       }),
     [],
   );
@@ -527,26 +538,66 @@ export function ReportPage() {
         </div>
       </div>
 
-      <Card padding="p-4">
-        <div className="filter-row">
-          <Select
-            value={String(year)}
-            onChange={(v) => setYear(Number(v))}
-            options={yearOptions}
+      <Card padding="p-4" className="events-filters report-filters">
+        <button
+          type="button"
+          className="events-filters-toggle"
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-expanded={filtersOpen}
+        >
+          <span>Фильтры</span>
+          {activeFilterCount > 0 && (
+            <span className="events-filters-count">{activeFilterCount}</span>
+          )}
+          {activeFilterCount > 0 && (
+            <span
+              role="button"
+              tabIndex={0}
+              className="events-filters-clear-mobile"
+              aria-label="Очистить фильтры"
+              title="Очистить"
+              onClick={(e) => {
+                e.stopPropagation();
+                clearAllFilters();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  clearAllFilters();
+                }
+              }}
+            >
+              <FilterX size={15} />
+            </span>
+          )}
+          <ChevronDown
+            size={16}
+            className="events-filters-caret"
+            style={{ transform: filtersOpen ? "rotate(180deg)" : "none" }}
           />
-          <Select
-            value={String(month)}
-            onChange={(v) => setMonth(Number(v))}
-            options={monthOptions}
-          />
-          <Select
-            value={categoryId || "all"}
-            onChange={(v) => setCategoryId(v === "all" ? "" : v)}
-            options={[
-              { value: "all", label: "Все категории" },
-              ...((cats.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))),
-            ]}
-          />
+        </button>
+        <div className="events-filters-body" data-open={filtersOpen ? "true" : "false"}>
+          <div className="filter-row">
+            <Select
+              value={String(year)}
+              onChange={(v) => setYear(Number(v))}
+              options={yearOptions}
+            />
+            <Select
+              value={String(month)}
+              onChange={(v) => setMonth(Number(v))}
+              options={monthOptions}
+            />
+            <Select
+              value={categoryId || "all"}
+              onChange={(v) => setCategoryId(v === "all" ? "" : v)}
+              options={[
+                { value: "all", label: "Все категории" },
+                ...((cats.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))),
+              ]}
+            />
+          </div>
         </div>
       </Card>
 

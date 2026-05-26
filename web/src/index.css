@@ -1370,13 +1370,23 @@ input[type="number"] { -moz-appearance: textfield; }
      sit 12px apart. */
   .page { gap: 12px; }
 
+  /* Report (мобильный): фильтры — sticky top с зазором 19px от верха
+     вьюпорта, чтобы тогглер не прилипал вплотную. */
+  .card.report-filters {
+    position: sticky;
+    top: 19px;
+    z-index: 20;
+  }
+
   /* Flatten controls into the toolbar so search / filters / tabs can be
-     reordered as independent flex items. */
+     reordered as independent flex items. Scoped to .events-toolbar so the
+     order: 2 on .events-filters doesn't leak to Report (which reuses the
+     events-filters class for its collapsible filter card). */
   .events-toolbar { display: flex; flex-direction: column; gap: 12px; }
-  .events-controls { display: contents; }
-  .events-search { margin-left: 0; width: 100%; order: 1; }
-  .events-filters { order: 2; }
-  .events-tabs { order: 3; }
+  .events-toolbar .events-controls { display: contents; }
+  .events-toolbar .events-search { margin-left: 0; width: 100%; order: 1; }
+  .events-toolbar .events-filters { order: 2; }
+  .events-toolbar .events-tabs { order: 3; }
 
   /* The filters card matches the event cards' radius; the search input and
      tab radius are now handled app-wide (see the .view-switcher mobile
