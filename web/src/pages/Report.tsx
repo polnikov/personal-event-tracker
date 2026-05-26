@@ -128,10 +128,19 @@ export function ReportPage() {
   const [categoryId, setCategoryId] = useState<string>("");
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Только categoryId — это «фильтр». Year/Month — это навигация по периоду,
-  // их сброс по кнопке «очистить» сбивал бы пользователя, поэтому не учитываем.
-  const activeFilterCount = categoryId ? 1 : 0;
-  const clearAllFilters = () => setCategoryId("");
+  // Кнопка «Очистить» активна, если выбрана категория ИЛИ месяц/год не текущие.
+  // Сброс возвращает год, месяц и категорию к значениям по умолчанию.
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth() + 1;
+  const activeFilterCount =
+    (categoryId ? 1 : 0) +
+    (year !== todayYear ? 1 : 0) +
+    (month !== todayMonth ? 1 : 0);
+  const clearAllFilters = () => {
+    setYear(todayYear);
+    setMonth(todayMonth);
+    setCategoryId("");
+  };
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
 
