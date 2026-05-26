@@ -283,18 +283,23 @@ def outbox(
     rows = db.execute(stmt).all()
     out: list[GoogleOutboxRow] = []
     for row, event in rows:
-        summary = None
+        # Prefer the snapshot captured at enqueue time so deleted events still
+        # show a meaningful title. Fall back to the live join (legacy rows
+        # written before the snapshot column existed have summary = NULL).
+        summary = row.summary
         client_name = None
         subcategory_label = None
         event_start_at = None
         if event is not None and event.subcategory is not None:
             cat = event.subcategory.category
-            summary = f"{cat.name} | {event.subcategory.name}"
             subcategory_label = f"{cat.name} · {event.subcategory.name}"
             if event.client is not None:
                 client_name = event.client.full_name
-                summary += f" · {client_name}"
             event_start_at = event.start_at
+            if not summary:
+                summary = f"{cat.name} | {event.subcategory.name}"
+                if client_name:
+                    summary += f" · {client_name}"
         out.append(
             GoogleOutboxRow(
                 id=row.id,

@@ -169,7 +169,11 @@ function OutboxRow({
   };
 
   const eventClickable = row.event_id !== null;
-  const clientLabel = row.client_name ?? "(событие удалено)";
+  // Когда событие удалено, клиент уже не доступен по join — показываем
+  // снимок заголовка («Категория | Подкатегория · Клиент»), сохранённый
+  // в outbox при постановке в очередь.
+  const clientLabel =
+    row.client_name ?? row.event_summary ?? "(событие удалено)";
 
   return (
     <div className="debug-row">

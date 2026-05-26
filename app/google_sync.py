@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, selectinload
 
 from google.auth.transport.requests import Request as GoogleRequest
@@ -120,16 +120,61 @@ def event_to_google_body(event: Event) -> dict:
 # ───────────────────────── outbox enqueue ─────────────────────────
 
 
+OUTBOX_MAX_ROWS = 50
+OUTBOX_MAX_AGE_DAYS = 30
+
+
+def _event_label(event: Event) -> str | None:
+    """Compact human-readable label for the Debug UI:
+    "Категория | Подкатегория · Клиент" (client part omitted if absent)."""
+    if event is None or event.subcategory is None:
+        return None
+    cat = event.subcategory.category
+    label = f"{cat.name} | {event.subcategory.name}"
+    if event.client is not None:
+        label += f" · {event.client.full_name}"
+    return label
+
+
+def _prune_outbox(db: Session) -> None:
+    """Enforce the outbox retention policy: drop anything older than
+    OUTBOX_MAX_AGE_DAYS and keep at most OUTBOX_MAX_ROWS rows (newest)."""
+    cutoff = datetime.utcnow() - timedelta(days=OUTBOX_MAX_AGE_DAYS)
+    db.execute(delete(GoogleSyncOutbox).where(GoogleSyncOutbox.created_at < cutoff))
+    # Make freshly-added rows visible to the subquery (session has autoflush=False).
+    db.flush()
+    keep_ids = list(
+        db.execute(
+            select(GoogleSyncOutbox.id)
+            .order_by(GoogleSyncOutbox.created_at.desc(), GoogleSyncOutbox.id.desc())
+            .limit(OUTBOX_MAX_ROWS)
+        ).scalars().all()
+    )
+    if keep_ids:
+        db.execute(
+            delete(GoogleSyncOutbox).where(GoogleSyncOutbox.id.notin_(keep_ids))
+        )
+
+
 def enqueue_for_event(db: Session, event: Event, *, op_hint: OpHint) -> None:
-    """Append the right outbox rows for a just-mutated event.
+    """Append the right outbox rows for a just-mutated event, then enforce
+    the outbox retention policy.
 
     Must be called BEFORE the commit so the new rows land in the same
     transaction as the mutation. Reads `event.subcategory.category` for
     the desired calendar and compares against the snapshot on the event
     itself (google_calendar_id / google_event_id)."""
+    _enqueue_for_event_impl(db, event, op_hint=op_hint)
+    _prune_outbox(db)
+
+
+def _enqueue_for_event_impl(db: Session, event: Event, *, op_hint: OpHint) -> None:
     desired_cal = event.subcategory.category.google_calendar_id if event.subcategory else None
     actual_cal = event.google_calendar_id
     actual_gid = event.google_event_id
+    # Snapshot a human-readable label so the Debug UI survives the event
+    # being deleted later (event_id is SET NULL on cascade).
+    label = _event_label(event)
 
     if op_hint == "delete":
         if actual_cal and actual_gid:
@@ -138,6 +183,7 @@ def enqueue_for_event(db: Session, event: Event, *, op_hint: OpHint) -> None:
                 calendar_id=actual_cal,
                 google_event_id=actual_gid,
                 payload_json="{}",
+                summary=label,
             ))
         return
 
@@ -152,6 +198,7 @@ def enqueue_for_event(db: Session, event: Event, *, op_hint: OpHint) -> None:
                 op="create",
                 calendar_id=desired_cal,
                 payload_json=payload,
+                summary=label,
             ))
         return
 
@@ -163,6 +210,7 @@ def enqueue_for_event(db: Session, event: Event, *, op_hint: OpHint) -> None:
             calendar_id=desired_cal,
             google_event_id=actual_gid,
             payload_json=payload,
+            summary=label,
         ))
         return
 
@@ -173,6 +221,7 @@ def enqueue_for_event(db: Session, event: Event, *, op_hint: OpHint) -> None:
             calendar_id=actual_cal,
             google_event_id=actual_gid,
             payload_json="{}",
+            summary=label,
         ))
         # Clear the snapshot so a future re-enable creates fresh.
         event.google_event_id = None
@@ -186,12 +235,14 @@ def enqueue_for_event(db: Session, event: Event, *, op_hint: OpHint) -> None:
             calendar_id=actual_cal,
             google_event_id=actual_gid,
             payload_json="{}",
+            summary=label,
         ))
         db.add(GoogleSyncOutbox(
             event_id=event.id,
             op="create",
             calendar_id=desired_cal,
             payload_json=payload,
+            summary=label,
         ))
         event.google_event_id = None
         event.google_calendar_id = None

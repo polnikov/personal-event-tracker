@@ -160,5 +160,9 @@ class GoogleSyncOutbox(Base):
         DateTime, nullable=False, server_default=func.now()
     )
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Snapshotted human-readable label ("Категория | Подкатегория · Клиент"),
+    # captured at enqueue time so the Debug UI can still show what the row was
+    # about after the underlying event is deleted (event_id → NULL).
+    summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
