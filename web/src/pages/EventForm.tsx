@@ -299,7 +299,7 @@ export function EventForm({
   return (
     <>
       {error && <div className="login-error" style={{ marginBottom: 16 }}>{error}</div>}
-      <form onSubmit={form.handleSubmit(onSubmit)} className="form">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="form event-form">
         <div className="form-grid-2">
           <Field label="Подкатегория" error={form.formState.errors.subcategory_id?.message}>
             <Select

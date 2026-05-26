@@ -3199,4 +3199,55 @@ a.cd2-name:hover {
     padding: 8px 10px;
     line-height: 1.2;
   }
+
+  /* EventForm (мобильный): все контролы на 13.5px с высотой 38 + radius
+     var(--r-md) — как у Подкатегории. Поле даты-времени в две равные
+     колонки, и убран верхний разделитель перед action-кнопками. */
+  .event-form .input,
+  .event-form .select-trigger,
+  .event-form .datepicker-trigger,
+  .event-form .textarea {
+    font-size: 13.5px;
+    line-height: 1.3;
+    border-radius: var(--r-md);
+  }
+  .event-form .input,
+  .event-form .select-trigger,
+  .event-form .datepicker-trigger {
+    height: 38px;
+    min-height: 38px;
+  }
+  .event-form .input::placeholder { font-size: 13.5px; }
+  /* Перебиваем выше идущее правило для native time/date inputs (0,2,1),
+     чтобы их высота тоже совпадала с Подкатегорией. */
+  .event-form input[type="time"].input,
+  .event-form input[type="date"].input,
+  .event-form input[type="datetime-local"].input {
+    min-height: 38px;
+    padding: 9px 12px;
+    line-height: 1.3;
+  }
+  /* Длительность: 5 пресет-чипов на всю ширину поля, равные между собой
+     (вместо inline-обтекания с разными ширинами). */
+  .event-form .dur-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .event-form .dur-row .chip {
+    padding: 6px 4px;            /* меньше боковых отступов, чтобы метки уверенно помещались */
+    width: 100%;
+    height: 38px;                /* высота как у остальных элементов формы */
+    min-height: 38px;            /* перебивает мобильный .chip min-height: 44 */
+    border-radius: var(--r-md);  /* радиус как у остальных элементов формы */
+    justify-content: center;     /* центрируем подпись в inline-flex чипе */
+    text-align: center;
+  }
+  /* Без верхней линии перед action-кнопками. */
+  .event-form .form-actions,
+  .modal-body .event-form .form-actions {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 0;
+  }
 }
