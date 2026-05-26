@@ -348,7 +348,7 @@ export function ReportPage() {
     const taxColor = "oklch(0.78 0.10 145)";
 
     return {
-      grid: { top: 25, right: 16, bottom: 28, left: GRID_LEFT_FLUSH, containLabel: true },
+      grid: { top: 25, right: 16, bottom: 5, left: GRID_LEFT_FLUSH, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
