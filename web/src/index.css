@@ -2303,6 +2303,10 @@ input[type="number"] { -moz-appearance: textfield; }
   border-left: 1px solid var(--line);
 }
 .week-time-col.today { background: oklch(0.99 0.01 145); }
+/* In-flow row per hour — provides the horizontal separators inside a day
+   column (events overlay these via position:absolute). */
+.week-time-col-hour { border-top: 1px solid var(--line); }
+.week-time-col-hour:first-child { border-top: 0; }
 .week-time-event {
   position: absolute;
   left: 4px;
