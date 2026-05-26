@@ -279,6 +279,7 @@ export function ReportPage() {
         backgroundColor: "rgba(255, 255, 255, 0.6)",
         extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
         borderRadius: 16,
+        borderColor: "#ECEAE3",
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (p: unknown) => {
