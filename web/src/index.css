@@ -2316,9 +2316,6 @@ input[type="number"] { -moz-appearance: textfield; }
   display: grid;
   grid-template-columns: 56px repeat(var(--cal-days, 7), 1fr);
   position: relative;
-  /* Room for the first hour label, which is centred on the row's top line
-     (translateY(-50%)) and would otherwise be clipped at the top. */
-  padding-top: 8px;
 }
 .week-time-hours {
   position: relative;
