@@ -6,6 +6,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_auth
+from ..clock import now_local
 from ..database import get_db
 from ..models import Event, Subcategory
 from ..schemas import (
@@ -49,7 +50,7 @@ def dashboard(
     client_id: int | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    now = datetime.now()
+    now = now_local()
     if period == "all":
         start = datetime(1900, 1, 1)
         end = datetime(2100, 12, 31)

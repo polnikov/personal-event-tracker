@@ -4,6 +4,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_auth
+from ..clock import now_local
 from ..database import get_db
 from ..google_sync import enqueue_for_event
 from ..google_sync_worker import kick_worker
@@ -99,7 +100,7 @@ def list_events(
         stmt = stmt.where(and_(*conds))
 
     events = db.execute(stmt).scalars().all()
-    now = datetime.now()
+    now = now_local()
     future = sorted([e for e in events if e.start_at >= now], key=lambda e: e.start_at)
     past = [e for e in events if e.start_at < now]
 
@@ -119,7 +120,7 @@ def upcoming(limit: int = 10, db: Session = Depends(get_db)):
                 selectinload(Event.subcategory).selectinload(Subcategory.category),
                 selectinload(Event.client),
             )
-            .where(Event.start_at >= datetime.now())
+            .where(Event.start_at >= now_local())
             .order_by(Event.start_at)
             .limit(limit)
         )

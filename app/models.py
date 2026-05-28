@@ -1,7 +1,8 @@
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Numeric, Text, func, Index
+from sqlalchemy import String, Integer, ForeignKey, DateTime, Numeric, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from .clock import now_local
 from .database import Base
 
 
@@ -13,7 +14,7 @@ class Category(Base):
     color: Mapped[str] = mapped_column(String(7), default="#3b82f6")
     icon: Mapped[str | None] = mapped_column(String(64), nullable=True)
     google_calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     subcategories: Mapped[list["Subcategory"]] = relationship(
         back_populates="category", cascade="all, delete-orphan"
@@ -28,7 +29,7 @@ class Subcategory(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     icon: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     category: Mapped[Category] = relationship(back_populates="subcategories")
     prices: Mapped[list["SubcategoryPrice"]] = relationship(
@@ -52,7 +53,7 @@ class SubcategoryPrice(Base):
     )
     price_per_hour: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     effective_from: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     subcategory: Mapped[Subcategory] = relationship(back_populates="prices")
 
@@ -66,7 +67,7 @@ class Client(Base):
     phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     telegram: Mapped[str | None] = mapped_column(String(100), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     events: Mapped[list["Event"]] = relationship(back_populates="client")
 
@@ -105,9 +106,9 @@ class Event(Base):
     # delete-old + create-new instead of a futile patch on the wrong cal.
     google_calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     google_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now()
+        DateTime, default=now_local, onupdate=now_local
     )
 
     subcategory: Mapped[Subcategory] = relationship(back_populates="events")
@@ -132,7 +133,7 @@ class GoogleAccount(Base):
     scopes: Mapped[str] = mapped_column(Text, nullable=False, default="")
     connected_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now()
+        DateTime, default=now_local, onupdate=now_local
     )
 
 
@@ -157,12 +158,12 @@ class GoogleSyncOutbox(Base):
     payload_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     next_attempt_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, server_default=func.now()
+        DateTime, nullable=False, default=now_local
     )
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Snapshotted human-readable label ("Категория | Подкатегория · Клиент"),
     # captured at enqueue time so the Debug UI can still show what the row was
     # about after the underlying event is deleted (event_id → NULL).
     summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

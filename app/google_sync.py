@@ -20,6 +20,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from .clock import now_local
 from .config import settings
 from .models import Event, GoogleAccount, GoogleSyncOutbox, Subcategory
 
@@ -139,7 +140,7 @@ def _event_label(event: Event) -> str | None:
 def _prune_outbox(db: Session) -> None:
     """Enforce the outbox retention policy: drop anything older than
     OUTBOX_MAX_AGE_DAYS and keep at most OUTBOX_MAX_ROWS rows (newest)."""
-    cutoff = datetime.utcnow() - timedelta(days=OUTBOX_MAX_AGE_DAYS)
+    cutoff = now_local() - timedelta(days=OUTBOX_MAX_AGE_DAYS)
     db.execute(delete(GoogleSyncOutbox).where(GoogleSyncOutbox.created_at < cutoff))
     # Make freshly-added rows visible to the subquery (session has autoflush=False).
     db.flush()
@@ -316,7 +317,7 @@ def _apply_op(service, row: GoogleSyncOutbox, db: Session) -> tuple[bool, str | 
 def process_due_outbox_rows(db: Session, batch_size: int = 20) -> int:
     """Process up to `batch_size` due outbox rows. Returns the number of
     rows processed (success or failure)."""
-    now = datetime.utcnow()
+    now = now_local()
     rows = (
         db.execute(
             select(GoogleSyncOutbox)
@@ -346,12 +347,12 @@ def process_due_outbox_rows(db: Session, batch_size: int = 20) -> int:
     for row in rows:
         ok, err = _apply_op(service, row, db)
         if ok:
-            row.completed_at = datetime.utcnow()
+            row.completed_at = now_local()
             row.last_error = None
         else:
             row.attempts += 1
             row.last_error = err
-            row.next_attempt_at = datetime.utcnow() + timedelta(seconds=_backoff_seconds(row.attempts))
+            row.next_attempt_at = now_local() + timedelta(seconds=_backoff_seconds(row.attempts))
         db.commit()
         processed += 1
     return processed

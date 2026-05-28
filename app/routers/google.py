@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import secrets
-from datetime import datetime
 from typing import Literal
 
 import httpx
@@ -17,6 +16,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..auth import require_auth
+from ..clock import now_local
 from ..config import settings
 from ..database import get_db
 from ..google_sync import (
@@ -327,7 +327,7 @@ def retry_outbox(row_id: int, db: Session = Depends(get_db)):
     if not row:
         raise HTTPException(404)
     row.attempts = 0
-    row.next_attempt_at = datetime.utcnow()
+    row.next_attempt_at = now_local()
     row.last_error = None
     row.completed_at = None
     db.commit()
@@ -340,7 +340,7 @@ def dismiss_outbox(row_id: int, db: Session = Depends(get_db)):
     row = db.get(GoogleSyncOutbox, row_id)
     if not row:
         raise HTTPException(404)
-    row.completed_at = datetime.utcnow()
+    row.completed_at = now_local()
     row.last_error = (row.last_error or "") + " | dismissed by user"
     db.commit()
     return {"ok": True}

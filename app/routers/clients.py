@@ -5,6 +5,7 @@ from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_auth
+from ..clock import now_local
 from ..database import get_db
 from ..models import Client, Event, Subcategory
 from ..schemas import (
@@ -169,7 +170,7 @@ def client_detail(client_id: int, db: Session = Depends(get_db)):
         b["minutes"] += e.duration_minutes
         b["cost"] += e.total_cost
 
-    now = datetime.now()
+    now = now_local()
     future = sorted([e for e in events if e.start_at >= now], key=lambda e: e.start_at)
     past = [e for e in events if e.start_at < now]
 

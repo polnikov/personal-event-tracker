@@ -1,9 +1,9 @@
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_auth
+from ..clock import now_local
 from ..database import get_db
 from ..models import Category, Subcategory, SubcategoryPrice
 from ..schemas import (
@@ -92,7 +92,7 @@ def create_subcategory(cat_id: int, payload: SubcategoryCreate, db: Session = De
         SubcategoryPrice(
             subcategory_id=sub.id,
             price_per_hour=payload.initial_price,
-            effective_from=payload.effective_from or datetime.now(),
+            effective_from=payload.effective_from or now_local(),
         )
     )
     db.commit()
