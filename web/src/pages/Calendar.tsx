@@ -407,7 +407,9 @@ function WeekView({
             <div className="week-time-hours" style={{ height: totalHeight }}>
               {hours.map((h, i) => (
                 <div key={h} className="week-time-hour" style={{ height: hourHeights[i] }}>
-                  {String(h).padStart(2, "0")}:00
+                  <span className="week-time-hour-label">
+                    {String(h).padStart(2, "0")}:00
+                  </span>
                 </div>
               ))}
             </div>

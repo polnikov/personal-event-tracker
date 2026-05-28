@@ -2316,21 +2316,31 @@ input[type="number"] { -moz-appearance: textfield; }
   display: grid;
   grid-template-columns: 56px repeat(var(--cal-days, 7), 1fr);
   position: relative;
+  /* Room for the first hour label, which is centred on the row's top line
+     (translateY(-50%)) and would otherwise be clipped at the top. */
+  padding-top: 8px;
 }
 .week-time-hours {
   position: relative;
   border-right: 1px solid var(--line);
 }
+/* Time gutter: no horizontal lines; each label is centred on the gridline
+   marking the START of its hour (top edge of the hour block). */
 .week-time-hour {
-  font-size: 10.5px;
-  color: var(--muted);
-  font-feature-settings: 'tnum';
-  padding: 2px 8px 0 6px;
-  text-align: right;
-  border-top: 1px solid var(--line);
+  position: relative;
   background: var(--surface);
 }
-.week-time-hour:first-child { border-top: 0; }
+.week-time-hour-label {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 10.5px;
+  line-height: 1;
+  color: var(--muted);
+  font-feature-settings: 'tnum';
+  white-space: nowrap;
+}
 .week-time-col {
   position: relative;
   border-left: 1px solid var(--line);
