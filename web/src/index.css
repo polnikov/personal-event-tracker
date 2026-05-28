@@ -2108,7 +2108,10 @@ input[type="number"] { -moz-appearance: textfield; }
 .cal-cell:not(.today) .cal-num:hover {
   background: color-mix(in oklab, var(--ink) 10%, transparent);
 }
-.cal-events { display: flex; flex-direction: column; gap: 3px; }
+/* Контейнер событий не перехватывает тапы (чтобы тап по пустому месту ячейки
+   всегда доходил до .cal-cell → создание события на тач-устройствах); сами
+   карточки событий возвращают pointer-events для своих обработчиков. */
+.cal-events { display: flex; flex-direction: column; gap: 3px; pointer-events: none; }
 .cal-event {
   display: flex;
   flex-direction: column;
@@ -2118,6 +2121,7 @@ input[type="number"] { -moz-appearance: textfield; }
   background: color-mix(in oklab, var(--cat) 14%, white);
   border-left: 2px solid var(--cat);
   cursor: pointer;
+  pointer-events: auto;
   font-size: 11.5px;
   overflow: hidden;
   transition: background 0.12s;
@@ -2334,8 +2338,12 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .week-time-col.today { background: oklch(0.99 0.01 145); }
 /* In-flow row per hour — provides the horizontal separators inside a day
-   column (events overlay these via position:absolute). */
-.week-time-col-hour { border-top: 1px solid var(--line); }
+   column (events overlay these via position:absolute).
+   pointer-events:none пропускает тапы/клики сквозь фон к самой колонке — иначе на
+   тач-устройствах тап по этому дочернему div не порождает click на родителе
+   (click-to-create не срабатывал бы на мобильном). События выше — со своим
+   pointer-events (auto по умолчанию), остаются кликабельными. */
+.week-time-col-hour { border-top: 1px solid var(--line); pointer-events: none; }
 .week-time-col-hour:first-child { border-top: 0; }
 .week-time-event {
   position: absolute;
