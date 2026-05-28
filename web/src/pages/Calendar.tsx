@@ -17,8 +17,7 @@ type View = "month" | "week" | "3days";
 /** Local midnight of a date — start of the "3 дня" window. */
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-const HOUR_HEIGHT = 56;          // full height for hours that contain events
-const EMPTY_HOUR_HEIGHT = 20;    // collapsed height for empty hours (just fits the label)
+const HOUR_HEIGHT = 56;
 const START_HOUR = 6;
 const END_HOUR = 23;
 const HOUR_COUNT = END_HOUR - START_HOUR + 1;
@@ -337,54 +336,21 @@ function WeekView({
   const todayKey = today.toDateString();
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => START_HOUR + i);
 
-  // Mark which hours are "busy" — covered by at least one event across the
-  // visible days. Busy hours keep the full height; empty hours collapse so
-  // the grid focuses on the times that actually have events.
-  const hourBusy = new Array<boolean>(HOUR_COUNT).fill(false);
-  for (const d of days) {
-    const evs = eventsByDay.get(d.toDateString()) ?? [];
-    for (const e of evs) {
-      const s = new Date(e.start);
-      const en = new Date(e.end);
-      const startMins = s.getHours() * 60 + s.getMinutes();
-      const endMins = en.getHours() * 60 + en.getMinutes();
-      const startH = Math.floor(startMins / 60);
-      const endH = Math.max(startH, Math.ceil(endMins / 60) - 1);
-      for (let h = Math.max(startH, START_HOUR); h <= Math.min(endH, END_HOUR); h++) {
-        hourBusy[h - START_HOUR] = true;
-      }
-    }
-  }
-  const hourHeights = hourBusy.map((b) => (b ? HOUR_HEIGHT : EMPTY_HOUR_HEIGHT));
-  const hourOffsets: number[] = [0];
-  for (const h of hourHeights) hourOffsets.push(hourOffsets[hourOffsets.length - 1] + h);
-  const totalHeight = hourOffsets[HOUR_COUNT];
+  // Uniform grid: every hour gets the full height.
+  const hourHeights = new Array<number>(HOUR_COUNT).fill(HOUR_HEIGHT);
+  const totalHeight = HOUR_HEIGHT * HOUR_COUNT;
 
-  // Map a minute-of-day to its pixel offset within the column, respecting
-  // per-hour heights. Events sit entirely inside busy hours so their internal
-  // proportions stay correct (full HOUR_HEIGHT per spanned hour).
+  // Minute-of-day → pixel offset within a column (uniform per-hour height).
   const minsToY = (mins: number): number => {
     const clamped = Math.max(START_HOUR * 60, Math.min(mins, (END_HOUR + 1) * 60));
-    const h = Math.floor(clamped / 60);
-    const i = h - START_HOUR;
-    if (i >= HOUR_COUNT) return hourOffsets[HOUR_COUNT];
-    const frac = (clamped - h * 60) / 60;
-    return hourOffsets[i] + frac * hourHeights[i];
+    return ((clamped - START_HOUR * 60) / 60) * HOUR_HEIGHT;
   };
 
-  // Inverse of minsToY: pixel offset within a column → minute-of-day, snapped
-  // to 15-minute steps. Used by click-to-create on an empty slot.
+  // Inverse of minsToY, snapped to 30-minute steps. Used by click-to-create.
   const yToMins = (y: number): number => {
-    let mins = (END_HOUR + 1) * 60;
-    for (let i = 0; i < HOUR_COUNT; i++) {
-      if (y < hourOffsets[i + 1]) {
-        const frac = (y - hourOffsets[i]) / hourHeights[i];
-        mins = (START_HOUR + i) * 60 + frac * 60;
-        break;
-      }
-    }
-    const snapped = Math.round(mins / 15) * 15;
-    return Math.max(START_HOUR * 60, Math.min(snapped, END_HOUR * 60 + 45));
+    const mins = START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
+    const snapped = Math.round(mins / 30) * 30;
+    return Math.max(START_HOUR * 60, Math.min(snapped, END_HOUR * 60 + 30));
   };
 
   return (
