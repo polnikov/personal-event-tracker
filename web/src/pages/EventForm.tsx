@@ -50,6 +50,9 @@ interface EventFormProps {
   copyId?: number;
   /** Optional client id prefill for a brand-new event. */
   prefillClient?: string;
+  /** Optional start datetime prefill ("yyyy-MM-dd'T'HH:mm") for a new event
+   *  — used by calendar click-to-create. */
+  prefillStart?: string;
   /** Called when the user cancels. */
   onCancel: () => void;
   /** Called after a successful create / update / delete. */
@@ -65,6 +68,7 @@ export function EventForm({
   eventId,
   copyId,
   prefillClient,
+  prefillStart,
   onCancel,
   onSaved,
   onCopy,
@@ -106,7 +110,7 @@ export function EventForm({
     defaultValues: {
       subcategory_id: "",
       client_id: "",
-      start_at: nowLocal,
+      start_at: prefillStart || nowLocal,
       duration_minutes: 60,
       notes: "",
       recalculate_price: false,
@@ -561,6 +565,7 @@ export function EventFormModal({
   eventId,
   copyId,
   prefillClient,
+  prefillStart,
   onClose,
   onSaved,
   onCopy,
@@ -569,6 +574,7 @@ export function EventFormModal({
   eventId?: number;
   copyId?: number;
   prefillClient?: string;
+  prefillStart?: string;
   onClose: () => void;
   onSaved: () => void;
   onCopy?: (id: number) => void;
@@ -585,6 +591,7 @@ export function EventFormModal({
         eventId={eventId}
         copyId={copyId}
         prefillClient={prefillClient}
+        prefillStart={prefillStart}
         onCancel={onClose}
         onSaved={onSaved}
         onCopy={onCopy}

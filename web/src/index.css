@@ -2095,6 +2095,18 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 13px;
   font-weight: 500;
   font-feature-settings: 'tnum';
+  align-self: flex-start;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  cursor: pointer; /* отдельная цель: клик по числу → открыть неделю */
+  transition: background 0.12s;
+}
+.cal-cell:not(.today) .cal-num:hover {
+  background: color-mix(in oklab, var(--ink) 10%, transparent);
 }
 .cal-events { display: flex; flex-direction: column; gap: 3px; }
 .cal-event {
@@ -2318,6 +2330,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .week-time-col {
   position: relative;
   border-left: 1px solid var(--line);
+  cursor: pointer; /* клик по пустому слоту → создать событие */
 }
 .week-time-col.today { background: oklch(0.99 0.01 145); }
 /* In-flow row per hour — provides the horizontal separators inside a day

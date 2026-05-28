@@ -30,11 +30,15 @@ export function CalendarPage() {
   const [openEventId, setOpenEventId] = useState<number | null>(null);
   const [clientFilter, setClientFilter] = useState("");
   const [formModal, setFormModal] = useState<
-    | { kind: "new" }
+    | { kind: "new"; prefillStart?: string }
     | { kind: "edit"; eventId: number }
     | { kind: "copy"; copyId: number }
     | null
   >(null);
+
+  // Build the prefill string for click-to-create from a date (+ optional time).
+  const openCreateAt = (start: Date) =>
+    setFormModal({ kind: "new", prefillStart: format(start, "yyyy-MM-dd'T'HH:mm") });
 
   const clientsList = useQuery({
     queryKey: ["clients", ""],
@@ -157,6 +161,12 @@ export function CalendarPage() {
           eventsByDay={eventsByDay}
           onEvent={(id) => setOpenEventId(id)}
           onDay={handleMonthDayClick}
+          onCreate={(d) => {
+            // No time in month view — default to the current hour, :00.
+            const start = new Date(d);
+            start.setHours(new Date().getHours(), 0, 0, 0);
+            openCreateAt(start);
+          }}
         />
       )}
       {(view === "week" || view === "3days") && (
@@ -165,6 +175,7 @@ export function CalendarPage() {
           today={today}
           eventsByDay={eventsByDay}
           onEvent={(id) => setOpenEventId(id)}
+          onCreate={openCreateAt}
         />
       )}
       {openEventId !== null && (
@@ -178,6 +189,7 @@ export function CalendarPage() {
         open={formModal !== null}
         eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
         copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
+        prefillStart={formModal?.kind === "new" ? formModal.prefillStart : undefined}
         onClose={() => setFormModal(null)}
         onSaved={() => setFormModal(null)}
         onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
@@ -232,12 +244,14 @@ function MonthView({
   eventsByDay,
   onEvent,
   onDay,
+  onCreate,
 }: {
   cursor: Date;
   today: Date;
   eventsByDay: Map<string, CalendarEvent[]>;
   onEvent: (id: number) => void;
   onDay: (d: Date) => void;
+  onCreate: (d: Date) => void;
 }) {
   const grid = useMemo(() => {
     const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
@@ -261,11 +275,23 @@ function MonthView({
             <div
               key={d.toISOString()}
               className={cn("cal-cell", !inMonth && "out", isToday && "today")}
-              onClick={() => onDay(d)}
+              onClick={() => onCreate(d)}
               role="button"
               tabIndex={0}
+              title="Создать событие"
             >
-              <div className="cal-num">{d.getDate()}</div>
+              <div
+                className="cal-num"
+                role="button"
+                tabIndex={0}
+                title="Открыть неделю"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDay(d);
+                }}
+              >
+                {d.getDate()}
+              </div>
               <div className="cal-events">
                 {evs.slice(0, 3).map((e) => (
                   <div
@@ -300,11 +326,13 @@ function WeekView({
   today,
   eventsByDay,
   onEvent,
+  onCreate,
 }: {
   days: Date[];
   today: Date;
   eventsByDay: Map<string, CalendarEvent[]>;
   onEvent: (id: number) => void;
+  onCreate: (start: Date) => void;
 }) {
   const todayKey = today.toDateString();
   const hours = Array.from({ length: HOUR_COUNT }, (_, i) => START_HOUR + i);
@@ -344,6 +372,21 @@ function WeekView({
     return hourOffsets[i] + frac * hourHeights[i];
   };
 
+  // Inverse of minsToY: pixel offset within a column → minute-of-day, snapped
+  // to 15-minute steps. Used by click-to-create on an empty slot.
+  const yToMins = (y: number): number => {
+    let mins = (END_HOUR + 1) * 60;
+    for (let i = 0; i < HOUR_COUNT; i++) {
+      if (y < hourOffsets[i + 1]) {
+        const frac = (y - hourOffsets[i]) / hourHeights[i];
+        mins = (START_HOUR + i) * 60 + frac * 60;
+        break;
+      }
+    }
+    const snapped = Math.round(mins / 15) * 15;
+    return Math.max(START_HOUR * 60, Math.min(snapped, END_HOUR * 60 + 45));
+  };
+
   return (
     <Card padding="p-0">
       <div className="week-time" style={{ "--cal-days": days.length } as React.CSSProperties}>
@@ -376,6 +419,16 @@ function WeekView({
                   key={d.toISOString()}
                   className={cn("week-time-col", isToday && "today")}
                   style={{ height: totalHeight }}
+                  title="Создать событие"
+                  onClick={(e) => {
+                    // Empty-slot click → create. Clicks on an event bubble up
+                    // here too, but the event's own handler stops propagation.
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const mins = yToMins(e.clientY - rect.top);
+                    const start = new Date(d);
+                    start.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+                    onCreate(start);
+                  }}
                 >
                   {/* One in-flow row per hour gives the horizontal separators
                       aligned with the gutter (replaces the old fixed-pitch
@@ -403,7 +456,10 @@ function WeekView({
                           height,
                           "--cat": e.backgroundColor,
                         } as React.CSSProperties}
-                        onClick={() => onEvent(Number(e.id))}
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          onEvent(Number(e.id));
+                        }}
                       >
                         <div className="week-time-ev-name">
                           {e.extendedProps.category}
