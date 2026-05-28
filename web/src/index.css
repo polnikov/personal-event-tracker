@@ -2125,6 +2125,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 11.5px;
   overflow: hidden;
   transition: background 0.12s;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
 }
 .cal-event:hover { background: color-mix(in oklab, var(--cat) 22%, white); }
 .cal-event-name {
@@ -2142,7 +2143,19 @@ input[type="number"] { -moz-appearance: textfield; }
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.cal-event-more { font-size: 11px; color: var(--muted); padding: 0 7px; }
+.cal-event-more {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 8px;
+  margin-left: 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
 
 /* View switcher (Month / Week / List) */
 .view-switcher {
@@ -2364,6 +2377,7 @@ input[type="number"] { -moz-appearance: textfield; }
   overflow: hidden;
   transition: background 0.12s, transform 0.12s;
   z-index: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
 }
 .week-time-event:hover {
   background: color-mix(in oklab, var(--cat) 22%, white);
@@ -3117,7 +3131,7 @@ a.cd2-name:hover {
   }
   .cal-event-time,
   .cal-event-sub { display: none; }
-  .cal-event-more { font-size: 10px; padding: 0 5px; }
+  .cal-event-more { font-size: 9.5px; padding: 2px 6px; margin-left: 5px; }
   .cal-dow { padding: 8px 4px; font-size: 9.5px; letter-spacing: 0.04em; }
 
   /* Calendar — week grid */
