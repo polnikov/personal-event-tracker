@@ -239,6 +239,10 @@ export interface GoogleStatus {
   email: string | null;
   pending: number;
   failed: number;
+  /** Whether the stored token actually works (not just that a row exists). */
+  credentials_valid: boolean;
+  /** Explanation when credentials_valid is false. */
+  reason: string | null;
 }
 
 export interface GoogleCalendarOption {

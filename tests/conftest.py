@@ -103,3 +103,15 @@ def auth_client(client):
     )
     assert r.status_code == 200, r.text
     return client
+
+
+@pytest.fixture(autouse=True)
+def _reset_google_health():
+    """Google connection health is process-global; reset it between tests so
+    one test's recorded state can't leak into another."""
+    from app import google_health
+
+    google_health._health.ok = None
+    google_health._health.reason = None
+    google_health._health.checked_at = None
+    yield

@@ -48,6 +48,9 @@ export function SettingsGooglePage() {
   const email = status.data?.email ?? null;
   const pending = status.data?.pending ?? 0;
   const failed = status.data?.failed ?? 0;
+  const credsValid = status.data?.credentials_valid ?? true;
+  const reason = status.data?.reason ?? null;
+  const credsBroken = connected && !credsValid;
 
   return (
     <div className="page">
@@ -64,6 +67,15 @@ export function SettingsGooglePage() {
         </Card>
       )}
 
+      {credsBroken && (
+        <Card padding="p-4" style={{ borderLeft: "4px solid var(--danger)" }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>Проблема с подключением Google</div>
+          <div className="muted small">
+            {reason || "Учётные данные недействительны."} Переподключите аккаунт ниже — события в очереди уйдут автоматически.
+          </div>
+        </Card>
+      )}
+
       <Card>
         <div className="form">
           <div>
@@ -72,6 +84,9 @@ export function SettingsGooglePage() {
               {connected ? (
                 <>
                   Подключён{email ? <>: <span className="mono">{email}</span></> : null}
+                  {credsBroken && (
+                    <span style={{ color: "var(--danger)" }}> — токен недействителен</span>
+                  )}
                 </>
               ) : (
                 "Не подключён"
@@ -120,7 +135,7 @@ export function SettingsGooglePage() {
         </div>
       </Card>
 
-      {!connected && <ManualConnectCard />}
+      {(!connected || credsBroken) && <ManualConnectCard />}
     </div>
   );
 }

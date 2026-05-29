@@ -7,12 +7,19 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 
 from .config import settings
 from .database import SessionLocal
-from .google_sync import process_due_outbox_rows
+from .google_sync import check_calendar_health, process_due_outbox_rows
 
 logger = logging.getLogger(__name__)
+
+# Validate the Google connection at most this often, independent of whether
+# there are outbox rows to process — so a silently-revoked token is noticed
+# (and surfaced in /status) even when nothing is being synced.
+_HEALTH_CHECK_INTERVAL_SECONDS = 600
+_last_health_check: float | None = None
 
 # Module-level event allows enqueue paths to wake the worker immediately
 # instead of waiting for the next poll interval. Routers can import
@@ -29,9 +36,17 @@ def kick_worker() -> None:
 
 
 def _tick_once() -> None:
+    global _last_health_check
     db = SessionLocal()
     try:
         process_due_outbox_rows(db)
+        now = time.monotonic()
+        if _last_health_check is None or now - _last_health_check >= _HEALTH_CHECK_INTERVAL_SECONDS:
+            _last_health_check = now
+            try:
+                check_calendar_health(db)
+            except Exception:
+                logger.exception("calendar health check failed")
     finally:
         db.close()
 

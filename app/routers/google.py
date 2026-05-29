@@ -19,9 +19,11 @@ from ..auth import require_auth
 from ..clock import now_local
 from ..config import settings
 from ..database import get_db
+from ..google_health import get_health, record_health
 from ..google_sync import (
     build_credentials,
     build_service,
+    check_calendar_health,
     fetch_userinfo_email,
     get_account,
     list_calendars,
@@ -93,11 +95,19 @@ def status(db: Session = Depends(get_db)):
         .where(GoogleSyncOutbox.completed_at.is_(None))
         .where(GoogleSyncOutbox.attempts >= threshold)
     ).scalar_one()
+    # Reflect the real credential state. Use the cached health when available
+    # (kept fresh by the worker / sync attempts) and validate once inline after
+    # a restart so the very first poll is honest.
+    health = get_health()
+    if health.checked_at is None:
+        health = check_calendar_health(db)
     return GoogleStatus(
         connected=acc is not None,
         email=acc.connected_email if acc else None,
         pending=pending,
         failed=failed,
+        credentials_valid=health.ok if health.ok is not None else True,
+        reason=health.reason,
     )
 
 
@@ -164,6 +174,7 @@ def oauth_callback(
     acc.scopes = " ".join(creds.scopes or settings.GOOGLE_SCOPES)
     acc.connected_email = email
     db.commit()
+    record_health(True, None)
     kick_worker()
     return RedirectResponse("/settings/google?status=ok", status_code=302)
 
@@ -216,6 +227,7 @@ def manual_connect(payload: ManualConnectPayload, db: Session = Depends(get_db))
     acc.scopes = " ".join(creds.scopes or scopes)
     acc.connected_email = email
     db.commit()
+    record_health(True, None)
     kick_worker()
     return {"ok": True, "email": email}
 
@@ -239,6 +251,7 @@ def disconnect(db: Session = Depends(get_db)):
         logger.exception("Token revoke failed (ignored)")
     db.delete(acc)
     db.commit()
+    record_health(True, None)  # nothing connected → no problem to flag
     return {"ok": True}
 
 

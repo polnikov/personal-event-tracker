@@ -22,6 +22,7 @@ from googleapiclient.errors import HttpError
 
 from .clock import now_local
 from .config import settings
+from .google_health import CalendarHealth, get_health, record_health
 from .models import Event, GoogleAccount, GoogleSyncOutbox
 
 logger = logging.getLogger(__name__)
@@ -38,15 +39,22 @@ def get_account(db: Session) -> GoogleAccount | None:
     return db.execute(select(GoogleAccount).limit(1)).scalar_one_or_none()
 
 
-def build_credentials(db: Session) -> Credentials | None:
-    """Hydrate a Credentials object from the saved GoogleAccount row.
-    Refreshes the access_token if expired and persists the new value."""
+# Human-readable reasons surfaced in the outbox/UI when credentials fail.
+REASON_NOT_CONNECTED = "Google-аккаунт не подключён"
+REASON_NO_CLIENT_CONFIG = "На сервере не заданы GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET"
+REASON_TOKEN_REVOKED = "Токен Google отозван или истёк — переподключите аккаунт"
+
+
+def build_credentials_with_reason(db: Session) -> tuple[Credentials | None, str | None]:
+    """Hydrate a Credentials object from the saved GoogleAccount row, refreshing
+    the access_token if expired. Returns (creds, None) on success, or
+    (None, reason) with a human-readable explanation of the failure."""
     acc = get_account(db)
     if not acc or not acc.refresh_token:
-        return None
+        return None, REASON_NOT_CONNECTED
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         logger.warning("Google client_id/secret not configured")
-        return None
+        return None, REASON_NO_CLIENT_CONFIG
     creds = Credentials(
         token=acc.access_token,
         refresh_token=acc.refresh_token,
@@ -62,11 +70,31 @@ def build_credentials(db: Session) -> Credentials | None:
             creds.refresh(GoogleRequest())
         except Exception as e:
             logger.exception("Failed to refresh Google credentials: %s", e)
-            return None
+            if "invalid_grant" in str(e).lower():
+                return None, REASON_TOKEN_REVOKED
+            return None, f"Не удалось обновить токен Google: {e}"
         acc.access_token = creds.token
         acc.token_expiry = creds.expiry
         db.commit()
-    return creds
+    return creds, None
+
+
+def build_credentials(db: Session) -> Credentials | None:
+    return build_credentials_with_reason(db)[0]
+
+
+def _record_health(reason: str | None) -> None:
+    # "Not connected" is a neutral state, not a problem to alarm about; only a
+    # configured account with broken credentials is unhealthy.
+    healthy = reason is None or reason == REASON_NOT_CONNECTED
+    record_health(healthy, None if healthy else reason)
+
+
+def check_calendar_health(db: Session) -> CalendarHealth:
+    """Validate the stored credentials and record the result for /status."""
+    _, reason = build_credentials_with_reason(db)
+    _record_health(reason)
+    return get_health()
 
 
 def build_service(creds: Credentials):
@@ -332,16 +360,19 @@ def process_due_outbox_rows(db: Session, batch_size: int = 20) -> int:
     if not rows:
         return 0
 
-    creds = build_credentials(db)
+    creds, reason = build_credentials_with_reason(db)
     if creds is None:
-        # Not connected: mark last_error but don't bump attempts so the
-        # rows fire immediately once the user connects.
+        # No usable credentials: record the specific reason on every row (and
+        # in health) but don't bump attempts, so rows fire immediately once the
+        # user reconnects.
+        _record_health(reason)
         for r in rows:
-            r.last_error = "Google account is not connected"
+            r.last_error = reason
             r.next_attempt_at = now + timedelta(seconds=settings.GOOGLE_SYNC_POLL_SECONDS * 6)
         db.commit()
         return len(rows)
 
+    _record_health(None)
     service = build_service(creds)
     processed = 0
     for row in rows:

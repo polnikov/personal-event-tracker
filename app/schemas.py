@@ -318,6 +318,10 @@ class GoogleStatus(BaseModel):
     email: str | None = None
     pending: int = 0
     failed: int = 0
+    # Honest credential check: connected means a DB row exists, credentials_valid
+    # means the token actually works; reason explains an invalid state.
+    credentials_valid: bool = True
+    reason: str | None = None
 
 
 class GoogleCalendarOption(BaseModel):

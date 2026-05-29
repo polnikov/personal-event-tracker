@@ -48,6 +48,9 @@ export function Layout() {
     staleTime: 15_000,
   });
   const failedCount = googleStatus.data?.failed ?? 0;
+  // Connected but the token no longer works → warn on the Settings item.
+  const googleBroken =
+    !!googleStatus.data?.connected && googleStatus.data?.credentials_valid === false;
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
@@ -87,6 +90,9 @@ export function Layout() {
                 <span>{label}</span>
                 {to === "/debug" && failedCount > 0 && (
                   <span className="nav-badge">{failedCount}</span>
+                )}
+                {to === "/settings/google" && googleBroken && (
+                  <span className="nav-badge" title="Проблема с подключением Google">!</span>
                 )}
               </NavLink>
             );
