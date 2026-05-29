@@ -1,5 +1,6 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.engine import Connection
 from alembic import context
 
 from app.config import settings
@@ -27,18 +28,29 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
+def _run(connection: Connection) -> None:
+    context.configure(
+        connection=connection, target_metadata=target_metadata, render_as_batch=True
     )
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata, render_as_batch=True
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    # Tests inject a live Connection/Engine via config.attributes["connection"]
+    # so migrations run against the same in-memory SQLite the app uses.
+    connectable = config.attributes.get("connection", None)
+    if isinstance(connectable, Connection):
+        _run(connectable)
+        return
+    if connectable is None:
+        connectable = engine_from_config(
+            config.get_section(config.config_ini_section, {}),
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
         )
-        with context.begin_transaction():
-            context.run_migrations()
+    with connectable.connect() as connection:
+        _run(connection)
 
 
 if context.is_offline_mode():
