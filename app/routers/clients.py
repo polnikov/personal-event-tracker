@@ -38,21 +38,26 @@ def _find_duplicate(
 ) -> Client | None:
     """Look up a client with the same (first_name, last_name, phone) tuple.
     Comparison is case-insensitive for names; phone is matched exactly after
-    normalisation (None matches NULL or empty)."""
+    normalisation (None matches NULL or empty).
+
+    Names are compared in Python: SQLite's lower() is ASCII-only and would
+    never fold Cyrillic, so an SQL ``func.lower`` match silently fails for
+    Russian names. We narrow by phone in SQL (cheap, single-user dataset),
+    then fold names with Python's Unicode-aware str.lower()."""
     fn = first_name.strip().lower()
     ln = last_name.strip().lower()
     ph = _normalize_phone(phone)
-    stmt = select(Client).where(
-        func.lower(Client.first_name) == fn,
-        func.lower(Client.last_name) == ln,
-    )
+    stmt = select(Client)
     if ph is None:
         stmt = stmt.where((Client.phone.is_(None)) | (Client.phone == ""))
     else:
-        stmt = stmt.where(func.lower(Client.phone) == ph.lower())
+        stmt = stmt.where(Client.phone == ph)
     if exclude_id is not None:
         stmt = stmt.where(Client.id != exclude_id)
-    return db.execute(stmt).scalars().first()
+    for c in db.execute(stmt).scalars():
+        if (c.first_name or "").strip().lower() == fn and (c.last_name or "").strip().lower() == ln:
+            return c
+    return None
 
 
 def _duplicate_message(c: Client) -> str:
