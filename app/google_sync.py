@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import delete, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2.credentials import Credentials
@@ -22,7 +22,7 @@ from googleapiclient.errors import HttpError
 
 from .clock import now_local
 from .config import settings
-from .models import Event, GoogleAccount, GoogleSyncOutbox, Subcategory
+from .models import Event, GoogleAccount, GoogleSyncOutbox
 
 logger = logging.getLogger(__name__)
 
@@ -366,7 +366,7 @@ def get_event_sync_statuses(db: Session, event_ids: list[int]) -> dict[int, str]
     rows. Events without open rows map to "ok". Threshold from settings."""
     if not event_ids:
         return {}
-    from sqlalchemy import func, case
+    from sqlalchemy import func
     threshold = settings.GOOGLE_SYNC_FAIL_THRESHOLD
     rows = db.execute(
         select(

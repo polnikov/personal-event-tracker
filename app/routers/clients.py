@@ -15,7 +15,7 @@ from ..schemas import (
     ClientStatsByCategory,
     ClientUpdate,
 )
-from ..serializers import event_to_schema, event_to_schema_with_sync, hydrate_sync_status_map
+from ..serializers import event_to_schema_with_sync, hydrate_sync_status_map
 
 router = APIRouter(
     prefix="/api/clients",

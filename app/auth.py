@@ -1,7 +1,6 @@
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, InvalidHash
 from fastapi import Request, HTTPException, status
-from .config import settings
 
 
 _ph = PasswordHasher()

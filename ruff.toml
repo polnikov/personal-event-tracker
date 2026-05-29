@@ -1,0 +1,4 @@
+# Backend lint config. Default rule set (E/F) — keep CI deterministic
+# regardless of the interpreter version ruff happens to detect.
+target-version = "py313"
+line-length = 100
