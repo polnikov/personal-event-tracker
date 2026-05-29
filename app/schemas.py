@@ -275,6 +275,8 @@ class ReportResponse(BaseModel):
     # 7×12 matrices (rows: Mon..Sun, cols: Jan..Dec) for the year.
     weekday_month: list[list[int]] = []  # event counts
     weekday_month_net: list[list[float]] = []  # net income
+    # 7×24 event-count matrix (rows: Mon..Sun, cols: hour 0..23) for the year.
+    weekday_hour: list[list[int]] = []
     events_with_royalty: list[EventRead]
 
 

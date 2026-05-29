@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { MONTH_ABBR, weekdayMonthHeatmap } from "./heatmap";
+import { MONTH_ABBR, weekdayHourHeatmap, weekdayMonthHeatmap } from "./heatmap";
 
 const DOW = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -89,6 +89,45 @@ describe("weekdayMonthHeatmap empty matrix", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const opt = weekdayMonthHeatmap(matrix(), false) as any;
     expect(opt.visualMap.max).toBe(1);
+  });
+});
+
+function hourMatrix(overrides: [number, number, number][] = []): number[][] {
+  const m = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+  for (const [w, h, v] of overrides) m[w][h] = v;
+  return m;
+}
+
+describe("weekdayHourHeatmap", () => {
+  it("returns null unless the matrix has 7 rows", () => {
+    expect(weekdayHourHeatmap(null, false)).toBeNull();
+    expect(weekdayHourHeatmap([[0]], false)).toBeNull();
+  });
+
+  it("produces 168 cells (7×24)", () => {
+    expect(cellsOf(weekdayHourHeatmap(hourMatrix(), false))).toHaveLength(168);
+  });
+
+  it("desktop: X = hours, Y = weekdays (6-w)", () => {
+    const opt = weekdayHourHeatmap(hourMatrix([[0, 9, 5], [6, 23, 3]]), false)!;
+    const cells = cellsOf(opt);
+    expect(findCell(cells, 9, 6)![2]).toBe(5); // Mon 09:00
+    expect(findCell(cells, 23, 0)![2]).toBe(3); // Sun 23:00
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const o = opt as any;
+    expect(o.xAxis.data).toHaveLength(24);
+    expect(o.xAxis.data[0]).toBe("00");
+    expect(o.xAxis.data[23]).toBe("23");
+    expect(o.yAxis.data).toEqual([...DOW].reverse());
+  });
+
+  it("mobile: X = weekdays, Y = hours (23-h)", () => {
+    const opt = weekdayHourHeatmap(hourMatrix([[0, 9, 5]]), true)!;
+    expect(findCell(cellsOf(opt), 0, 14)![2]).toBe(5); // w0, hour9 -> y=23-9
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const o = opt as any;
+    expect(o.xAxis.data).toEqual(DOW);
+    expect(o.yAxis.data).toHaveLength(24);
   });
 });
 

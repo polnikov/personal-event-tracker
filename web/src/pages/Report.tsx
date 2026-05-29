@@ -10,7 +10,7 @@ import {
 import { Echart, GRID_LEFT_FLUSH, type EChartsOption } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
-import { MONTH_ABBR, weekdayMonthHeatmap } from "@/lib/heatmap";
+import { MONTH_ABBR, weekdayHourHeatmap, weekdayMonthHeatmap } from "@/lib/heatmap";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
@@ -426,6 +426,10 @@ export function ReportPage() {
       ),
     [data.data?.weekday_month_net, isMobile],
   );
+  const hourHeatmapOption: EChartsOption | null = useMemo(
+    () => weekdayHourHeatmap(data.data?.weekday_hour, isMobile),
+    [data.data?.weekday_hour, isMobile],
+  );
 
   const hoursRowCount = subcatColored.filter((s) => s.hours > 0).length;
   const netRowCount = subcatColored.filter((s) => s.net > 0).length;
@@ -590,6 +594,16 @@ export function ReportPage() {
             <div className="muted small">{year}</div>
           </div>
           <Echart option={heatmapOption} height={isMobile ? 420 : 290} />
+        </Card>
+      )}
+
+      {hourHeatmapOption && (
+        <Card>
+          <div className="card-head" style={{ alignItems: "baseline" }}>
+            <div className="card-title">События по часам</div>
+            <div className="muted small">{year}</div>
+          </div>
+          <Echart option={hourHeatmapOption} height={isMobile ? 560 : 290} />
         </Card>
       )}
 

@@ -174,6 +174,8 @@ export interface ReportResponse {
   /** 7×12 matrices; rows: Mon..Sun, cols: Jan..Dec. */
   weekday_month: number[][]; // event counts
   weekday_month_net: number[][]; // net income
+  /** 7×24 event counts; rows: Mon..Sun, cols: hour 0..23. */
+  weekday_hour: number[][];
   events_with_royalty: EventItem[];
 }
 

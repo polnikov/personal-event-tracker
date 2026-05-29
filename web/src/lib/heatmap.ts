@@ -6,6 +6,7 @@ export const MONTH_ABBR = [
 ];
 
 const DOW_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const HOUR_LABELS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
 
 const AXIS_TEXT = {
   fontFamily: "Inter, system-ui, sans-serif",
@@ -13,35 +14,38 @@ const AXIS_TEXT = {
 };
 
 /**
- * Build the ECharts option for the weekday × month heatmap.
+ * Build an ECharts heatmap option from a [rows][cols] count matrix.
  *
- * `matrix` is [weekday 0..6 (Mon..Sun)][month 0..11]. ECharts data points are
- * [x, y, value]; the Y axis is inverted, so the lead axis is reversed to keep
- * reading order:
- *   Desktop — X = months, Y = weekdays (Mon top → Sun bottom)
- *   Mobile  — X = weekdays, Y = months (Jan top → Dec bottom)
+ * Data points are [x, y, value]; the Y axis is inverted, so the lead axis is
+ * reversed to keep natural reading order:
+ *   Desktop — X = cols, Y = rows  (first row on top)
+ *   Mobile  — X = rows, Y = cols  (first col on top)
  *
- * Returns null when the matrix is missing or not 7 rows.
+ * Returns null when the matrix is missing or its row count != rowLabels.
  */
-export function weekdayMonthHeatmap(
+function buildHeatmap(
   matrix: number[][] | null | undefined,
+  rowLabels: string[],
+  colLabels: string[],
   isMobile: boolean,
   groupThousands = false,
 ): EChartsOption | null {
-  if (!matrix || matrix.length !== 7) return null;
+  const rows = rowLabels.length;
+  const cols = colLabels.length;
+  if (!matrix || matrix.length !== rows) return null;
   const cells: [number, number, number][] = [];
   let maxValue = 0;
-  for (let w = 0; w < 7; w++) {
-    for (let m = 0; m < 12; m++) {
-      const c = matrix[w][m] || 0;
-      const x = isMobile ? w : m;
-      const y = isMobile ? 11 - m : 6 - w;
-      cells.push([x, y, c]);
-      if (c > maxValue) maxValue = c;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const v = matrix[r][c] || 0;
+      const x = isMobile ? r : c;
+      const y = isMobile ? cols - 1 - c : rows - 1 - r;
+      cells.push([x, y, v]);
+      if (v > maxValue) maxValue = v;
     }
   }
-  const xData = isMobile ? DOW_LABELS : MONTH_ABBR;
-  const yData = isMobile ? [...MONTH_ABBR].reverse() : [...DOW_LABELS].reverse();
+  const xData = isMobile ? rowLabels : colLabels;
+  const yData = isMobile ? [...colLabels].reverse() : [...rowLabels].reverse();
   return {
     grid: { top: 16, right: 16, bottom: 28, left: 36 },
     tooltip: { show: false },
@@ -103,4 +107,23 @@ export function weekdayMonthHeatmap(
       },
     ],
   } as EChartsOption;
+}
+
+/** Weekday × month heatmap. matrix is [weekday 0..6 (Mon..Sun)][month 0..11].
+ *  Desktop: X = months, Y = weekdays; Mobile: X = weekdays, Y = months. */
+export function weekdayMonthHeatmap(
+  matrix: number[][] | null | undefined,
+  isMobile: boolean,
+  groupThousands = false,
+): EChartsOption | null {
+  return buildHeatmap(matrix, DOW_LABELS, MONTH_ABBR, isMobile, groupThousands);
+}
+
+/** Weekday × hour heatmap. matrix is [weekday 0..6 (Mon..Sun)][hour 0..23].
+ *  Desktop: X = hours, Y = weekdays; Mobile: X = weekdays, Y = hours. */
+export function weekdayHourHeatmap(
+  matrix: number[][] | null | undefined,
+  isMobile: boolean,
+): EChartsOption | null {
+  return buildHeatmap(matrix, DOW_LABELS, HOUR_LABELS, isMobile);
 }

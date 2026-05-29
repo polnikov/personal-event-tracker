@@ -54,6 +54,21 @@ def test_weekday_month_matrix_counts(auth_client):
     assert matrix[dt.weekday()][dt.month - 1] >= 1
 
 
+def test_weekday_hour_matrix(auth_client):
+    sub = _sub(auth_client)
+    _event(auth_client, sub["id"], "2026-06-15T09:00:00")  # Monday 09:00
+    _event(auth_client, sub["id"], "2026-06-15T09:30:00")  # Monday 09:00 bucket
+    _event(auth_client, sub["id"], "2026-06-16T23:00:00")  # Tuesday 23:00
+
+    wh = auth_client.get("/api/reports", params={"year": 2026, "month": 6}).json()["weekday_hour"]
+    assert len(wh) == 7 and all(len(row) == 24 for row in wh)
+    mon = datetime.fromisoformat("2026-06-15T09:00:00")
+    tue = datetime.fromisoformat("2026-06-16T23:00:00")
+    assert wh[mon.weekday()][9] == 2
+    assert wh[tue.weekday()][23] == 1
+    assert sum(sum(row) for row in wh) == 3
+
+
 def test_monthly_by_category_series(auth_client):
     sub = _sub(auth_client, cat_name="ЕдинственнаяКат")
     _event(auth_client, sub["id"], "2026-06-10T10:00:00")

@@ -159,10 +159,13 @@ def report(
     # weekday_month = event counts; weekday_month_net = net income.
     weekday_month = [[0 for _ in range(12)] for _ in range(7)]
     weekday_month_net_dec = [[Decimal(0) for _ in range(12)] for _ in range(7)]
+    # Weekday × hour event counts (rows Mon..Sun, cols 0..23).
+    weekday_hour = [[0 for _ in range(24)] for _ in range(7)]
     for e in year_events:
         w = e.start_at.weekday()
         m = e.start_at.month - 1
         weekday_month[w][m] += 1
+        weekday_hour[w][e.start_at.hour] += 1
         weekday_month_net_dec[w][m] += e.total_cost * (
             Decimal(1) - e.tax / Decimal(100) - e.royalty / Decimal(100)
         )
@@ -179,5 +182,6 @@ def report(
         monthly_by_category=monthly_by_category,
         weekday_month=weekday_month,
         weekday_month_net=weekday_month_net,
+        weekday_hour=weekday_hour,
         events_with_royalty=[event_to_schema_with_sync(e, sync_map) for e in royalty_events],
     )
