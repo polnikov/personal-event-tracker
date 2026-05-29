@@ -7,6 +7,13 @@ import { Button, Card, IconButton, SearchableSelect } from "@/components/design"
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
 import { calendar as calendarApi, clients as clientsApi } from "@/lib/api";
+import {
+  HOUR_COUNT,
+  HOUR_HEIGHT,
+  START_HOUR,
+  minsToY,
+  yToMins,
+} from "@/lib/calendarGrid";
 import { fmt } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/api";
@@ -16,11 +23,6 @@ type View = "month" | "week" | "3days";
 
 /** Local midnight of a date — start of the "3 дня" window. */
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
-const HOUR_HEIGHT = 56;
-const START_HOUR = 6;
-const END_HOUR = 23;
-const HOUR_COUNT = END_HOUR - START_HOUR + 1;
 
 export function CalendarPage() {
   const today = useMemo(() => new Date(), []);
@@ -339,19 +341,6 @@ function WeekView({
   // Uniform grid: every hour gets the full height.
   const hourHeights = new Array<number>(HOUR_COUNT).fill(HOUR_HEIGHT);
   const totalHeight = HOUR_HEIGHT * HOUR_COUNT;
-
-  // Minute-of-day → pixel offset within a column (uniform per-hour height).
-  const minsToY = (mins: number): number => {
-    const clamped = Math.max(START_HOUR * 60, Math.min(mins, (END_HOUR + 1) * 60));
-    return ((clamped - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-  };
-
-  // Inverse of minsToY, snapped to 30-minute steps. Used by click-to-create.
-  const yToMins = (y: number): number => {
-    const mins = START_HOUR * 60 + (y / HOUR_HEIGHT) * 60;
-    const snapped = Math.round(mins / 30) * 30;
-    return Math.max(START_HOUR * 60, Math.min(snapped, END_HOUR * 60 + 30));
-  };
 
   return (
     <Card padding="p-0">

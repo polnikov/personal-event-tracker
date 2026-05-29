@@ -10,6 +10,7 @@ import {
 import { Echart, GRID_LEFT_FLUSH, type EChartsOption } from "@/components/echart";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
+import { MONTH_ABBR, weekdayMonthHeatmap } from "@/lib/heatmap";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
@@ -20,105 +21,10 @@ const SUBCAT_PALETTE = [
   "#00BFA5", "#7239EA",
 ];
 
-const MONTH_ABBR = [
-  "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
-  "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
-];
-
 const ECHART_BASE_TEXT = {
   fontFamily: "Inter, system-ui, sans-serif",
   color: "#807A72",
 };
-
-// Weekday × month heatmap (whole year). ECharts data: [x_index, y_index, value].
-// Y-axis is inverted by default, so we reverse the lead axis to keep reading order:
-//   Desktop — X=months, Y=weekdays  → Mon at top, Sun at bottom.
-//   Mobile  — X=weekdays, Y=months → Jan at top, Dec at bottom.
-// Shared by the «События» (counts) and «Сумма» (net income) heatmaps so their
-// settings stay identical — only the matrix differs.
-function weekdayMonthHeatmap(
-  matrix: number[][] | null | undefined,
-  isMobile: boolean,
-  groupThousands = false,
-) {
-  if (!matrix || matrix.length !== 7) return null;
-  const monthLabels = MONTH_ABBR;
-  const dowLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-  const cells: [number, number, number][] = [];
-  let maxValue = 0;
-  for (let w = 0; w < 7; w++) {
-    for (let m = 0; m < 12; m++) {
-      const c = matrix[w][m] || 0;
-      const x = isMobile ? w : m;
-      const y = isMobile ? 11 - m : 6 - w;
-      cells.push([x, y, c]);
-      if (c > maxValue) maxValue = c;
-    }
-  }
-  const xData = isMobile ? dowLabels : monthLabels;
-  const yData = isMobile ? [...monthLabels].reverse() : [...dowLabels].reverse();
-  return {
-    grid: { top: 16, right: 16, bottom: 28, left: 36 },
-    tooltip: { show: false },
-    visualMap: {
-      show: false,
-      type: "continuous",
-      min: 0,
-      max: Math.max(maxValue, 1),
-      calculable: false,
-      inRange: {
-        color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"],
-      },
-    },
-    xAxis: {
-      type: "category",
-      data: xData,
-      splitArea: { show: false },
-      axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#ECEAE3" } },
-      axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
-    },
-    yAxis: {
-      type: "category",
-      data: yData,
-      splitArea: { show: false },
-      axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#ECEAE3" } },
-      axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
-    },
-    series: [
-      {
-        type: "heatmap" as const,
-        data: cells,
-        label: {
-          show: true,
-          color: "#2A2A2E",
-          fontFamily: "JetBrains Mono, ui-monospace, monospace",
-          fontFeatureSettings: "'tnum'",
-          fontSize: 11,
-          formatter: (p: unknown) => {
-            const v = (p as { value: [number, number, number] }).value[2];
-            if (v <= 0) return "";
-            return groupThousands
-              ? v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })
-              : String(v);
-          },
-        },
-        itemStyle: {
-          borderColor: "#FFFFFF",
-          borderWidth: 2,
-          borderRadius: 4,
-        },
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 8,
-            shadowColor: "rgba(42, 42, 46, 0.15)",
-          },
-        },
-      },
-    ],
-  } as EChartsOption;
-}
 
 export function ReportPage() {
   const isMobile = useIsMobile();

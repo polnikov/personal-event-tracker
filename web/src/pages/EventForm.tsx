@@ -19,6 +19,7 @@ import {
   Toggle,
 } from "@/components/design";
 import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
+import { calcEvent, effectivePrice } from "@/lib/eventCalc";
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/DateTimePicker";
 
@@ -247,19 +248,7 @@ export function EventForm({
       const s = c.subcategories.find((s) => s.id === subId);
       if (!s) continue;
       const startMs = startAtValue ? new Date(startAtValue).getTime() : Date.now();
-      const applicable = (s.prices ?? [])
-        .filter((p) => new Date(p.effective_from).getTime() <= startMs)
-        .sort(
-          (a, b) =>
-            new Date(b.effective_from).getTime() -
-            new Date(a.effective_from).getTime(),
-        )[0];
-      const priceStr = applicable?.price_per_hour ?? s.current_price;
-      form.setValue(
-        "price_per_hour",
-        priceStr ? parseFloat(priceStr) || 0 : 0,
-        { shouldDirty: true },
-      );
+      form.setValue("price_per_hour", effectivePrice(s, startMs), { shouldDirty: true });
       lastSyncedKey.current = key;
       break;
     }
@@ -286,16 +275,18 @@ export function EventForm({
   }, [startAtValue, durationValue]);
 
   // Live calculation
-  const calc = useMemo(() => {
-    const price = Number(priceValue) || 0;
-    const minutes = Number(durationValue) || 0;
-    const gross = (price * minutes) / 60;
-    const taxAmt = taxEnabled ? (gross * (Number(taxValue) || 0)) / 100 : 0;
-    const royaltyAmt = royaltyEnabled ? (gross * (Number(royaltyValue) || 0)) / 100 : 0;
-    const net = gross - taxAmt - royaltyAmt;
-    return { gross, taxAmt, royaltyAmt, net };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [priceValue, durationValue, taxEnabled, taxValue, royaltyEnabled, royaltyValue]);
+  const calc = useMemo(
+    () =>
+      calcEvent({
+        price: Number(priceValue) || 0,
+        minutes: Number(durationValue) || 0,
+        tax: Number(taxValue) || 0,
+        royalty: Number(royaltyValue) || 0,
+        taxEnabled,
+        royaltyEnabled,
+      }),
+    [priceValue, durationValue, taxEnabled, taxValue, royaltyEnabled, royaltyValue],
+  );
 
   const fmtMoney = (v: number) =>
     v.toLocaleString("ru-RU", { maximumFractionDigits: 0 });
