@@ -17,7 +17,49 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install backend deps
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff check app)
+        run: ruff check app
+
+      - name: Backend tests (pytest)
+        run: pytest
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web deps
+        run: npm ci
+        working-directory: web
+
+      - name: Typecheck (tsc -b)
+        run: npx tsc -b
+        working-directory: web
+
+      - name: Frontend tests (vitest run)
+        run: npx vitest run
+        working-directory: web
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
