@@ -16,6 +16,7 @@ import {
 import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
 import { google as googleApi } from "@/lib/api";
 import { useOnline } from "@/hooks/useOnline";
+import { count as outboxCount, subscribe as outboxSubscribe } from "@/lib/outbox";
 import { cn } from "@/lib/utils";
 import { EventFormModal } from "@/pages/EventForm";
 
@@ -50,6 +51,20 @@ export function Layout() {
   });
   const failedCount = googleStatus.data?.failed ?? 0;
   const online = useOnline();
+  const [queued, setQueued] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      const n = await outboxCount();
+      if (!cancelled) setQueued(n);
+    };
+    void refresh();
+    const unsub = outboxSubscribe(() => void refresh());
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, []);
   // Connected but the token no longer works → warn on the Settings item.
   const googleBroken =
     !!googleStatus.data?.connected && googleStatus.data?.credentials_valid === false;
@@ -91,6 +106,25 @@ export function Layout() {
             }}
           >
             Офлайн
+          </div>
+        )}
+        {queued > 0 && (
+          <div
+            role="status"
+            aria-live="polite"
+            title="Ожидают отправки на сервер"
+            style={{
+              margin: "0 12px 8px",
+              padding: "4px 10px",
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 600,
+              textAlign: "center",
+              background: "var(--accent-soft)",
+              color: "var(--accent-ink)",
+            }}
+          >
+            В очереди: {queued}
           </div>
         )}
 

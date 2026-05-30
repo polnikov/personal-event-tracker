@@ -18,7 +18,12 @@ import {
   Textarea,
   Toggle,
 } from "@/components/design";
-import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
+import {
+  categories as categoriesApi,
+  clients as clientsApi,
+  events as eventsApi,
+  OfflineQueuedError,
+} from "@/lib/api";
 import { calcEvent, effectivePrice } from "@/lib/eventCalc";
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -219,7 +224,16 @@ export function EventForm({
         invalidateAfterEventMutation();
         onSaved();
       },
-      onError: (err: Error) => setError(err.message),
+      onError: (err: Error) => {
+        // Offline → kept in the outbox; treat as soft success so the modal
+        // closes and the UI refreshes once the daemon flushes.
+        if (err instanceof OfflineQueuedError) {
+          invalidateAfterEventMutation();
+          onSaved();
+          return;
+        }
+        setError(err.message);
+      },
     });
   };
 
@@ -501,6 +515,14 @@ export function EventForm({
                       onSuccess: () => {
                         invalidateAfterEventMutation();
                         onSaved();
+                      },
+                      onError: (err: Error) => {
+                        if (err instanceof OfflineQueuedError) {
+                          invalidateAfterEventMutation();
+                          onSaved();
+                          return;
+                        }
+                        setError(err.message);
                       },
                     });
                   }

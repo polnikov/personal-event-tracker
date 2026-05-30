@@ -13,6 +13,8 @@ import type {
   UpcomingEvent,
 } from "@/types/api";
 
+import { enqueue } from "./outbox";
+
 const API_BASE = "/api";
 
 class ApiError extends Error {
@@ -25,26 +27,86 @@ class ApiError extends Error {
   }
 }
 
+/** Thrown by `request()` when a mutation could not reach the server and was
+ *  parked in the outbox instead. Callers should treat it as a soft success
+ *  (the op will be replayed once connectivity returns). */
+class OfflineQueuedError extends Error {
+  path: string;
+  method: string;
+  idempotencyKey: string;
+  constructor(path: string, method: string, idempotencyKey: string) {
+    super("Сохранено в очереди для отправки");
+    this.name = "OfflineQueuedError";
+    this.path = path;
+    this.method = method;
+    this.idempotencyKey = idempotencyKey;
+  }
+}
+
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/** Skip outbox for endpoints whose state must always be live (auth/google
+ *  flows). They'll just fail in-browser when offline — the UI handles it. */
+const NEVER_QUEUE_RE = /^\/(auth|google)(\/|$)/;
+
+function parseBody(body: BodyInit | null | undefined): unknown {
+  if (body === undefined || body === null) return undefined;
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return body;
+    }
+  }
+  return undefined;
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method || "GET").toUpperCase();
-  // Mutations get a fresh client-generated Idempotency-Key by default so
-  // retries and offline-replays don't produce duplicate rows server-side.
-  // Callers (e.g. the outbox flusher) can override via init.headers.
-  const idempotencyHeader: HeadersInit = MUTATION_METHODS.has(method)
-    ? { "Idempotency-Key": crypto.randomUUID() }
+  const isMutation = MUTATION_METHODS.has(method);
+  const idempotencyKey = isMutation ? crypto.randomUUID() : undefined;
+  const canQueue = isMutation && !NEVER_QUEUE_RE.test(path);
+
+  // Offline before we even try → enqueue and bail out as "queued".
+  if (canQueue && typeof navigator !== "undefined" && !navigator.onLine) {
+    await enqueue({
+      method: method as "POST" | "PUT" | "PATCH" | "DELETE",
+      url: path,
+      body: parseBody(init.body),
+      idempotencyKey,
+    });
+    throw new OfflineQueuedError(path, method, idempotencyKey!);
+  }
+
+  const idempotencyHeader: HeadersInit = idempotencyKey
+    ? { "Idempotency-Key": idempotencyKey }
     : {};
-  const res = await fetch(`${API_BASE}${path}`, {
-    credentials: "include",
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...idempotencyHeader,
-      ...(init.headers || {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      credentials: "include",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...idempotencyHeader,
+        ...(init.headers || {}),
+      },
+    });
+  } catch (err) {
+    // Network failure mid-request: a mutation can be safely queued (same key,
+    // server-side idempotency dedupes if it actually reached the backend).
+    if (canQueue && idempotencyKey) {
+      await enqueue({
+        method: method as "POST" | "PUT" | "PATCH" | "DELETE",
+        url: path,
+        body: parseBody(init.body),
+        idempotencyKey,
+      });
+      throw new OfflineQueuedError(path, method, idempotencyKey);
+    }
+    throw err;
+  }
   if (!res.ok) {
     let body: unknown = null;
     try {
@@ -63,7 +125,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
-export { ApiError };
+export { ApiError, OfflineQueuedError };
 
 // ---------- Auth ----------
 

@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import App from "./App";
 import { queryStorage } from "@/lib/queryPersist";
+import { startSyncDaemon } from "@/lib/syncDaemon";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -27,6 +28,9 @@ const persister = createAsyncStoragePersister({
   storage: queryStorage,
   key: "event-tracker-rq",
 });
+
+// Drain the offline outbox on boot and whenever the network comes back.
+startSyncDaemon(queryClient);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
