@@ -7,6 +7,7 @@ import {
   CalendarDots,
   CalendarPlus,
   ChartPieSlice,
+  CloudArrowUp,
   GearSix,
   GridFour,
   IdentificationCard,
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/categories", label: "Категории", Icon: Tag, end: false },
   { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
   { to: "/settings/google", label: "Настройки", Icon: GearSix, end: false },
+  { to: "/sync", label: "Очередь", Icon: CloudArrowUp, end: false },
   { to: "/debug", label: "Отладка", Icon: Bug, end: false },
 ];
 
@@ -108,25 +110,6 @@ export function Layout() {
             Офлайн
           </div>
         )}
-        {queued > 0 && (
-          <div
-            role="status"
-            aria-live="polite"
-            title="Ожидают отправки на сервер"
-            style={{
-              margin: "0 12px 8px",
-              padding: "4px 10px",
-              borderRadius: 999,
-              fontSize: 11,
-              fontWeight: 600,
-              textAlign: "center",
-              background: "var(--accent-soft)",
-              color: "var(--accent-ink)",
-            }}
-          >
-            В очереди: {queued}
-          </div>
-        )}
 
         <div className="nav">
           {NAV_ITEMS.map(({ to, label, Icon, end }) => {
@@ -149,6 +132,9 @@ export function Layout() {
                 )}
                 {to === "/settings/google" && googleBroken && (
                   <span className="nav-badge" title="Проблема с подключением Google">!</span>
+                )}
+                {to === "/sync" && queued > 0 && (
+                  <span className="nav-badge" title="Ожидают отправки">{queued}</span>
                 )}
               </NavLink>
             );

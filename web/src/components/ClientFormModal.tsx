@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button, Field, Input, Modal, Textarea } from "@/components/design";
-import { clients as clientsApi } from "@/lib/api";
+import { clients as clientsApi, OfflineQueuedError } from "@/lib/api";
 import type { Client } from "@/types/api";
 
 const schema = z.object({
@@ -43,6 +43,13 @@ export function ClientFormModal({
       qc.invalidateQueries({ queryKey: ["clients"] });
       onSaved?.(saved);
       onClose();
+    },
+    onError: (err: Error) => {
+      // Offline — the op is queued; close the modal so the user can keep working.
+      if (err instanceof OfflineQueuedError) {
+        qc.invalidateQueries({ queryKey: ["clients"] });
+        onClose();
+      }
     },
   });
 

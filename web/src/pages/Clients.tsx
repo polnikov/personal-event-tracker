@@ -11,7 +11,7 @@ import {
   Input,
 } from "@/components/design";
 import { ClientFormModal } from "@/components/ClientFormModal";
-import { clients as clientsApi } from "@/lib/api";
+import { clients as clientsApi, OfflineQueuedError } from "@/lib/api";
 import { fmt } from "@/lib/format";
 
 export function ClientsPage() {
@@ -30,6 +30,12 @@ export function ClientsPage() {
   const remove = useMutation({
     mutationFn: (id: number) => clientsApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clients"] }),
+    onError: (err: Error) => {
+      // Offline → queued; refresh list once the daemon flushes.
+      if (err instanceof OfflineQueuedError) {
+        qc.invalidateQueries({ queryKey: ["clients"] });
+      }
+    },
   });
 
   const filtered = useMemo(() => {
