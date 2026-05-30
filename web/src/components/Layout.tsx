@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
 import { google as googleApi } from "@/lib/api";
+import { useOnline } from "@/hooks/useOnline";
 import { cn } from "@/lib/utils";
 import { EventFormModal } from "@/pages/EventForm";
 
@@ -48,6 +49,7 @@ export function Layout() {
     staleTime: 15_000,
   });
   const failedCount = googleStatus.data?.failed ?? 0;
+  const online = useOnline();
   // Connected but the token no longer works → warn on the Settings item.
   const googleBroken =
     !!googleStatus.data?.connected && googleStatus.data?.credentials_valid === false;
@@ -71,6 +73,26 @@ export function Layout() {
           <img src="/icon.png" alt="Tracker" className="brand-mark" />
           <div className="brand-name">Tracker</div>
         </NavLink>
+
+        {!online && (
+          <div
+            role="status"
+            aria-live="polite"
+            title="Нет соединения. Данные показываются из кэша."
+            style={{
+              margin: "0 12px 8px",
+              padding: "4px 10px",
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 600,
+              textAlign: "center",
+              background: "var(--danger-soft, #fdecea)",
+              color: "var(--danger, #b00020)",
+            }}
+          >
+            Офлайн
+          </div>
+        )}
 
         <div className="nav">
           {NAV_ITEMS.map(({ to, label, Icon, end }) => {
