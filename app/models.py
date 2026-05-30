@@ -167,3 +167,19 @@ class GoogleSyncOutbox(Base):
     summary: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class IdempotencyLog(Base):
+    """Cached response for a mutation, keyed by the client's Idempotency-Key
+    header. Lets the offline outbox replay a request without producing dupes."""
+
+    __tablename__ = "idempotency_log"
+    __table_args__ = (Index("ix_idempotency_created", "created_at"),)
+
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    method: Mapped[str] = mapped_column(String(8), nullable=False)
+    path: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[int] = mapped_column(Integer, nullable=False)
+    # JSON-serialised response body ("null" for 204 / empty bodies).
+    response_json: Mapped[str] = mapped_column(Text, nullable=False, default="null")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)

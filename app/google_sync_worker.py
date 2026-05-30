@@ -12,6 +12,7 @@ import time
 from .config import settings
 from .database import SessionLocal
 from .google_sync import check_calendar_health, process_due_outbox_rows
+from .idempotency import purge_idempotency_log
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,10 @@ def _tick_once() -> None:
                 check_calendar_health(db)
             except Exception:
                 logger.exception("calendar health check failed")
+            try:
+                purge_idempotency_log(db)
+            except Exception:
+                logger.exception("idempotency log purge failed")
     finally:
         db.close()
 

@@ -25,15 +25,25 @@ class ApiError extends Error {
   }
 }
 
+const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = (init.method || "GET").toUpperCase();
+  // Mutations get a fresh client-generated Idempotency-Key by default so
+  // retries and offline-replays don't produce duplicate rows server-side.
+  // Callers (e.g. the outbox flusher) can override via init.headers.
+  const idempotencyHeader: HeadersInit = MUTATION_METHODS.has(method)
+    ? { "Idempotency-Key": crypto.randomUUID() }
+    : {};
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
+    ...init,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...idempotencyHeader,
       ...(init.headers || {}),
     },
-    ...init,
   });
   if (!res.ok) {
     let body: unknown = null;

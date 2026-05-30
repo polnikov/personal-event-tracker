@@ -11,6 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .config import settings
 from .google_sync_worker import run_sync_worker
+from .idempotency import IdempotencyMiddleware
 from .routers.auth_router import router as auth_router, limiter as auth_limiter
 from .routers.categories import router as categories_router
 from .routers.clients import router as clients_router
@@ -38,6 +39,10 @@ app = FastAPI(title="Трекер событий API", debug=settings.DEBUG, lif
 
 app.state.limiter = auth_limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Idempotency replay cache for /api mutations. Added first so it ends up
+# innermost — CORS/Session wrap it and still emit their headers on replay.
+app.add_middleware(IdempotencyMiddleware)
 
 # CORS — Vite dev server + production frontend origin
 app.add_middleware(
