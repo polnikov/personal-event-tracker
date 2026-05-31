@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { format, parse, parseISO } from "date-fns";
@@ -465,7 +465,7 @@ export function DashboardPage() {
   );
 
   return (
-    <div className="page">
+    <div className="page dashboard-page">
       <div className="page-head">
         <div>
           <h1 className="h1">Дашборд</h1>
@@ -490,12 +490,9 @@ export function DashboardPage() {
 
       {data && (
         <>
-          {/* Row 1: upcoming (3-day window) */}
+          {/* Row 1: upcoming (3-day window) — no section header; each day
+              group's weekday + date acts as the card heading. */}
           <div className="section">
-            <div className="section-head">
-              <div className="card-title">Ближайшие события</div>
-              <Link className="link small" to="/events">Все →</Link>
-            </div>
             {upcomingGroups.length > 0 ? (
               upcomingGroups.map((g) => (
                 <div key={g.key} className="day-group">
@@ -536,6 +533,15 @@ export function DashboardPage() {
               <div className="muted small">В ближайшие 3 дня событий нет</div>
             )}
           </div>
+
+          {/* Mobile-only "Все события" button — sibling at page level so the
+              page gap separates it from the upcoming block above and the
+              chart row below by the same amount. */}
+          {isMobile && (
+            <Button variant="secondary" block onClick={() => nav("/events")}>
+              Все события
+            </Button>
+          )}
 
           {/* Row 2: daily + pie */}
           <div className="grid grid-2 gap-md">

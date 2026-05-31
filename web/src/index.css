@@ -294,6 +294,11 @@
    Page basics
    ============================================================ */
 .page { display: flex; flex-direction: column; gap: 22px; max-width: 1320px; }
+/* Dashboard rhythm: every page-level sibling (upcoming block, mobile "Все
+   события" button, each chart row) is separated by the same gap as the
+   widgets *inside* a chart row (gap-md = 16px), giving the whole page a
+   single uniform vertical step. */
+.dashboard-page { gap: 16px; }
 .page-head {
   display: flex;
   align-items: flex-end;
@@ -1376,6 +1381,7 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Tighter rhythm: page-level gap matches the toolbar gap so the blocks all
      sit 12px apart. */
   .page { gap: 12px; }
+  .dashboard-page { gap: 16px; }
 
   /* Report (мобильный): фильтры — sticky top с зазором 19px от верха
      вьюпорта, чтобы тогглер не прилипал вплотную. */
