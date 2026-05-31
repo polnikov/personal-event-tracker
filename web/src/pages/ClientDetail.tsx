@@ -26,7 +26,7 @@ import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
-import { fmt, pluralize } from "@/lib/format";
+import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 type TabKey = "future" | "past" | "analytics";
@@ -118,16 +118,18 @@ function MonthGroupedEvents({
   }
 
   // Trim events across month widgets so the total displayed events <= limit.
+  // Keep each visible group's FULL count separately so the group badge counts
+  // the whole month even when the last group is paginated.
   const totalEvents = groups.reduce((s, g) => s + g.events.length, 0);
-  const visibleGroups: MonthGroup[] = [];
+  const visibleGroups: { full: MonthGroup; events: EventItem[] }[] = [];
   let remaining = limit;
   for (const g of groups) {
     if (remaining <= 0) break;
     if (g.events.length <= remaining) {
-      visibleGroups.push(g);
+      visibleGroups.push({ full: g, events: g.events });
       remaining -= g.events.length;
     } else {
-      visibleGroups.push({ ...g, events: g.events.slice(0, remaining) });
+      visibleGroups.push({ full: g, events: g.events.slice(0, remaining) });
       remaining = 0;
     }
   }
@@ -136,7 +138,7 @@ function MonthGroupedEvents({
 
   return (
     <div className="stack-md">
-      {visibleGroups.map((g) => {
+      {visibleGroups.map(({ full: g, events: visibleEvents }) => {
         const groupHasToday = g.events.some(
           (e) => e.start_at.slice(0, 10) === todayDayKey,
         );
@@ -147,10 +149,7 @@ function MonthGroupedEvents({
               <span className="day-group-weekday" style={{ textTransform: "capitalize" }}>
                 {format(g.date, "LLLL yyyy", { locale: ru })}
               </span>
-              <span className="day-group-date muted">
-                {" · "}
-                {g.events.length} {pluralize(g.events.length, "событие", "события", "событий")}
-              </span>
+              <span className="day-group-count-badge">{g.events.length}</span>
               {groupHasToday && (
                 <span className="day-group-today"> · сегодня</span>
               )}
@@ -159,7 +158,7 @@ function MonthGroupedEvents({
           </div>
           <Card padding="p-0">
             <div className="event-table">
-              {g.events.map((e) => {
+              {visibleEvents.map((e) => {
                 const d = parseISO(e.start_at);
                 return (
                   <EventLineRow

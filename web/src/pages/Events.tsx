@@ -75,19 +75,34 @@ function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Trim a list of day groups so that at most `limit` events total are shown. */
-function paginateGroups(groups: DayGroup[], limit: number): { groups: DayGroup[]; total: number } {
+interface VisibleDayGroup extends DayGroup {
+  /** Total events for the day BEFORE pagination — drives the count badge. */
+  totalEvents: number;
+}
+
+/** Trim a list of day groups so that at most `limit` events total are shown,
+ *  while preserving each day's full count so the badge always reflects the
+ *  whole day even when the last group is paginated. */
+function paginateGroups(
+  groups: DayGroup[],
+  limit: number,
+): { groups: VisibleDayGroup[]; total: number } {
   const total = groups.reduce((s, g) => s + g.events.length, 0);
-  if (limit >= total) return { groups, total };
-  const out: DayGroup[] = [];
+  if (limit >= total) {
+    return {
+      groups: groups.map((g) => ({ ...g, totalEvents: g.events.length })),
+      total,
+    };
+  }
+  const out: VisibleDayGroup[] = [];
   let remaining = limit;
   for (const g of groups) {
     if (remaining <= 0) break;
     if (g.events.length <= remaining) {
-      out.push(g);
+      out.push({ ...g, totalEvents: g.events.length });
       remaining -= g.events.length;
     } else {
-      out.push({ ...g, events: g.events.slice(0, remaining) });
+      out.push({ ...g, events: g.events.slice(0, remaining), totalEvents: g.events.length });
       remaining = 0;
     }
   }
@@ -489,11 +504,12 @@ export function EventsPage() {
                 {" · "}
                 {format(g.date, "d MMMM", { locale: ru })}
               </span>
+              <span className="day-group-count-badge">{g.totalEvents}</span>
               {g.key === todayKey && (
                 <span className="day-group-today"> · сегодня</span>
               )}
             </div>
-            {g.events.length >= 2 && (
+            {g.totalEvents >= 2 && (
               <div className="day-group-net mono">{fmt.money(g.net)} ₽</div>
             )}
           </div>

@@ -508,6 +508,7 @@ export function DashboardPage() {
                         {" · "}
                         {format(g.date, "d MMMM", { locale: ru })}
                       </span>
+                      <span className="day-group-count-badge">{g.events.length}</span>
                       {g.key === todayKey && (
                         <span className="day-group-today"> · сегодня</span>
                       )}
