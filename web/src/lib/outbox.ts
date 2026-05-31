@@ -14,6 +14,18 @@ export interface EnqueueOp {
   dependsOn?: string[];
 }
 
+// ───────────────────────── monotonic timestamp ─────────────────────────
+
+// Date.now() has 1-ms resolution; two enqueues in the same tick would tie
+// and Dexie's orderBy("ts") wouldn't guarantee FIFO. Keep a tiny monotonic
+// counter so each entry sorts strictly after the previous one.
+let _lastTs = 0;
+function nextTs(): number {
+  const t = Math.max(Date.now(), _lastTs + 1);
+  _lastTs = t;
+  return t;
+}
+
 // ───────────────────────── change subscription ─────────────────────────
 
 const subscribers = new Set<() => void>();
@@ -35,7 +47,7 @@ function notify(): void {
 export async function enqueue(op: EnqueueOp): Promise<OutboxEntry> {
   const entry: OutboxEntry = {
     id: uuidv4(),
-    ts: Date.now(),
+    ts: nextTs(),
     method: op.method,
     url: op.url,
     body: op.body,

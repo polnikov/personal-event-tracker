@@ -16,11 +16,13 @@ import { DatePicker } from "@/components/DatePicker";
 import { IconPicker } from "@/components/IconPicker";
 import { AppIcon } from "@/components/phosphor";
 import { categories as categoriesApi, google as googleApi } from "@/lib/api";
+import { useOfflineRefresh } from "@/hooks/useOfflineRefresh";
 import { fmt } from "@/lib/format";
 import type { Category, Subcategory, SubcategoryPrice } from "@/types/api";
 
 export function CategoriesPage() {
   const qc = useQueryClient();
+  const onQueued = useOfflineRefresh(["categories"]);
   const list = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
 
   const [creatingCat, setCreatingCat] = useState(false);
@@ -32,10 +34,12 @@ export function CategoriesPage() {
   const removeCat = useMutation({
     mutationFn: (id: number) => categoriesApi.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onError: onQueued,
   });
   const removeSub = useMutation({
     mutationFn: (id: number) => categoriesApi.removeSubcategory(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onError: onQueued,
   });
 
   return (
@@ -182,6 +186,7 @@ function CategoryFormModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const onQueued = useOfflineRefresh(["categories"]);
   const isEdit = !!category;
   const [name, setName] = useState(category?.name ?? "");
   const [color, setColor] = useState(category?.color ?? "#7BB661");
@@ -222,6 +227,14 @@ function CategoryFormModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       onClose();
+    },
+    onError: (err: Error) => {
+      // Offline: row is in the outbox — close so the user can keep working.
+      // Other errors stay visible (toast/alert).
+      if (err.name === "OfflineQueuedError") {
+        onQueued(err);
+        onClose();
+      }
     },
   });
 
@@ -279,6 +292,7 @@ function CategoryFormModal({
 
 function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => void }) {
   const qc = useQueryClient();
+  const onQueued = useOfflineRefresh(["categories"]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
@@ -296,6 +310,12 @@ function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => v
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       onClose();
+    },
+    onError: (err: Error) => {
+      if (err.name === "OfflineQueuedError") {
+        onQueued(err);
+        onClose();
+      }
     },
   });
   const canSubmit = !!name.trim() && !!price && !!effectiveFrom && !create.isPending;
@@ -369,6 +389,7 @@ function EditSubcategoryModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const onQueued = useOfflineRefresh(["categories"]);
   const [name, setName] = useState(sub.name);
   const [icon, setIcon] = useState<string | null>(sub.icon);
 
@@ -378,6 +399,12 @@ function EditSubcategoryModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       onClose();
+    },
+    onError: (err: Error) => {
+      if (err.name === "OfflineQueuedError") {
+        onQueued(err);
+        onClose();
+      }
     },
   });
   const canSubmit = !!name.trim() && !save.isPending;
@@ -429,6 +456,7 @@ function NewPriceModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const onQueued = useOfflineRefresh(["categories"]);
   const [price, setPrice] = useState("");
   const [effectiveFrom, setEffectiveFrom] = useState(() =>
     new Date().toISOString().slice(0, 10),
@@ -458,6 +486,12 @@ function NewPriceModal({
       // clear the amount so it's ready for another entry.
       setPrice("");
     },
+    onError: (err: Error) => {
+      if (err.name === "OfflineQueuedError") {
+        onQueued(err);
+        setPrice("");
+      }
+    },
   });
   const canSubmit = !!price && Number(price) > 0 && !!effectiveFrom && !create.isPending;
 
@@ -470,6 +504,12 @@ function NewPriceModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       setEditingId(null);
+    },
+    onError: (err: Error) => {
+      if (err.name === "OfflineQueuedError") {
+        onQueued(err);
+        setEditingId(null);
+      }
     },
   });
   const canSaveEdit =
@@ -484,6 +524,7 @@ function NewPriceModal({
   const remove = useMutation({
     mutationFn: (priceId: number) => categoriesApi.removePrice(priceId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onError: onQueued,
   });
   return (
     <Modal

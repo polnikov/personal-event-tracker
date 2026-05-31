@@ -10,7 +10,21 @@ const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "ut
 // offline. Auth + Google must always go to the network (login state, OAuth
 // callbacks, calendar list) so we don't serve stale credentials/calendars.
 const SAFE_READ_RE = /^\/api\/(events|clients|categories|reports|dashboard|calendar)(\/|$)/;
+const MUTABLE_RE = /^\/api\/(events|clients|categories)(\/|$)/;
 const NEVER_CACHE_RE = /^\/api\/(auth|google)(\/|$)/;
+
+// Workbox runtimeCaching rules accept a single HTTP method per entry, so each
+// mutating method needs its own entry pointing at the same Background Sync
+// queue. This is a safety net: the client-side outbox already handles
+// "offline at submit-time"; SW Background Sync only matters when a fetch is
+// in-flight as the tab closes (we never get to enqueue from JS).
+const BG_SYNC_OPTIONS = {
+  backgroundSync: {
+    name: "et-mutations",
+    options: { maxRetentionTime: 24 * 60 }, // minutes
+  },
+};
+const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"] as const;
 
 export default defineConfig({
   plugins: [
@@ -53,6 +67,16 @@ export default defineConfig({
               expiration: { maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 },
             },
           },
+          // SW-level Background Sync for mutations: catches fetches that fail
+          // mid-flight (tab close, network blip) when the JS daemon can't.
+          // The server is idempotent, so a SW-replay alongside the JS daemon
+          // is safe — both carry the same Idempotency-Key.
+          ...MUTATION_METHODS.map((method) => ({
+            urlPattern: ({ url }: { url: URL }) => MUTABLE_RE.test(url.pathname),
+            handler: "NetworkOnly" as const,
+            method,
+            options: BG_SYNC_OPTIONS,
+          })),
           // Everything else under /api/ — fall back to a short-timeout
           // network-first so things still work when online (e.g. /healthz).
           {

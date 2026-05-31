@@ -17,7 +17,7 @@ import {
 import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
 import { google as googleApi } from "@/lib/api";
 import { useOnline } from "@/hooks/useOnline";
-import { count as outboxCount, subscribe as outboxSubscribe } from "@/lib/outbox";
+import { list as outboxList, subscribe as outboxSubscribe } from "@/lib/outbox";
 import { cn } from "@/lib/utils";
 import { EventFormModal } from "@/pages/EventForm";
 
@@ -53,12 +53,16 @@ export function Layout() {
   });
   const failedCount = googleStatus.data?.failed ?? 0;
   const online = useOnline();
-  const [queued, setQueued] = useState(0);
+  const [outbox, setOutbox] = useState({ pending: 0, failed: 0 });
   useEffect(() => {
     let cancelled = false;
     const refresh = async () => {
-      const n = await outboxCount();
-      if (!cancelled) setQueued(n);
+      const all = await outboxList();
+      if (cancelled) return;
+      setOutbox({
+        pending: all.filter((e) => e.status === "pending").length,
+        failed: all.filter((e) => e.status === "failed").length,
+      });
     };
     void refresh();
     const unsub = outboxSubscribe(() => void refresh());
@@ -133,8 +137,22 @@ export function Layout() {
                 {to === "/settings/google" && googleBroken && (
                   <span className="nav-badge" title="Проблема с подключением Google">!</span>
                 )}
-                {to === "/sync" && queued > 0 && (
-                  <span className="nav-badge" title="Ожидают отправки">{queued}</span>
+                {to === "/sync" && outbox.failed > 0 && (
+                  <span className="nav-badge" title="Не удалось отправить">
+                    {`!${outbox.failed}`}
+                  </span>
+                )}
+                {to === "/sync" && outbox.failed === 0 && outbox.pending > 0 && (
+                  <span
+                    className="nav-badge"
+                    title="Ожидают отправки"
+                    style={{
+                      background: "var(--accent-soft)",
+                      color: "var(--accent-ink)",
+                    }}
+                  >
+                    {outbox.pending}
+                  </span>
                 )}
               </NavLink>
             );
