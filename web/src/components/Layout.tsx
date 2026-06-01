@@ -264,7 +264,7 @@ export function Layout() {
               }}
             >
               <span className="mobile-sheet-item-icon">
-                <CalendarPlus size={22} weight="duotone" />
+                <CalendarPlus size={22} weight="fill" />
               </span>
               <span>Добавить событие</span>
             </button>
@@ -278,10 +278,12 @@ export function Layout() {
               }}
             >
               <span className="mobile-sheet-item-icon">
-                <UserPlus size={22} weight="duotone" />
+                <UserPlus size={22} weight="fill" />
               </span>
               <span>Добавить клиента</span>
             </button>
+
+            <div className="mobile-sheet-divider" role="separator" />
 
             <NavLink to="/clients" className="mobile-sheet-item">
               <span className="mobile-sheet-item-icon">
