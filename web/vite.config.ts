@@ -28,25 +28,9 @@ function buildVersion(): string {
 }
 const APP_VERSION = buildVersion();
 
-// Safe-to-cache read endpoints — UI must render from cache instantly while
-// offline. Auth + Google must always go to the network (login state, OAuth
-// callbacks, calendar list) so we don't serve stale credentials/calendars.
-const SAFE_READ_RE = /^\/api\/(events|clients|categories|reports|dashboard|calendar)(\/|$)/;
-const MUTABLE_RE = /^\/api\/(events|clients|categories)(\/|$)/;
+// Live-only endpoints — never cached. Auth + Google flows (login state,
+// OAuth callbacks, Google calendar list) must always hit the network.
 const NEVER_CACHE_RE = /^\/api\/(auth|google)(\/|$)/;
-
-// Workbox runtimeCaching rules accept a single HTTP method per entry, so each
-// mutating method needs its own entry pointing at the same Background Sync
-// queue. This is a safety net: the client-side outbox already handles
-// "offline at submit-time"; SW Background Sync only matters when a fetch is
-// in-flight as the tab closes (we never get to enqueue from JS).
-const BG_SYNC_OPTIONS = {
-  backgroundSync: {
-    name: "et-mutations",
-    options: { maxRetentionTime: 24 * 60 }, // minutes
-  },
-};
-const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"] as const;
 
 export default defineConfig({
   plugins: [
@@ -79,38 +63,34 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         runtimeCaching: [
-          // Auth/Google: never cached, never queued — always live.
+          // Auth/Google: always live. NetworkOnly avoids stale login state
+          // and OAuth artefacts; also doesn't queue, so SW never rejects
+          // these with a "no-response".
           {
             urlPattern: ({ url }) => NEVER_CACHE_RE.test(url.pathname),
             handler: "NetworkOnly",
           },
-          // Read endpoints: serve from cache instantly, refresh in background.
+          // All other GET /api/* — NetworkFirst with a short timeout. Fresh
+          // data on every reload; falls back to the last cached payload only
+          // when the network actually fails (true offline). Cache name is
+          // versioned so the previous SWR-era cache (api-read-v1) is
+          // abandoned after deploy.
           {
             urlPattern: ({ url, request }) =>
-              request.method === "GET" && SAFE_READ_RE.test(url.pathname),
-            handler: "StaleWhileRevalidate",
+              request.method === "GET" && url.pathname.startsWith("/api/"),
+            handler: "NetworkFirst",
             options: {
-              cacheName: "api-read-v1",
+              cacheName: "api-read-v2",
+              networkTimeoutSeconds: 3,
               expiration: { maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 },
             },
           },
-          // SW-level Background Sync for mutations: catches fetches that fail
-          // mid-flight (tab close, network blip) when the JS daemon can't.
-          // The server is idempotent, so a SW-replay alongside the JS daemon
-          // is safe — both carry the same Idempotency-Key.
-          ...MUTATION_METHODS.map((method) => ({
-            urlPattern: ({ url }: { url: URL }) => MUTABLE_RE.test(url.pathname),
-            handler: "NetworkOnly" as const,
-            method,
-            options: BG_SYNC_OPTIONS,
-          })),
-          // Everything else under /api/ — fall back to a short-timeout
-          // network-first so things still work when online (e.g. /healthz).
-          {
-            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
-            handler: "NetworkFirst",
-            options: { cacheName: "api-cache", networkTimeoutSeconds: 5 },
-          },
+          // Non-GET (POST/PUT/PATCH/DELETE) requests are intentionally not
+          // listed here: Workbox only intercepts methods it has a rule for,
+          // so mutations pass straight through to the browser fetch. The
+          // JS-side outbox in lib/api.ts owns offline replay end-to-end —
+          // doubling that up with a SW BackgroundSync queue was producing
+          // the "respondWith: no-response" rejections this commit fixes.
         ],
       },
     }),
