@@ -101,8 +101,15 @@ def list_events(
 
     events = db.execute(stmt).scalars().all()
     now = now_local()
-    future = sorted([e for e in events if e.start_at >= now], key=lambda e: e.start_at)
-    past = [e for e in events if e.start_at < now]
+    # An event becomes "past" only after its end_at (start + duration), so an
+    # in-progress slot (e.g. 14:00–15:00 at 14:30) stays in `future` until it
+    # actually finishes. Event has no end_at column — derive it from
+    # start_at + duration_minutes.
+    def _has_ended(e: Event) -> bool:
+        return e.start_at + timedelta(minutes=e.duration_minutes) <= now
+
+    future = sorted([e for e in events if not _has_ended(e)], key=lambda e: e.start_at)
+    past = [e for e in events if _has_ended(e)]
 
     sync_map = hydrate_sync_status_map(db, events)
     return EventListResponse(
@@ -113,20 +120,29 @@ def list_events(
 
 @router.get("/upcoming", response_model=list[UpcomingEvent])
 def upcoming(limit: int = 10, db: Session = Depends(get_db)):
-    rows = (
+    now = now_local()
+    # Want "still upcoming or in progress" — end_at > now. End is derived
+    # from start_at + duration; can't filter on it in SQL portably, so
+    # pre-filter with a generous SQL window (events almost never run >24h)
+    # and apply the precise end_at check in Python.
+    candidates = (
         db.execute(
             select(Event)
             .options(
                 selectinload(Event.subcategory).selectinload(Subcategory.category),
                 selectinload(Event.client),
             )
-            .where(Event.start_at >= now_local())
+            .where(Event.start_at >= now - timedelta(days=1))
             .order_by(Event.start_at)
-            .limit(limit)
         )
         .scalars()
         .all()
     )
+    rows = [
+        e
+        for e in candidates
+        if e.start_at + timedelta(minutes=e.duration_minutes) > now
+    ][:limit]
     return [
         UpcomingEvent(
             id=e.id,
