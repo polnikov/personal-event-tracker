@@ -93,87 +93,170 @@
   z-index: 60;
 }
 
-/* Mobile trigger and backdrop */
-.mobile-fab { display: none; }
-.mobile-trigger {
-  display: none;
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  background: color-mix(in oklab, var(--bg) 60%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-2);
-  border-bottom: 1px solid var(--line);
-  margin: -28px -36px 16px;
-}
-.mobile-trigger-btn {
-  display: inline-grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 0;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
-  color: var(--ink);
-  border-radius: var(--r-md);
-  cursor: pointer;
-}
-.mobile-trigger-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
-.mobile-backdrop { display: none; }
+/* Mobile FABs are dead code on mobile — bottom tabbar replaces them — but
+   the .mobile-fab-client button still sits in pages/Clients.tsx markup, so
+   hide it everywhere. Desktop never showed them in the first place. */
+.mobile-fab { display: none !important; }
+
+/* Bottom tabbar (mobile primary nav) + slide-up "Ещё" sheet.
+   Both are hidden on desktop; styles below the media query are only
+   reachable on screens ≤768px. */
+.mobile-tabbar { display: none; }
+.mobile-sheet,
+.mobile-sheet-backdrop { display: none; }
 
 @media (max-width: 768px) {
   .app {
     grid-template-columns: 1fr;
   }
-  .sidebar {
+  /* Sidebar is desktop-only now. The slide-out from a burger menu has been
+     replaced by the bottom tabbar + "Ещё" sheet. */
+  .sidebar { display: none; }
+
+  .mobile-tabbar {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
     position: fixed;
     left: 0;
-    top: 0;
-    height: 100dvh;
-    width: 280px;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    box-shadow: var(--shadow-3);
-    border-right: 1px solid var(--line);
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    background: color-mix(in oklab, var(--bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--line);
   }
-  .app[data-mobile-open="true"] .sidebar { transform: translateX(0); }
-  .mobile-fab {
-    display: inline-grid;
-    place-items: center;
-    position: fixed;
-    bottom: 16px;
-    /* above everything, incl. chart tooltips */
-    z-index: 2147483647;
-    width: 50px;
-    height: 50px;
-    border: 1px solid var(--line);
-    border-radius: 50%;
-    background: color-mix(in srgb, var(--accent) 25%, rgba(255, 255, 255, 0.7));
-    backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-3);
-    color: var(--ink);
+  /* Don't float over an open modal (overlay is portaled to <body>). */
+  body:has(.modal-overlay) .mobile-tabbar { display: none; }
+
+  .mobile-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 2px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 500;
+    text-decoration: none;
     cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: color 0.12s;
+    min-width: 0;
   }
-  .mobile-fab-menu   { left: 16px; }
-  .mobile-fab-new    { left: 76px; }
-  .mobile-fab-client { left: 136px; }
-  .mobile-fab:active { transform: scale(0.96); }
-  .app[data-mobile-open="true"] .mobile-fab { display: none; }
-  /* don't float over an open modal (its overlay is portaled to <body>) */
-  body:has(.modal-overlay) .mobile-fab { display: none; }
-  .app[data-mobile-open="true"] .mobile-backdrop {
+  .mobile-tab span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mobile-tab:active { transform: scale(0.96); }
+  .mobile-tab.active { color: var(--accent); }
+  .mobile-tab-dot {
+    position: absolute;
+    top: 4px;
+    /* place the dot just to the right of the icon (icon is centered) */
+    left: calc(50% + 8px);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--danger);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--bg) 88%, transparent);
+  }
+
+  .mobile-sheet-backdrop {
     display: block;
     position: fixed;
     inset: 0;
     background: rgba(42, 42, 46, 0.36);
     backdrop-filter: blur(6px);
-    z-index: 50;
+    z-index: 80;
     animation: fadeIn 0.2s ease;
   }
+  .mobile-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 81;
+    padding: 6px 16px calc(16px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-radius: 18px 18px 0 0;
+    box-shadow: var(--shadow-3);
+    animation: sheetUp 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .mobile-sheet-handle {
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 6px auto 10px;
+  }
+  .mobile-sheet-status {
+    display: flex;
+    justify-content: center;
+    padding: 0 0 8px;
+  }
+  .mobile-sheet-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .mobile-sheet-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .mobile-sheet-status-pill.online {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--accent-ink, var(--accent));
+  }
+  .mobile-sheet-status-pill.offline {
+    background: var(--danger-soft, #fdecea);
+    color: var(--danger, #b00020);
+  }
+  .mobile-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 12px;
+    border: 0;
+    background: transparent;
+    border-radius: var(--r-md);
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 16px;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  .mobile-sheet-item:active { background: var(--bg-2); }
+  .mobile-sheet-item-icon {
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+    width: 24px;
+  }
+  .mobile-sheet-item .nav-badge { margin-left: auto; }
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .brand {
@@ -287,7 +370,8 @@
   width: 100%;
 }
 @media (max-width: 768px) {
-  .main { padding: 16px 16px 96px; }
+  /* Bottom padding clears the fixed .mobile-tabbar (~64px + safe area). */
+  .main { padding: 16px 16px calc(88px + env(safe-area-inset-bottom)); }
 }
 
 /* ============================================================
