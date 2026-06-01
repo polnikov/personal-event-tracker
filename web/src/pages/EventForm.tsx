@@ -111,27 +111,15 @@ export function EventForm({
     [],
   );
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      subcategory_id: "",
-      client_id: "",
-      start_at: prefillStart || nowLocal,
-      duration_minutes: 60,
-      notes: "",
-      recalculate_price: false,
-      price_per_hour: 0,
-      tax: 0,
-      royalty: 0,
-    },
-  });
-
-  useEffect(() => {
+  // Build the form payload from whichever async source is ready (edit/copy
+  // event details, or the new-event pre-fills). Passing this to useForm via
+  // `values` lets react-hook-form sync the form when the data arrives —
+  // avoiding the manual `form.reset` race that caused the subcategory Select
+  // to briefly miss the value while items were still loading.
+  const formValues = useMemo<FormValues>(() => {
     if (existing.data) {
       const e = existing.data;
-      const tax = parseFloat(e.tax) || 0;
-      const royalty = parseFloat(e.royalty) || 0;
-      form.reset({
+      return {
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
         start_at: format(parseISO(e.start_at), "yyyy-MM-dd'T'HH:mm"),
@@ -139,9 +127,53 @@ export function EventForm({
         notes: e.notes || "",
         recalculate_price: false,
         price_per_hour: parseFloat(e.hourly_rate_snapshot) || 0,
-        tax,
-        royalty,
-      });
+        tax: parseFloat(e.tax) || 0,
+        royalty: parseFloat(e.royalty) || 0,
+      };
+    }
+    if (sourceForCopy.data) {
+      const e = sourceForCopy.data;
+      // Copy keeps the source event's time-of-day but moves the date to today.
+      const sourceTime = format(parseISO(e.start_at), "HH:mm");
+      const todayDate = format(new Date(), "yyyy-MM-dd");
+      return {
+        subcategory_id: String(e.subcategory_id),
+        client_id: e.client_id ? String(e.client_id) : "",
+        start_at: `${todayDate}T${sourceTime}`,
+        duration_minutes: e.duration_minutes,
+        notes: e.notes || "",
+        recalculate_price: false,
+        price_per_hour: parseFloat(e.hourly_rate_snapshot) || 0,
+        tax: parseFloat(e.tax) || 0,
+        royalty: parseFloat(e.royalty) || 0,
+      };
+    }
+    return {
+      subcategory_id: "",
+      client_id: prefillClient ?? "",
+      start_at: prefillStart || nowLocal,
+      duration_minutes: 60,
+      notes: "",
+      recalculate_price: false,
+      price_per_hour: 0,
+      tax: 0,
+      royalty: 0,
+    };
+  }, [existing.data, sourceForCopy.data, prefillClient, prefillStart, nowLocal]);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: formValues,
+    values: formValues,
+  });
+
+  // Sync the tax/royalty toggles and the price-sync guard whenever async
+  // data lands. Driven by the data refs so it fires exactly once per event.
+  useEffect(() => {
+    if (existing.data) {
+      const e = existing.data;
+      const tax = parseFloat(e.tax) || 0;
+      const royalty = parseFloat(e.royalty) || 0;
       setTaxEnabled(tax > 0);
       setRoyaltyEnabled(royalty > 0);
       lastSyncedKey.current = `${e.subcategory_id}@${format(parseISO(e.start_at), "yyyy-MM-dd'T'HH:mm")}`;
@@ -149,28 +181,13 @@ export function EventForm({
       const e = sourceForCopy.data;
       const tax = parseFloat(e.tax) || 0;
       const royalty = parseFloat(e.royalty) || 0;
-      // Copy keeps the source event's time-of-day but moves the date to today.
-      const sourceTime = format(parseISO(e.start_at), "HH:mm");
-      const todayDate = format(new Date(), "yyyy-MM-dd");
-      const copyStartAt = `${todayDate}T${sourceTime}`;
-      form.reset({
-        subcategory_id: String(e.subcategory_id),
-        client_id: e.client_id ? String(e.client_id) : "",
-        start_at: copyStartAt,
-        duration_minutes: e.duration_minutes,
-        notes: e.notes || "",
-        recalculate_price: false,
-        price_per_hour: parseFloat(e.hourly_rate_snapshot) || 0,
-        tax,
-        royalty,
-      });
       setTaxEnabled(tax > 0);
       setRoyaltyEnabled(royalty > 0);
-      lastSyncedKey.current = `${e.subcategory_id}@${copyStartAt}`;
-    } else if (prefillClient) {
-      form.setValue("client_id", prefillClient);
+      const sourceTime = format(parseISO(e.start_at), "HH:mm");
+      const todayDate = format(new Date(), "yyyy-MM-dd");
+      lastSyncedKey.current = `${e.subcategory_id}@${todayDate}T${sourceTime}`;
     }
-  }, [existing.data, sourceForCopy.data, prefillClient, form]);
+  }, [existing.data, sourceForCopy.data]);
 
   // datetime-local already gives us "yyyy-MM-ddTHH:mm" in local time;
   // pass it through as a naive ISO string so the backend stores exactly what the
