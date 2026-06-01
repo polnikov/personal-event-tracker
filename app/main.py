@@ -91,6 +91,17 @@ if WEB_DIST.is_dir():
         name="spa-assets",
     )
 
+    # SPA shell + Service Worker + manifest must NOT be HTTP-cached or the
+    # browser keeps booting yesterday's code after a deploy. Hashed assets
+    # under /assets/* are immutable URLs (Vite content-hashes the filename),
+    # so they're safe with default StaticFiles caching.
+    _NO_CACHE_FILES = {"sw.js", "registerSW.js", "manifest.webmanifest"}
+    _NO_CACHE_PREFIXES = ("workbox-",)
+    _NO_CACHE_HEADERS = {"Cache-Control": "no-cache, must-revalidate"}
+
+    def _is_no_cache(name: str) -> bool:
+        return name in _NO_CACHE_FILES or any(name.startswith(p) for p in _NO_CACHE_PREFIXES)
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str, request: Request):
         # Reserve API and health namespaces for the routers above
@@ -101,5 +112,6 @@ if WEB_DIST.is_dir():
         # client-side routing handles deep links.
         candidate = WEB_DIST / full_path
         if full_path and candidate.is_file():
-            return FileResponse(candidate)
-        return FileResponse(INDEX_HTML)
+            headers = _NO_CACHE_HEADERS if _is_no_cache(full_path) else None
+            return FileResponse(candidate, headers=headers)
+        return FileResponse(INDEX_HTML, headers=_NO_CACHE_HEADERS)

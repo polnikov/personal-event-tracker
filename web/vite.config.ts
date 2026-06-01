@@ -2,9 +2,31 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const pkg = JSON.parse(readFileSync(path.resolve(__dirname, "package.json"), "utf-8"));
+
+// Cache buster: include the git commit SHA so every deploy actually changes
+// the buster string. Without it, package.json hardly ever changes and the
+// persisted React Query cache (Dexie) plus the Workbox precache would keep
+// serving stale state across deploys.
+function buildVersion(): string {
+  try {
+    const sha = execSync("git rev-parse --short HEAD", {
+      cwd: __dirname,
+      stdio: ["ignore", "pipe", "ignore"],
+    })
+      .toString()
+      .trim();
+    return `${pkg.version}+${sha}`;
+  } catch {
+    // Tarball builds / detached git: fall back to the wall clock so the
+    // value still changes per build.
+    return `${pkg.version}+${Date.now()}`;
+  }
+}
+const APP_VERSION = buildVersion();
 
 // Safe-to-cache read endpoints — UI must render from cache instantly while
 // offline. Auth + Google must always go to the network (login state, OAuth
@@ -51,6 +73,11 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: "/index.html",
+        // Wipe stale precaches from older deploys + activate the new SW
+        // immediately so users don't sit on yesterday's bundle.
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           // Auth/Google: never cached, never queued — always live.
           {
@@ -89,8 +116,9 @@ export default defineConfig({
     }),
   ],
   define: {
-    // Buster for the persisted React Query cache; bumps with each release.
-    __APP_VERSION__: JSON.stringify(pkg.version),
+    // Buster for the persisted React Query cache; changes per commit so a
+    // deploy invalidates the stored cache and the new code reads fresh data.
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
   },
   resolve: {
     alias: {
