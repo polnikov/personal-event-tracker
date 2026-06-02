@@ -58,6 +58,11 @@ const MORE_ROUTES = ["/categories", "/clients", "/sync", "/debug", "/settings"];
 export function Layout() {
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Two-stage state so the sheet can animate IN (mount → next frame adds the
+  // open class so transform transitions from translateY(100%) → 0) AND OUT
+  // (drop the open class, then unmount after the transition finishes).
+  const [sheetMounted, setSheetMounted] = useState(false);
+  const [sheetEntered, setSheetEntered] = useState(false);
   const [newEventOpen, setNewEventOpen] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   // Lightweight poll for the failed-sync badge in the "Отладка" nav item.
@@ -112,6 +117,25 @@ export function Layout() {
         document.removeEventListener("keydown", onKey);
       };
     }
+  }, [sheetOpen]);
+
+  // Mount/unmount + open-class scheduling for the slide animation.
+  useEffect(() => {
+    if (sheetOpen) {
+      setSheetMounted(true);
+      // Wait a paint so the initial closed transform commits before the
+      // open class flips it — otherwise the browser collapses both styles
+      // into one frame and there's no transition to animate.
+      const raf1 = requestAnimationFrame(() => {
+        const raf2 = requestAnimationFrame(() => setSheetEntered(true));
+        return () => cancelAnimationFrame(raf2);
+      });
+      return () => cancelAnimationFrame(raf1);
+    }
+    setSheetEntered(false);
+    // Defer unmount until the slide-down transition has played out.
+    const t = window.setTimeout(() => setSheetMounted(false), 260);
+    return () => window.clearTimeout(t);
   }, [sheetOpen]);
 
   const inMore = MORE_ROUTES.some((p) => location.pathname.startsWith(p));
@@ -227,15 +251,15 @@ export function Layout() {
         </button>
       </nav>
 
-      {sheetOpen && (
+      {sheetMounted && (
         <>
           <div
-            className="mobile-sheet-backdrop"
+            className={cn("mobile-sheet-backdrop", sheetEntered && "is-open")}
             onClick={() => setSheetOpen(false)}
             aria-hidden="true"
           />
           <div
-            className="mobile-sheet"
+            className={cn("mobile-sheet", sheetEntered && "is-open")}
             role="dialog"
             aria-label="Дополнительное меню"
           >

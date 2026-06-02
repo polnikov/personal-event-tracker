@@ -179,8 +179,10 @@
     background: rgba(42, 42, 46, 0.36);
     backdrop-filter: blur(6px);
     z-index: 80;
-    animation: fadeIn 0.2s ease;
+    opacity: 0;
+    transition: opacity 0.22s ease;
   }
+  .mobile-sheet-backdrop.is-open { opacity: 1; }
   .mobile-sheet {
     display: flex;
     flex-direction: column;
@@ -194,8 +196,13 @@
     background: var(--surface);
     border-radius: 18px 18px 0 0;
     box-shadow: var(--shadow-3);
-    animation: sheetUp 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+    /* Drives both open (translateY 100% → 0) and close (0 → 100%) — the
+       cubic-bezier eases out quickly on enter and decelerates on exit. */
+    transform: translateY(100%);
+    transition: transform 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+    will-change: transform;
   }
+  .mobile-sheet.is-open { transform: translateY(0); }
   .mobile-sheet-handle {
     width: 38px;
     height: 4px;
@@ -263,10 +270,6 @@
   }
 }
 
-@keyframes sheetUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
 
 .brand {
   display: flex;
