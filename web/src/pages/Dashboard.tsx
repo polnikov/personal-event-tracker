@@ -119,7 +119,7 @@ export function DashboardPage() {
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
-      grid: { top: 20, right: 16, bottom: 44, left: 20, containLabel: true },
+      grid: { top: 55, right: 16, bottom: 44, left: 20, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
