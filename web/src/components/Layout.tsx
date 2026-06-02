@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bug,
+  Calendar,
   CalendarDots,
   CalendarPlus,
   ChartPieSlice,
@@ -11,6 +12,7 @@ import {
   GearSix,
   GridFour,
   IdentificationCard,
+  ListNumbers,
   ListPlus,
   Tag,
   UserPlus,
@@ -44,8 +46,8 @@ const NAV_ITEMS: NavItem[] = [
 
 const MOBILE_TABS: NavItem[] = [
   { to: "/", label: "Дашборд", Icon: GridFour, end: true },
-  { to: "/calendar", label: "Календарь", Icon: CalendarDots, end: false },
-  { to: "/events", label: "События", Icon: ListPlus, end: false },
+  { to: "/calendar", label: "Календарь", Icon: Calendar, end: false },
+  { to: "/events", label: "События", Icon: ListNumbers, end: false },
   { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
 ];
 
