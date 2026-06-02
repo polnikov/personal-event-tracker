@@ -48,7 +48,7 @@ jobs:
         working-directory: /opt/event-tracker
         run: |
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            if docker compose exec -T app python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"; then
+            if docker compose exec -T petracker python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"; then
               echo "App is healthy"
               exit 0
             fi
@@ -56,5 +56,5 @@ jobs:
             sleep 3
           done
           echo "App did not become healthy in time"
-          docker compose logs --tail=80 app
+          docker compose logs --tail=80 petracker
           exit 1
