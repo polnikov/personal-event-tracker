@@ -857,12 +857,27 @@ input[type="number"] { -moz-appearance: textfield; }
   letter-spacing: 0.04em;
 }
 /* MultiSelect — checkbox dropdown over a Popover, sharing the select look.
-   Compound selector outranks the later `.popover-content` padding rule. */
+   Compound selector outranks the later `.popover-content` padding rule.
+   Matches .select-content / .select-item exactly so the highlight on a
+   checked subcategory looks the same as a checked category single-select. */
 .popover-content.multiselect-pop {
   min-width: var(--radix-popover-trigger-width);
   padding: 4px;
 }
-.select-item.is-multi { justify-content: flex-start; gap: 10px; }
+.select-item.is-multi {
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  /* Native <button> doesn't auto-stretch to the parent like the Radix Select
+     <div> Item does — without this the .is-on background only paints behind
+     the text. Force the row to span the full .select-viewport width. */
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
 .select-item.is-multi.is-on {
   background: var(--accent-soft);
   color: var(--accent-ink);
@@ -1443,6 +1458,18 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 600;
   font-feature-settings: 'tnum';
 }
+/* Right-aligned tail group inside the filter toggle: filtered-event
+   count badge + chevron sit as a unit on the right. Uses inline-flex so
+   the caret's own margin-left:auto rule has nothing to push against and
+   the pair stays glued together with a single gap. */
+.events-filters-toggle-tail {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.events-filters-toggle-tail .day-group-count-badge { margin-left: 0; }
+.events-filters-toggle-tail .events-filters-caret { margin-left: 0; }
 /* Mobile-only clear-all, rendered inside the toggle (which is hidden on
    desktop), right of the count badge. */
 .events-filters-clear-mobile {
@@ -2142,20 +2169,70 @@ input[type="number"] { -moz-appearance: textfield; }
   overflow: hidden;
 }
 
-/* Calendar controls row — sits between the page-head (title + "+")
-   and the calendar grid. Filter / View switcher / nav / Today button. */
+/* Calendar controls block — sits between the page-head (title + "+") and the
+   calendar grid. Desktop layout (two-row grid):
+     ┌─Filters card (rows 1–2)─┐  ┌─Search (row 1)──┐
+     │ Клиент | Кат | Подкат   │  └─────────────────┘
+     └─────────────────────────┘  ┌─View | Nav (row 2)
+                                  └──────────────────
+   On phones it collapses to a single column with reordered children
+   (search → filters card → view switcher → nav). See the mobile block. */
 .cal-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 10px 12px;
+  align-items: start;
 }
-.cal-controls-filter { min-width: 200px; flex: 0 1 240px; }
-/* Group the view-switcher + nav on the right side with a single shared
-   shadow; individual children drop their own surface/box-shadow so the
-   wrapper reads as one card. The client filter stays on the left. */
+/* Row 1: search alone, pinned to the right with a fixed clamp width
+   (same as .events-search) so the column above the actions reads as one
+   stack. Row 2: filters take the rest of the page width on the left,
+   actions sit to their right at content-width. Filters + actions thus
+   share one row, matching the user's request. */
+.cal-controls > .cal-search {
+  grid-column: 1 / 3;
+  grid-row: 1;
+  justify-self: end;
+  width: clamp(220px, 28vw, 360px);
+}
+.cal-controls > .cal-filters { grid-column: 1; grid-row: 2; }
+.cal-controls > .cal-controls-actions {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+}
+
+/* Filter card row — 3 columns: Клиент | Категория | Подкатегория. Client
+   first per spec, Cat narrow (auto-fits longest name), Subcat takes the
+   remaining width because it's a multiselect with chip-style tags. */
+.filter-row-cal-3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: center;
+}
+/* Without this, the grid sits as a content-sized flex child of
+   .events-filters-row and the inner 1fr columns collapse to the inputs'
+   intrinsic widths — particularly visible on mobile where the row
+   stacks to one column. Mirrors the Events page rule. */
+.events-filters-row .filter-row-cal-3 {
+  flex: 1;
+  min-width: 0;
+}
+.filter-row-cal-3 .input,
+.filter-row-cal-3 .select-trigger,
+.filter-row-cal-3 .datepicker-trigger {
+  height: 38px;
+}
+
+/* Client filter gets a white field (matches the search input style). The
+   Cat/Subcat selects keep the default --bg trigger so the input stands out
+   as the primary "who is this for" picker. */
+.cal-client-filter .input { background: var(--surface); }
+
+/* View-switcher + nav stay grouped under one shared shadow on desktop;
+   children drop their own surface so the wrapper reads as a single card. */
 .cal-controls-actions {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2170,6 +2247,140 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: none;
   padding: 0;
 }
+
+/* Search input width mirrors .events-search so the two pages line up. */
+.cal-search { width: 100%; }
+
+/* Mobile overrides — must come AFTER the desktop .cal-controls rules above
+   so the cascade picks the flex/column layout at ≤800px instead of the
+   desktop grid. Breakpoint matches .events-filters-toggle so the filter
+   card flips to collapsed mode at exactly the moment .cal-controls reflows. */
+@media (max-width: 800px) {
+  .cal-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .cal-controls > * { width: 100%; }
+  .cal-controls > .cal-search { order: 1; }
+  .cal-controls > .cal-filters { order: 2; }
+  .cal-controls > .cal-controls-actions { order: 3; }
+
+  .cal-controls-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .cal-controls-actions .view-switcher,
+  .cal-controls-actions .cal-nav {
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+    padding: 2px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+  }
+  .cal-controls .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
+  .cal-controls .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
+
+  /* View-switcher + cal-nav: 38px pill so they match the Поиск/Фильтры
+     contour above. The search input itself is handled app-wide by the
+     .input-wrap.has-icon mobile block (pill, no border, shadow-1, 38px,
+     13.5 font) so every search field across the app stays in sync. */
+  .cal-controls-actions .view-switcher,
+  .cal-controls-actions .cal-nav {
+    height: 38px;
+    border-radius: var(--r-xl);
+  }
+  /* Filter card: drop the default .card shadow-2 for the lighter shadow-1
+     and bump radius to pill so the collapsed toggle reads as a single
+     pill-shaped tile, matching the row of controls below. */
+  .cal-controls .events-filters {
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-1);
+  }
+
+  /* Unified 13.5px font baseline across the Calendar toolbar. The global
+     ≤640px override on .input / .select-trigger bumps them to 16px to dodge
+     iOS focus-zoom; here the visual rhythm of the row wins, so we re-lock
+     13.5 with higher specificity. The filter toggle default is 14px, dropped
+     to 13.5 too, and the view-switch / cal-month buttons drop from 12.5. */
+  .cal-search .input,
+  .cal-controls .events-filters-toggle,
+  .cal-controls .filter-row-cal-3 .input,
+  .cal-controls .filter-row-cal-3 .select-trigger,
+  .cal-controls .view-switch-btn,
+  .cal-controls .cal-month {
+    font-size: 13.5px;
+  }
+
+  /* Even spacing between every chip inside the collapsed Фильтры toggle:
+       Фильтры → count badge → clear button → filtered-events badge → caret
+     all separated by a single 10px flex gap. The day-group-count-badge
+     comes with its own margin-left:8px which fights the flex gap — reset
+     it. Auto-margin moves from the caret to the new filtered-events badge
+     so the badge ends up immediately to the left of the chevron. */
+  .cal-controls .events-filters-toggle { gap: 10px; }
+  /* day-group-count-badge brings its own margin-left:8px — drop it so the
+     chip uses the toggle's flex gap like everything else. */
+  .cal-controls .events-filters-toggle .day-group-count-badge { margin-left: 0; }
+
+  /* Filter row stacks into one column; placeholder fonts mirror
+     .filter-row-events-7 so the two pages read at the same size. */
+  .filter-row-cal-3 { grid-template-columns: 1fr; }
+  .filter-row-cal-3 .select-trigger { font-size: 13.5px; }
+  .filter-row-cal-3 .input::placeholder { font-size: 13.5px; }
+
+  /* Client filter rejoins the default --bg field on mobile — the white
+     override at line ~2260 only makes sense on desktop where Client pairs
+     with the right-column search to signal the "primary picker". */
+  .cal-client-filter .input { background: var(--bg); }
+}
+
+/* ── Calendar desktop (>800px) ────────────────────────────────────────────
+   Strip the Card chrome around the filters so the three dropdowns sit as
+   a bare 38px row with the search above and the view-switcher/nav below,
+   all on the page background. Drop the cal-controls-actions shadow + fix
+   it to 38px so the right column shares one height baseline. */
+@media (min-width: 801px) {
+  .cal-controls .card.events-filters {
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+  }
+  .cal-controls .card.events-filters.p-4 { padding: 0; }
+
+  /* All three filter triggers (incl. the Client SearchableSelect input)
+     share the same white surface on desktop — drops the previous mixed
+     Client=surface / Cat=Subcat=--bg distinction now that there's no
+     card surface behind them for the white field to contrast against. */
+  .cal-controls .filter-row-cal-3 .select-trigger { background: var(--surface); }
+
+  /* View-switcher + nav wrapper: 38px tall, no shadow, and the same 1px
+     line border as the filter triggers (.select-trigger / .input) so the
+     whole row reads as one set of bordered tiles. Inner blocks already
+     drop their own shadow inside .cal-controls-actions, so the wrapper
+     border is the only contour. */
+  .cal-controls-actions {
+    height: 38px;
+    box-shadow: none;
+    border: 1px solid var(--line);
+  }
+  .cal-controls-actions .view-switcher,
+  .cal-controls-actions .cal-nav {
+    height: 38px;
+  }
+
+  /* Search input lines up at 38px too — without this it sits ~37px
+     (9px padding × 2 + 13.5px text + default line-height) and the
+     top-row search visually drops below the actions baseline. */
+  .cal-search .input { height: 38px; }
+}
+
 .cal-dow {
   padding: 12px 14px;
   font-size: 11px;
@@ -2308,9 +2519,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .view-switch-btn:first-child { border-top-left-radius: var(--r-md); border-bottom-left-radius: var(--r-md); }
 .view-switch-btn:last-child  { border-top-right-radius: var(--r-md); border-bottom-right-radius: var(--r-md); }
 
-/* Mobile: tab switchers and search inputs app-wide adopt the card radius
-   (same as the Events search/tabs). Placed after the base radius rules so
-   these equal-specificity overrides win by source order. */
+/* Mobile: tab switchers and search inputs app-wide get the Calendar
+   search look — pill radius, surface fill, soft shadow-1 instead of the
+   1px line border, fixed 38px height, locked 13.5px text. Placed after the
+   base radius/border rules so these equal-specificity overrides win by
+   source order. */
 @media (max-width: 800px) {
   .view-switcher { border-radius: var(--r-lg); }
   .view-switch-btn:first-child {
@@ -2321,7 +2534,24 @@ input[type="number"] { -moz-appearance: textfield; }
     border-top-right-radius: var(--r-lg);
     border-bottom-right-radius: var(--r-lg);
   }
-  .input-wrap.has-icon .input { border-radius: var(--r-lg); }
+  .input-wrap.has-icon .input {
+    height: 38px;
+    min-height: 38px;
+    border: 0;
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-1);
+    /* Re-lock 13.5 against the ≤640 .input{font-size:16px} override that
+       exists to dodge iOS focus-zoom — the search-row rhythm wins here. */
+    font-size: 13.5px;
+  }
+  .input-wrap.has-icon .input::placeholder { font-size: 13.5px; }
+  /* Search input on focus: keep the soft shadow rather than swapping in
+     the dark .input:focus outline, so the visual rhythm doesn't jump. */
+  .input-wrap.has-icon .input:focus {
+    box-shadow: var(--shadow-1);
+    border: 0;
+    background: var(--surface);
+  }
 }
 
 /* Reverse paint order: earlier tabs stack above later ones. A corner
@@ -2427,13 +2657,17 @@ input[type="number"] { -moz-appearance: textfield; }
 .week-time-head {
   display: grid;
   grid-template-columns: 56px repeat(var(--cal-days, 7), 1fr);
-  border-bottom: 1px solid var(--line);
 }
 .week-time-corner { background: var(--surface); }
 .week-time-dh {
   padding: 10px 6px 8px;
   text-align: center;
-  border-left: 1px solid var(--line);
+  /* Bottom border lives on the day cells (not on .week-time-head) so the
+     line under the (col 1, row 1) corner cell is suppressed — the
+     horizontal divider runs only beneath the day/date headers. */
+  border-bottom: 1px solid var(--line);
+  /* No vertical dividers in the header row — day/number cells flow without
+     separators (the body day columns keep their .week-time-col border-left). */
 }
 .week-time-dh.today { background: oklch(0.99 0.01 145); }
 .week-time-body {
@@ -2457,7 +2691,9 @@ input[type="number"] { -moz-appearance: textfield; }
 .week-time-hour-label {
   position: absolute;
   top: 0;
-  right: 8px;
+  left: 0;
+  right: 0;
+  text-align: center;
   transform: translateY(-50%);
   font-size: 10.5px;
   line-height: 1;
@@ -3263,55 +3499,10 @@ a.cd2-name:hover {
     white-space: nowrap;
   }
 
-  /* Page header — Calendar has many controls (filter + view-switcher +
-     nav + buttons), so it stacks into a column on mobile. Other pages
-     (Events, Dashboard, Clients, Categories) keep the default flex-wrap
-     so a single action button sits content-width on the right of the
-     title group. We detect Calendar by the presence of .cal-nav. */
-  /* Calendar controls stack into full-width rows on phones so the filter,
-     view switcher, nav arrows and "Сегодня" each get their own line. The
-     page-head itself keeps the default flex-wrap behaviour so the title
-     and the "+ Событие" button stay on a single row, top-right. */
-  .cal-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  .cal-controls > * { width: 100%; }
-  .cal-controls-filter { flex: 0 0 auto; min-width: 0; }
-  .cal-controls-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    margin-left: 0;
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
-  }
-  .cal-controls-actions .view-switcher,
-  .cal-controls-actions .cal-nav {
-    background: var(--surface);
-    box-shadow: var(--shadow-1);
-    padding: 2px;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-  }
-  .cal-controls .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
-  .cal-controls .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
-
-  /* Equal height across the client filter, view switcher and nav, all with a
-     22px (pill) radius. */
-  .cal-controls-filter .input,
-  .cal-controls-actions .view-switcher,
-  .cal-controls-actions .cal-nav {
-    height: 44px;
-    border-radius: var(--r-xl);
-  }
-  /* Client filter: white field + 13.5px placeholder (the input itself stays
-     16px to avoid iOS focus-zoom). */
-  .cal-controls-filter .input { background: var(--surface); }
-  .cal-controls-filter .input::placeholder { font-size: 13.5px; }
+  /* Calendar controls mobile rules live in a separate ≤800 block above —
+     they need to fire at the same breakpoint as the Events filter toggle
+     so the .cal-filters card flips to a collapsed full-width toggle at
+     exactly the moment .cal-controls reflows out of its desktop grid. */
 
   /* Mobile: top-level Tabs<> live as a direct child of .page (Events,
      ClientDetail tabs row). On phones they stretch full width and the

@@ -1,12 +1,24 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addDays, format, startOfWeek } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { Button, Card, IconButton, SearchableSelect } from "@/components/design";
+import { ChevronDown, ChevronLeft, ChevronRight, FilterX, Plus, Search } from "lucide-react";
+import {
+  Button,
+  Card,
+  IconButton,
+  Input,
+  MultiSelect,
+  SearchableSelect,
+  Select,
+} from "@/components/design";
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
-import { calendar as calendarApi, clients as clientsApi } from "@/lib/api";
+import {
+  calendar as calendarApi,
+  categories as categoriesApi,
+  clients as clientsApi,
+} from "@/lib/api";
 import {
   HOUR_COUNT,
   HOUR_HEIGHT,
@@ -30,6 +42,10 @@ export function CalendarPage() {
   const [cursor, setCursor] = useState(() => new Date());
   const [openEventId, setOpenEventId] = useState<number | null>(null);
   const [clientFilter, setClientFilter] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const [subcatFilter, setSubcatFilter] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [formModal, setFormModal] = useState<
     | { kind: "new"; prefillStart?: string }
     | { kind: "edit"; eventId: number }
@@ -45,6 +61,38 @@ export function CalendarPage() {
     queryKey: ["clients", ""],
     queryFn: () => clientsApi.list(""),
   });
+
+  const cats = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoriesApi.list(),
+  });
+
+  // Subcategory options cascade off the selected category — empty cat → all.
+  const subcatOptions = useMemo(() => {
+    const out: { value: string; label: string }[] = [];
+    for (const c of cats.data ?? []) {
+      if (catFilter && c.id !== Number(catFilter)) continue;
+      for (const s of c.subcategories) {
+        out.push({ value: String(s.id), label: s.name });
+      }
+    }
+    out.sort((a, b) => a.label.localeCompare(b.label, "ru"));
+    return out;
+  }, [cats.data, catFilter]);
+
+  // Drop stale subcat picks when the category changes (or its subcats shift).
+  useEffect(() => {
+    setSubcatFilter((prev) => prev.filter((v) => subcatOptions.some((o) => o.value === v)));
+  }, [subcatOptions]);
+
+  const activeFilterCount =
+    (clientFilter ? 1 : 0) + (catFilter ? 1 : 0) + (subcatFilter.length ? 1 : 0);
+
+  const clearAllFilters = () => {
+    setClientFilter("");
+    setCatFilter("");
+    setSubcatFilter([]);
+  };
 
   const range = useMemo(() => {
     if (view === "month") {
@@ -82,20 +130,70 @@ export function CalendarPage() {
       ),
   });
 
+  // Client-side filter pass — client_id is server-narrowed for cache size,
+  // but cat/subcat/search live here so the dropdowns can react instantly
+  // without round-trips. Search hits the category, subcategory, client and
+  // notes fields the calendar tile actually shows. ID match is primary, but
+  // we fall back to name match so a persisted React Query payload from before
+  // category_id/subcategory_id were added to /api/calendar/feed still filters
+  // correctly (the cache buster only invalidates on a new git SHA).
+  const filteredFeed = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const wantedCat = catFilter
+      ? (cats.data ?? []).find((c) => c.id === Number(catFilter))
+      : null;
+    const wantedSubs = subcatFilter.length
+      ? (cats.data ?? [])
+          .flatMap((c) => c.subcategories)
+          .filter((s) => subcatFilter.includes(String(s.id)))
+      : [];
+    const wantedSubIds = new Set(wantedSubs.map((s) => s.id));
+    const wantedSubNames = new Set(wantedSubs.map((s) => s.name));
+
+    return (feed.data ?? []).filter((ev) => {
+      if (wantedCat) {
+        const evCatId = ev.extendedProps.category_id;
+        if (evCatId != null) {
+          if (evCatId !== wantedCat.id) return false;
+        } else if (ev.extendedProps.category !== wantedCat.name) {
+          return false;
+        }
+      }
+      if (wantedSubs.length) {
+        const evSubId = ev.extendedProps.subcategory_id;
+        if (evSubId != null) {
+          if (!wantedSubIds.has(evSubId)) return false;
+        } else if (!wantedSubNames.has(ev.extendedProps.subcategory)) {
+          return false;
+        }
+      }
+      if (q) {
+        const hay = [
+          ev.extendedProps.category,
+          ev.extendedProps.subcategory,
+          ev.extendedProps.client,
+          ev.extendedProps.notes,
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [feed.data, search, catFilter, subcatFilter, cats.data]);
+
   const eventsByDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();
-    if (feed.data) {
-      for (const ev of feed.data) {
-        const key = new Date(ev.start).toDateString();
-        if (!map.has(key)) map.set(key, []);
-        map.get(key)!.push(ev);
-      }
-      for (const list of map.values()) {
-        list.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-      }
+    for (const ev of filteredFeed) {
+      const key = new Date(ev.start).toDateString();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ev);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
     }
     return map;
-  }, [feed.data]);
+  }, [filteredFeed]);
 
   const headerLabel = useMemo(() => {
     if (view === "month") return fmt.monthYear(cursor);
@@ -133,16 +231,117 @@ export function CalendarPage() {
       </div>
 
       <div className="cal-controls">
-        <div className="cal-controls-filter">
-          <SearchableSelect
-            value={clientFilter}
-            onChange={setClientFilter}
-            placeholder="Все клиенты"
-            options={(clientsList.data ?? []).map((c) => ({ value: String(c.id), label: c.full_name }))}
+        <Card padding="p-4" className="events-filters cal-filters">
+          <button
+            type="button"
+            className="events-filters-toggle"
+            onClick={() => setFiltersOpen((o) => !o)}
+            aria-expanded={filtersOpen}
+          >
+            <span>Фильтры</span>
+            {activeFilterCount > 0 && (
+              <span className="events-filters-count">{activeFilterCount}</span>
+            )}
+            {activeFilterCount > 0 && (
+              <span
+                role="button"
+                tabIndex={0}
+                className="events-filters-clear-mobile"
+                aria-label="Очистить все фильтры"
+                title="Очистить всё"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  clearAllFilters();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    clearAllFilters();
+                  }
+                }}
+              >
+                <FilterX size={15} />
+              </span>
+            )}
+            <span className="events-filters-toggle-tail">
+              {(activeFilterCount > 0 || search.trim().length > 0) && (
+                <span
+                  className="day-group-count-badge events-filtered-count"
+                  title="Событий после фильтров"
+                >
+                  {filteredFeed.length}
+                </span>
+              )}
+              <ChevronDown
+                size={16}
+                className="events-filters-caret"
+                style={{ transform: filtersOpen ? "rotate(180deg)" : "none" }}
+              />
+            </span>
+          </button>
+          <div
+            className="events-filters-body"
+            data-open={filtersOpen ? "true" : "false"}
+          >
+            <div className="events-filters-row">
+              <div className="filter-row-cal-3">
+                <SearchableSelect
+                  className="cal-client-filter"
+                  value={clientFilter}
+                  onChange={setClientFilter}
+                  placeholder="Все клиенты"
+                  options={(clientsList.data ?? []).map((c) => ({
+                    value: String(c.id),
+                    label: c.full_name,
+                  }))}
+                />
+                <Select
+                  value={catFilter}
+                  onChange={setCatFilter}
+                  placeholder="Все категории"
+                  options={(cats.data ?? []).map((c) => ({
+                    value: String(c.id),
+                    label: c.name,
+                  }))}
+                />
+                <MultiSelect
+                  value={subcatFilter}
+                  onChange={setSubcatFilter}
+                  placeholder="Все подкатегории"
+                  options={subcatOptions}
+                />
+              </div>
+              <button
+                type="button"
+                className="events-filter-clear"
+                onClick={clearAllFilters}
+                disabled={activeFilterCount === 0}
+                aria-label="Очистить все фильтры"
+                title="Очистить всё"
+              >
+                <FilterX size={16} />
+              </button>
+            </div>
+          </div>
+        </Card>
+
+        <div className="cal-search">
+          <Input
+            icon={<Search size={16} />}
+            placeholder="Поиск…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
           />
         </div>
+
         <div className="cal-controls-actions">
-          <ViewSwitcher value={view} onChange={setView} onToday={() => setCursor(new Date())} />
+          <ViewSwitcher
+            value={view}
+            onChange={setView}
+            onToday={() => setCursor(new Date())}
+          />
           <div className="cal-nav">
             <IconButton onClick={() => navigate(-1)} aria-label="Назад">
               <ChevronLeft size={16} />

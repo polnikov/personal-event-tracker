@@ -57,9 +57,11 @@ def calendar_feed(
                 borderColor=cat.color,
                 extendedProps={
                     "category": cat.name,
+                    "category_id": cat.id,
                     "category_icon": cat.icon,
                     "category_color": cat.color,
                     "subcategory": ev.subcategory.name,
+                    "subcategory_id": ev.subcategory.id,
                     "subcategory_icon": ev.subcategory.icon,
                     "client": client_name,
                     "cost": float(ev.total_cost),

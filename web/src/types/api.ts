@@ -188,9 +188,11 @@ export interface CalendarEvent {
   borderColor: string;
   extendedProps: {
     category: string;
+    category_id: number;
     category_icon: string | null;
     category_color: string;
     subcategory: string;
+    subcategory_id: number;
     subcategory_icon: string | null;
     client: string;
     cost: number;
