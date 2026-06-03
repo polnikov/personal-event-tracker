@@ -21,6 +21,16 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       gcTime: 7 * 24 * 60 * 60 * 1000,
     },
+    mutations: {
+      // Default is "online" — React Query refuses to run mutationFn when
+      // navigator.onLine is false and parks the mutation in a "paused"
+      // state with isPending=true, leaving Submit buttons disabled and the
+      // form stuck until the network returns. We own the offline replay
+      // (lib/api.ts → enqueue() + OfflineQueuedError), so we always want
+      // the mutationFn to run and let request() decide between hitting the
+      // network and parking the op in the outbox.
+      networkMode: "offlineFirst",
+    },
   },
 });
 
