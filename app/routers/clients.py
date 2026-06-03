@@ -217,10 +217,27 @@ def client_monthly(
     for start_at, total in rows:
         monthly[start_at.month - 1] += total
         weekday_month[start_at.weekday()][start_at.month - 1] += 1
+
+    # Previous-year total for the YoY % delta on the analytics card. Same
+    # client filter, just the full preceding calendar year — keeps the
+    # comparison apples-to-apples with the current-year chart sum.
+    prev_year_total = float(
+        db.execute(
+            select(func.coalesce(func.sum(Event.total_cost), 0)).where(
+                and_(
+                    Event.client_id == client_id,
+                    Event.start_at >= datetime(year - 1, 1, 1),
+                    Event.start_at < datetime(year, 1, 1),
+                )
+            )
+        ).scalar_one()
+    )
+
     return {
         "year": year,
         "values": [float(v) for v in monthly],
         "weekday_month": weekday_month,
+        "prev_year_total": prev_year_total,
     }
 
 

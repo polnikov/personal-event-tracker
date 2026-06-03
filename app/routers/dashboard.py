@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.orm import Session, selectinload
 
 from ..auth import require_auth
@@ -72,6 +72,26 @@ def dashboard(
         start, end = _month_bounds(now)
         period_label = now.strftime("%B %Y")
 
+    # Resolve subcategory whitelist once so both the current-period and
+    # previous-period queries reuse it without re-hitting the DB.
+    sub_ids: list[int] | None = None
+    if category_id and not subcategory_id:
+        sub_ids = [
+            r[0]
+            for r in db.execute(
+                select(Subcategory.id).where(Subcategory.category_id == category_id)
+            ).all()
+        ]
+
+    def _apply_event_filters(stmt):
+        if subcategory_id:
+            stmt = stmt.where(Event.subcategory_id == subcategory_id)
+        elif sub_ids is not None:
+            stmt = stmt.where(Event.subcategory_id.in_(sub_ids or [-1]))
+        if client_id:
+            stmt = stmt.where(Event.client_id == client_id)
+        return stmt
+
     stmt = (
         select(Event)
         .options(
@@ -81,24 +101,41 @@ def dashboard(
         .where(and_(Event.start_at >= start, Event.start_at < end))
         .order_by(Event.start_at.desc())
     )
-    if subcategory_id:
-        stmt = stmt.where(Event.subcategory_id == subcategory_id)
-    elif category_id:
-        sub_ids = [
-            r[0]
-            for r in db.execute(
-                select(Subcategory.id).where(Subcategory.category_id == category_id)
-            ).all()
-        ]
-        stmt = stmt.where(Event.subcategory_id.in_(sub_ids or [-1]))
-    if client_id:
-        stmt = stmt.where(Event.client_id == client_id)
+    stmt = _apply_event_filters(stmt)
 
     events = db.execute(stmt).scalars().all()
 
     total_count = len(events)
     total_minutes = sum(e.duration_minutes for e in events)
     total_cost = sum((e.total_cost for e in events), Decimal(0))
+
+    # Previous-period total for the right-corner %-change indicator. Skip
+    # for "all" (no meaningful predecessor). For month/year use calendar
+    # bounds; custom shifts back by the current span.
+    prev_total_cost: Decimal | None = None
+    if period == "month":
+        prev_ref = start - timedelta(days=1)
+        prev_start, prev_end = _month_bounds(prev_ref)
+    elif period == "year":
+        prev_start = datetime(start.year - 1, 1, 1)
+        prev_end = start
+    elif period == "custom":
+        span = end - start
+        prev_start = start - span
+        prev_end = start
+    else:
+        prev_start = prev_end = None
+
+    if prev_start is not None and prev_end is not None:
+        prev_stmt = _apply_event_filters(
+            select(Event.total_cost).where(
+                and_(Event.start_at >= prev_start, Event.start_at < prev_end)
+            )
+        )
+        prev_total_cost = sum(
+            (row[0] for row in db.execute(prev_stmt).all()),
+            Decimal(0),
+        )
 
     by_cat: dict[str, dict] = {}
     by_sub: dict[str, dict] = {}
@@ -181,6 +218,19 @@ def dashboard(
         float(monthly_buckets.get(label, Decimal(0))) for label in monthly_labels
     ]
 
+    # Previous calendar year total for the YoY % delta on the "Доход по
+    # месяцам" card. Same un-filtered scope as the current-year monthly
+    # query above so the comparison is apples-to-apples.
+    prev_year_start = datetime(cur_year - 1, 1, 1)
+    prev_year_end = year_start
+    monthly_prev_total = float(
+        db.execute(
+            select(func.coalesce(func.sum(Event.total_cost), 0)).where(
+                and_(Event.start_at >= prev_year_start, Event.start_at < prev_year_end)
+            )
+        ).scalar_one()
+    )
+
     by_cat_sorted = sorted(by_cat.items(), key=lambda kv: -kv[1]["cost"])
     by_sub_sorted = sorted(by_sub.items(), key=lambda kv: -kv[1]["cost"])
     by_client_sorted = sorted(by_client.items(), key=lambda kv: -kv[1]["cost"])
@@ -191,6 +241,7 @@ def dashboard(
         total_count=total_count,
         total_minutes=total_minutes,
         total_cost=total_cost,
+        prev_total_cost=prev_total_cost,
         by_category=[
             DashboardCategoryStat(name=n, color=v["color"], count=v["count"], minutes=v["minutes"], cost=v["cost"])
             for n, v in by_cat_sorted
@@ -213,5 +264,6 @@ def dashboard(
             daily_series=daily_series,
             monthly_labels=monthly_labels,
             monthly_values=monthly_values,
+            monthly_prev_total=monthly_prev_total,
         ),
     )

@@ -26,6 +26,7 @@ import { ClientFormModal } from "@/components/ClientFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
+import { PctChangePill } from "@/components/PctChangePill";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -637,8 +638,15 @@ export function ClientDetailPage() {
                       <div className="muted small">{year}</div>
                     </div>
                     {monthly.data && (
-                      <div className="card-head-sum">
-                        {fmt.money(monthly.data.values.reduce((s, v) => s + v, 0))} ₽
+                      <div className="card-head-sum-wrap">
+                        <div className="card-head-sum">
+                          {fmt.money(monthly.data.values.reduce((s, v) => s + v, 0))} ₽
+                        </div>
+                        <PctChangePill
+                          current={monthly.data.values.reduce((s, v) => s + v, 0)}
+                          previous={monthly.data.prev_year_total ?? null}
+                          prevLabel={`${year - 1}`}
+                        />
                       </div>
                     )}
                   </div>

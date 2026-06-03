@@ -111,6 +111,9 @@ export interface DashboardChart {
   daily_series: DashboardDailySeries[];
   monthly_labels: string[];
   monthly_values: number[];
+  // Total income across the previous calendar year — drives the YoY %
+  // delta pill on the "Доход по месяцам" card.
+  monthly_prev_total?: number;
 }
 
 export interface DashboardResponse {
@@ -119,6 +122,8 @@ export interface DashboardResponse {
   total_count: number;
   total_minutes: number;
   total_cost: string;
+  // Same-shape previous-period income total. null for period="all".
+  prev_total_cost?: string | null;
   by_category: DashboardStat[];
   by_subcategory: DashboardStat[];
   by_client: DashboardStat[];
@@ -177,6 +182,15 @@ export interface ReportResponse {
   /** 7×24 event counts; rows: Mon..Sun, cols: hour 0..23. */
   weekday_hour: number[][];
   events_with_royalty: EventItem[];
+  /** Net income for the previous calendar year (same category filter) —
+   *  YoY delta on the "Доход по месяцам" card. */
+  prev_monthly_net_total?: number;
+  /** Net income for the previous calendar month (same category filter) —
+   *  MoM delta on the "Чистый доход по подкатегориям" card. */
+  prev_subcategory_net_total?: number;
+  /** Total event hours for the previous calendar month (same category
+   *  filter) — MoM delta on the "Часы по подкатегориям" card. */
+  prev_subcategory_hours_total?: number;
 }
 
 export interface CalendarEvent {

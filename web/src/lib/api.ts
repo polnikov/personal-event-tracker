@@ -158,9 +158,12 @@ export const clients = {
     request<Client>(`/clients/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   remove: (id: number) => request<{ ok: true }>(`/clients/${id}`, { method: "DELETE" }),
   monthly: (id: number, year: number) =>
-    request<{ year: number; values: number[]; weekday_month: number[][] }>(
-      `/clients/${id}/monthly?year=${year}`,
-    ),
+    request<{
+      year: number;
+      values: number[];
+      weekday_month: number[][];
+      prev_year_total?: number;
+    }>(`/clients/${id}/monthly?year=${year}`),
 };
 
 // ---------- Categories ----------

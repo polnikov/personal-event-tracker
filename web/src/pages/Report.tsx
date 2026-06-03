@@ -8,6 +8,7 @@ import {
   Select,
 } from "@/components/design";
 import { Echart, GRID_LEFT_FLUSH, type EChartsOption } from "@/components/echart";
+import { PctChangePill } from "@/components/PctChangePill";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
 import { MONTH_ABBR, weekdayHourHeatmap, weekdayMonthHeatmap } from "@/lib/heatmap";
@@ -528,10 +529,27 @@ export function ReportPage() {
             <div style={{ textAlign: "right" }}>
               <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
               {hoursBar && (
-                <div className="muted small" style={{ marginTop: 2 }}>
+                <div
+                  className="muted small"
+                  style={{
+                    marginTop: 2,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
                   <span className="mono">
                     {hoursTotal.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч
                   </span>
+                  <PctChangePill
+                    current={hoursTotal}
+                    previous={data.data?.prev_subcategory_hours_total ?? null}
+                    prevLabel="Прошлый месяц"
+                    unit="ч"
+                    formatPrev={(n) =>
+                      n.toLocaleString("ru-RU", { maximumFractionDigits: 1 })
+                    }
+                  />
                 </div>
               )}
             </div>
@@ -549,8 +567,21 @@ export function ReportPage() {
             <div style={{ textAlign: "right" }}>
               <div className="muted small" style={{ textTransform: "capitalize" }}>{periodLabel}</div>
               {netBar && (
-                <div className="muted small" style={{ marginTop: 2 }}>
+                <div
+                  className="muted small"
+                  style={{
+                    marginTop: 2,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
                   <span className="mono">{fmt.money(netTotal)} ₽</span>
+                  <PctChangePill
+                    current={netTotal}
+                    previous={data.data?.prev_subcategory_net_total ?? null}
+                    prevLabel="Прошлый месяц"
+                  />
                 </div>
               )}
             </div>
@@ -567,9 +598,17 @@ export function ReportPage() {
         <div className="report-monthly-head">
           <div className="report-monthly-meta-row">
             <div className="card-title">Доход по месяцам</div>
-            <span className="muted small">
+            <span
+              className="muted small"
+              style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+            >
               <span style={{ marginRight: 4 }}>чистыми</span>
               <span className="mono">{fmt.money(yearTotal.net)} ₽</span>
+              <PctChangePill
+                current={yearTotal.net}
+                previous={data.data?.prev_monthly_net_total ?? null}
+                prevLabel={`${year - 1}`}
+              />
             </span>
           </div>
           <div className="report-monthly-meta-row">

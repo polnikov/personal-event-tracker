@@ -2263,7 +2263,15 @@ input[type="number"] { -moz-appearance: textfield; }
     gap: 8px;
   }
   .cal-controls > * { width: 100%; }
-  .cal-controls > .cal-search { order: 1; }
+  /* Match the desktop .cal-controls > .cal-search (2 classes) so this rule
+     out-cascades the clamp() width and right-aligned justify-self defined
+     above — without explicit overrides the search input would still be
+     clamped to ≤360px and pinned to the right edge on phones. */
+  .cal-controls > .cal-search {
+    order: 1;
+    width: 100%;
+    justify-self: stretch;
+  }
   .cal-controls > .cal-filters { order: 2; }
   .cal-controls > .cal-controls-actions { order: 3; }
 
@@ -2866,6 +2874,41 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 12.5px;
   color: var(--muted);
   white-space: nowrap;
+}
+/* Top-right corner cluster on a chart card: the running sum on top, the
+   period-over-period % delta directly under it so both right-side bits
+   share one column. */
+.card-head-sum-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.card-head-pct {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-feature-settings: 'tnum';
+  line-height: 1.4;
+  white-space: nowrap;
+}
+/* Income up vs previous period — soft green, like a positive delta chip. */
+.card-head-pct.up {
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface));
+  color: color-mix(in oklab, var(--accent) 70%, var(--ink));
+}
+/* Income down — soft red. */
+.card-head-pct.down {
+  background: var(--danger-soft, color-mix(in oklab, var(--danger) 14%, var(--surface)));
+  color: var(--danger, #b00020);
+}
+/* Flat / zero baseline — same muted chip as the day-group count badge. */
+.card-head-pct.neutral {
+  background: var(--line);
+  color: var(--ink-2);
 }
 
 .client-card-top {

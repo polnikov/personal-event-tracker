@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import and_, func, select
@@ -175,6 +175,39 @@ def report(
     royalty_events = [e for e in period_events if e.royalty > 0]
     royalty_events.sort(key=lambda e: e.start_at, reverse=True)
 
+    # ── Previous-period totals for the % delta pills on the cards ──
+    # Net = total_cost × (1 − tax − royalty), summed across all events in the
+    # comparison window. Same category filter as the current view so the
+    # comparison stays apples-to-apples.
+    def _sum_net(events: list[Event]) -> float:
+        total = Decimal(0)
+        for ev in events:
+            total += ev.total_cost * (
+                Decimal(1) - ev.tax / Decimal(100) - ev.royalty / Decimal(100)
+            )
+        return float(total)
+
+    prev_year_events = _query_events(
+        db, datetime(year - 1, 1, 1), datetime(year, 1, 1), category_id
+    )
+    prev_monthly_net_total = _sum_net(prev_year_events)
+
+    prev_period_ref = period_start - timedelta(days=1)
+    prev_period_start = datetime(prev_period_ref.year, prev_period_ref.month, 1)
+    if prev_period_start.month == 12:
+        prev_period_end = datetime(prev_period_start.year + 1, 1, 1)
+    else:
+        prev_period_end = datetime(
+            prev_period_start.year, prev_period_start.month + 1, 1
+        )
+    prev_period_events = _query_events(
+        db, prev_period_start, prev_period_end, category_id
+    )
+    prev_subcategory_net_total = _sum_net(prev_period_events)
+    prev_subcategory_hours_total = round(
+        sum(ev.duration_minutes for ev in prev_period_events) / 60, 2
+    )
+
     sync_map = hydrate_sync_status_map(db, royalty_events)
     return ReportResponse(
         by_subcategory=by_subcategory,
@@ -184,4 +217,7 @@ def report(
         weekday_month_net=weekday_month_net,
         weekday_hour=weekday_hour,
         events_with_royalty=[event_to_schema_with_sync(e, sync_map) for e in royalty_events],
+        prev_monthly_net_total=prev_monthly_net_total,
+        prev_subcategory_net_total=prev_subcategory_net_total,
+        prev_subcategory_hours_total=prev_subcategory_hours_total,
     )

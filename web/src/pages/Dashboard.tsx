@@ -20,6 +20,7 @@ import {
 import { categories as categoriesApi, dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
+import { PctChangePill } from "@/components/PctChangePill";
 import { fmt } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -551,7 +552,17 @@ export function DashboardPage() {
                   <div className="card-title">Доход по дням</div>
                   <div className="muted small" style={{ textTransform: "capitalize" }}>{monthLabel}</div>
                 </div>
-                <div className="card-head-sum">{fmt.money(data.total_cost)} ₽</div>
+                <div className="card-head-sum-wrap">
+                  <div className="card-head-sum">{fmt.money(data.total_cost)} ₽</div>
+                  <PctChangePill
+                    current={parseFloat(data.total_cost) || 0}
+                    previous={
+                      data.prev_total_cost != null
+                        ? parseFloat(data.prev_total_cost) || 0
+                        : null
+                    }
+                  />
+                </div>
               </div>
               {dailyOption ? (
                 <Echart option={dailyOption} height={392} />
@@ -582,8 +593,15 @@ export function DashboardPage() {
                 <div className="card-title">Доход по месяцам</div>
                 <div className="muted small">{new Date().getFullYear()}</div>
               </div>
-              <div className="card-head-sum">
-                {fmt.money(data.chart.monthly_values.reduce((s, v) => s + v, 0))} ₽
+              <div className="card-head-sum-wrap">
+                <div className="card-head-sum">
+                  {fmt.money(data.chart.monthly_values.reduce((s, v) => s + v, 0))} ₽
+                </div>
+                <PctChangePill
+                  current={data.chart.monthly_values.reduce((s, v) => s + v, 0)}
+                  previous={data.chart.monthly_prev_total ?? null}
+                  prevLabel={`${new Date().getFullYear() - 1}`}
+                />
               </div>
             </div>
             {monthlyOption && data.chart.monthly_values.some((v) => v > 0) ? (

@@ -227,6 +227,9 @@ class DashboardChart(BaseModel):
     daily_series: list[DashboardDailySeries]
     monthly_labels: list[str]
     monthly_values: list[float]
+    # Total income across the previous calendar year — drives the
+    # period-over-period % delta on the "Доход по месяцам" card.
+    monthly_prev_total: float = 0.0
 
 
 class DashboardResponse(BaseModel):
@@ -235,6 +238,10 @@ class DashboardResponse(BaseModel):
     total_count: int
     total_minutes: int
     total_cost: Decimal
+    # Income total for the same-shape previous period (previous calendar
+    # month/year, or same-length window shifted back for custom). None when
+    # period == "all" — there's no meaningful "previous" for an all-time view.
+    prev_total_cost: Decimal | None = None
     by_category: list[DashboardCategoryStat]
     by_subcategory: list[DashboardSubcategoryStat]
     by_client: list[DashboardClientStat]
@@ -278,6 +285,16 @@ class ReportResponse(BaseModel):
     # 7×24 event-count matrix (rows: Mon..Sun, cols: hour 0..23) for the year.
     weekday_hour: list[list[int]] = []
     events_with_royalty: list[EventRead]
+    # Period-over-period totals (same filters, shifted back one bucket):
+    #  • prev_monthly_net_total — net income for the PREVIOUS calendar year
+    #    (drives the % delta on the "Доход по месяцам" card).
+    #  • prev_subcategory_net_total — net income for the PREVIOUS calendar
+    #    month (drives the delta on "Чистый доход по подкатегориям").
+    #  • prev_subcategory_hours_total — total event hours for the PREVIOUS
+    #    calendar month (drives the delta on "Часы по подкатегориям").
+    prev_monthly_net_total: float = 0.0
+    prev_subcategory_net_total: float = 0.0
+    prev_subcategory_hours_total: float = 0.0
 
 
 # ---------- Calendar ----------
