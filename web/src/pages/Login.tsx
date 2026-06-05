@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useIsRestoring } from "@tanstack/react-query";
 import { Button, Card, Field, Input } from "@/components/design";
 import { useLogin, useMe } from "@/hooks/useAuth";
 
@@ -13,6 +14,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export function LoginPage() {
+  const isRestoring = useIsRestoring();
   const me = useMe();
   const login = useLogin();
   const nav = useNavigate();
@@ -23,6 +25,13 @@ export function LoginPage() {
     resolver: zodResolver(schema),
     defaultValues: { username: "", password: "" },
   });
+
+  // Don't flash the login form while the persisted cache is still restoring —
+  // an already-authenticated session may be about to hydrate (e.g. a cold
+  // offline reload landing here), in which case we redirect home below.
+  if (isRestoring) {
+    return <div className="login-shell muted">Загрузка…</div>;
+  }
 
   if (me.data?.authenticated) return <Navigate to="/" replace />;
 
