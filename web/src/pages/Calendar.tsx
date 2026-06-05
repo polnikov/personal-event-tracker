@@ -199,7 +199,17 @@ export function CalendarPage() {
     if (view === "month") return fmt.monthYear(cursor);
     const start = view === "3days" ? startOfDay(cursor) : startOfWeek(cursor, { weekStartsOn: 1 });
     const end = addDays(start, view === "3days" ? 2 : 6);
-    return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM", { locale: ru })}`;
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    const startDay = format(start, "d", { locale: ru });
+    const endDay = format(end, "d", { locale: ru });
+    const endMon = cap(format(end, "MMM", { locale: ru }));
+    // Same calendar month → print the month once at the end ("1-7 Июн.");
+    // spanning two months → keep both ("29 Июн.-5 Июл.").
+    const sameMonth =
+      start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    if (sameMonth) return `${startDay}-${endDay} ${endMon}`;
+    const startMon = cap(format(start, "MMM", { locale: ru }));
+    return `${startDay} ${startMon}-${endDay} ${endMon}`;
   }, [view, cursor]);
 
   const navigate = (dir: -1 | 1) => {
