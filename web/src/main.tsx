@@ -7,6 +7,16 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import App from "./App";
 import { queryStorage } from "@/lib/queryPersist";
 import { startSyncDaemon } from "@/lib/syncDaemon";
+// Self-hosted fonts (was Google Fonts CDN). Bundled by Vite and served from
+// our own origin so a strict server CSP (style-src 'self') no longer blocks
+// the stylesheet — and the fonts now work offline too. Weights mirror what
+// index.css uses: Inter 400/500/600/700, JetBrains Mono 400/500.
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/500.css";
 import "./index.css";
 
 const queryClient = new QueryClient({
