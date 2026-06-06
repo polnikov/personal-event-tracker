@@ -1,28 +1,48 @@
+import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useIsRestoring } from "@tanstack/react-query";
-import { useMe } from "@/hooks/useAuth";
+import { useMe, rememberAuth, forgetAuth, wasAuthenticated } from "@/hooks/useAuth";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isRestoring = useIsRestoring();
-  const { data, isLoading } = useMe();
+  const { data, isLoading, isError } = useMe();
   const location = useLocation();
 
-  // While the persisted React Query cache is being restored from IndexedDB,
-  // PersistQueryClientProvider has already rendered us but the query is paused
-  // (fetchStatus "idle"), so isLoading (= isPending && isFetching) is false
-  // even though `data` hasn't arrived yet. Without gating on isRestoring we'd
-  // momentarily see data=undefined and bounce to /login — which is fatal on a
-  // cold OFFLINE reload, where the auth/me refetch can never recover and the
-  // user gets stuck on a login screen that errors with "NetworkError" because
-  // logging in needs the network. Holding here until restore finishes lets the
-  // cached session hydrate first.
-  if (isRestoring || isLoading) {
+  // Keep the persistent auth flag in sync with the live auth/me result.
+  // A genuine sign-out only happens online, where auth/me resolves to
+  // {authenticated:false} (success, not error) — that clears the flag. An
+  // offline failure is an *error*, which leaves the flag untouched.
+  useEffect(() => {
+    if (data?.authenticated === true) rememberAuth();
+    else if (data?.authenticated === false) forgetAuth();
+  }, [data?.authenticated]);
+
+  // While the persisted React Query cache restores from IndexedDB the auth/me
+  // query is paused (fetchStatus "idle"), so isLoading is false even though
+  // data hasn't arrived. Hold here so we don't bounce to /login prematurely.
+  if (isRestoring) {
     return <div className="login-shell muted">Загрузка…</div>;
   }
 
-  if (!data?.authenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+  // Live session confirmed (or hydrated from the persisted cache).
+  if (data?.authenticated) {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  // Couldn't confirm with the server (offline, or the request errored) but we
+  // have a remembered session → stay in and run on cached data. This is what
+  // makes a cold OFFLINE reload work even when the version buster wiped the
+  // persisted auth/me entry. Mutations queue; reads come from cache.
+  const offlineOrUnreachable =
+    isError || (typeof navigator !== "undefined" && !navigator.onLine);
+  if (offlineOrUnreachable && wasAuthenticated()) {
+    return <>{children}</>;
+  }
+
+  // First online auth check still in flight, no remembered session yet.
+  if (isLoading) {
+    return <div className="login-shell muted">Загрузка…</div>;
+  }
+
+  return <Navigate to="/login" replace state={{ from: location }} />;
 }
