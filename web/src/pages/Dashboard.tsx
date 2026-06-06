@@ -237,15 +237,7 @@ export function DashboardPage() {
                 fontFeatureSettings: "'tnum'",
                 fontSize: isMobile ? 11 : 12,
                 lineHeight: isMobile ? 11 : 12,
-                fontWeight: 600,
-                backgroundColor: "#FFFFFF",
-                borderColor: "#ECEAE3",
-                borderWidth: 1,
-                borderRadius: 6,
-                padding: [4, 6, 4, 6],
-                shadowColor: "rgba(0, 0, 0, 0.12)",
-                shadowBlur: 6,
-                shadowOffsetY: 2,
+                fontWeight: 400,
                 formatter: (p: unknown) => {
                   const total = dailyTotals[(p as { dataIndex: number }).dataIndex];
                   return total > 0 ? fmtCompact(total) : "";
@@ -399,7 +391,6 @@ export function DashboardPage() {
       series: [
         {
           type: "line" as const,
-          smooth: 0.2,
           // Per-point label.show is forced to false on zero values so empty
           // months don't render a stray label pill above the baseline.
           data: data.chart.monthly_values.map((v) =>

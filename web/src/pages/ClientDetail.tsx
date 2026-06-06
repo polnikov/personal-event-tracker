@@ -318,7 +318,6 @@ export function ClientDetailPage() {
       series: [
         {
           type: "line" as const,
-          smooth: 0.2,
           data: monthly.data.values.map((v) =>
             v > 0 ? v : { value: v, label: { show: false } },
           ),

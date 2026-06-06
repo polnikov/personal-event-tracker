@@ -149,15 +149,7 @@ export function ReportPage() {
             fontFeatureSettings: "'tnum'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
-            fontWeight: 600,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: isMobile ? [3, 5, 3, 5] : [4, 6, 4, 6],
-            shadowColor: "rgba(0, 0, 0, 0.12)",
-            shadowBlur: 6,
-            shadowOffsetY: 2,
+            fontWeight: 400,
             formatter: (p: unknown) => {
               const it = p as { value: number };
               const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
@@ -220,15 +212,7 @@ export function ReportPage() {
             fontFeatureSettings: "'tnum'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
-            fontWeight: 600,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: isMobile ? [3, 5, 3, 5] : [4, 6, 4, 6],
-            shadowColor: "rgba(0, 0, 0, 0.12)",
-            shadowBlur: 6,
-            shadowOffsetY: 2,
+            fontWeight: 400,
             formatter: (p: unknown) => {
               const it = p as { value: number };
               const v = it.value;
@@ -262,7 +246,8 @@ export function ReportPage() {
       categoryId === "" ? data.data.monthly_by_category ?? [] : [];
 
     const netColor = "oklch(0.62 0.13 145)";
-    const taxColor = "oklch(0.78 0.10 145)";
+    // Match the tax line's colour (#DC2626) so the tooltip swatch agrees.
+    const taxColor = "#DC2626";
 
     return {
       grid: { top: 25, right: 16, bottom: 5, left: GRID_LEFT_FLUSH, containLabel: true },
@@ -340,7 +325,6 @@ export function ReportPage() {
       series: [
         {
           type: "line" as const,
-          smooth: 0.2,
           // Per-point label.show=false on zero months so an empty pill
           // doesn't sit on the baseline.
           data: totalSeries.map((v) =>
@@ -387,7 +371,6 @@ export function ReportPage() {
         {
           name: "Налог",
           type: "line" as const,
-          smooth: 0.2,
           data: taxSeries,
           symbol: "circle",
           symbolSize: 5,
@@ -398,7 +381,6 @@ export function ReportPage() {
         ...cats.map((c) => ({
           name: c.name,
           type: "line" as const,
-          smooth: 0.2,
           data: c.net.map((v) => Math.round(v)),
           symbol: "circle",
           symbolSize: 5,
