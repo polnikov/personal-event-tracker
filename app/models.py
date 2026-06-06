@@ -6,6 +6,18 @@ from .clock import now_local
 from .database import Base
 
 
+class Club(Base):
+    """A venue/location an event can take place at. Optional on events; a
+    category may carry a default club that auto-fills new events."""
+
+    __tablename__ = "clubs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
+
+
 class Category(Base):
     __tablename__ = "categories"
 
@@ -14,11 +26,16 @@ class Category(Base):
     color: Mapped[str] = mapped_column(String(7), default="#3b82f6")
     icon: Mapped[str | None] = mapped_column(String(64), nullable=True)
     google_calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Club pre-selected for events created under this category (optional).
+    default_club_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clubs.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     subcategories: Mapped[list["Subcategory"]] = relationship(
         back_populates="category", cascade="all, delete-orphan"
     )
+    default_club: Mapped["Club | None"] = relationship("Club")
 
 
 class Subcategory(Base):
@@ -89,6 +106,9 @@ class Event(Base):
     client_id: Mapped[int | None] = mapped_column(
         ForeignKey("clients.id", ondelete="SET NULL"), nullable=True
     )
+    club_id: Mapped[int | None] = mapped_column(
+        ForeignKey("clubs.id", ondelete="SET NULL"), nullable=True
+    )
     start_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -113,6 +133,7 @@ class Event(Base):
 
     subcategory: Mapped[Subcategory] = relationship(back_populates="events")
     client: Mapped[Client | None] = relationship(back_populates="events")
+    club: Mapped["Club | None"] = relationship("Club")
 
     @property
     def end_at(self) -> datetime:

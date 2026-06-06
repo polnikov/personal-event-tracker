@@ -48,6 +48,30 @@ class ClientRead(BaseModel):
     total_spent: Decimal = Decimal(0)
 
 
+# ---------- Clubs ----------
+
+class ClubBase(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    address: str | None = None
+
+
+class ClubCreate(ClubBase):
+    pass
+
+
+class ClubUpdate(ClubBase):
+    pass
+
+
+class ClubRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    address: str | None = None
+    created_at: datetime
+
+
 # ---------- Categories / Subcategories / Prices ----------
 
 class SubcategoryPriceRead(BaseModel):
@@ -96,6 +120,7 @@ class CategoryRead(BaseModel):
     color: str
     icon: str | None = None
     google_calendar_id: str | None = None
+    default_club_id: int | None = None
     subcategories: list[SubcategoryRead] = []
 
 
@@ -104,6 +129,7 @@ class CategoryCreate(BaseModel):
     color: str = "#0969da"
     icon: str | None = None
     google_calendar_id: str | None = None
+    default_club_id: int | None = None
 
 
 class CategoryUpdate(BaseModel):
@@ -111,6 +137,7 @@ class CategoryUpdate(BaseModel):
     color: str
     icon: str | None = None
     google_calendar_id: str | None = None
+    default_club_id: int | None = None
 
 
 # ---------- Events ----------
@@ -130,10 +157,19 @@ class EventSubcategory(BaseModel):
     category_color: str
 
 
+class EventClub(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    address: str | None = None
+
+
 class EventRead(BaseModel):
     id: int
     subcategory_id: int
     client_id: int | None
+    club_id: int | None = None
     start_at: datetime
     end_at: datetime
     duration_minutes: int
@@ -144,6 +180,7 @@ class EventRead(BaseModel):
     notes: str | None
     subcategory: EventSubcategory
     client: EventClient | None = None
+    club: EventClub | None = None
     # Computed from open google_sync_outbox rows (see serializers.py).
     # "ok" — no pending sync, or category isn't synced to Google.
     # "pending" — at least one open outbox row with attempts < threshold.
@@ -154,6 +191,7 @@ class EventRead(BaseModel):
 class EventCreate(BaseModel):
     subcategory_id: int
     client_id: int | None = None
+    club_id: int | None = None
     start_at: datetime
     duration_minutes: int = Field(gt=0)
     notes: str | None = None
@@ -165,6 +203,7 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     subcategory_id: int
     client_id: int | None = None
+    club_id: int | None = None
     start_at: datetime
     duration_minutes: int = Field(gt=0)
     notes: str | None = None

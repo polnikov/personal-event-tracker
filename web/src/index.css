@@ -1301,6 +1301,12 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: 0 0 var(--r-xl) var(--r-xl);
 }
 
+/* EventForm: no divider above the action buttons (all widths). */
+.event-form .form-actions,
+.modal-body .event-form .form-actions {
+  border-top-width: 0;
+}
+
 /* Toggle (pill switch) */
 .toggle {
   display: inline-flex;
@@ -2922,6 +2928,16 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: flex-start;
   margin-bottom: 14px;
 }
+/* Club card: rounded icon tile in place of the client avatar. */
+.club-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
 .client-card-name {
   font-size: 16px;
   font-weight: 600;
@@ -3093,6 +3109,13 @@ input[type="number"] { -moz-appearance: textfield; }
   animation: popIn 0.2s ease;
 }
 .modal-lg { max-width: 640px; }
+/* EventForm needs a touch more width so the 5 duration presets (…1,5ч 2ч)
+   fit on one line inside the half-width duration column. */
+.modal-content:has(.event-form) { max-width: 720px; }
+/* Sum box + Клуб share one row; bottom-align so the sum tile lines up with
+   the club select (whose label sits above it). */
+.event-sum-club-row { align-items: end; }
+.event-sum-club-row .event-sum-box { min-height: 38px; box-sizing: border-box; }
 /* Calendar reschedule modal: sized to the natural width of its footer
    button row, not a fixed value. width:max-content lets the modal hug
    the widest child (the 3 action buttons + gaps + padding); the buttons
@@ -3239,11 +3262,30 @@ input[type="number"] { -moz-appearance: textfield; }
 a.cd2-name:hover {
   color: var(--accent);
 }
+/* Right column under the name: cost (+flags) on top, club right-aligned
+   directly beneath it. */
+.cd2-metacol {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
 .cd2-meta {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 7px;
+}
+.cd2-club {
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: right;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cd2-price {
   flex: 0 0 auto;

@@ -49,6 +49,7 @@ def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
         color=payload.color,
         icon=payload.icon,
         google_calendar_id=(payload.google_calendar_id or None),
+        default_club_id=payload.default_club_id,
     )
     db.add(cat)
     db.commit()
@@ -65,6 +66,7 @@ def update_category(cat_id: int, payload: CategoryUpdate, db: Session = Depends(
     cat.color = payload.color
     cat.icon = payload.icon
     cat.google_calendar_id = payload.google_calendar_id or None
+    cat.default_club_id = payload.default_club_id
     db.commit()
     db.refresh(cat)
     return category_to_schema(cat)

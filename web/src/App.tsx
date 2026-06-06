@@ -8,6 +8,7 @@ import { EventFormPage } from "@/pages/EventForm";
 import { ClientsPage } from "@/pages/Clients";
 import { ClientDetailPage } from "@/pages/ClientDetail";
 import { CategoriesPage } from "@/pages/Categories";
+import { ClubsPage } from "@/pages/Clubs";
 import { CalendarPage } from "@/pages/Calendar";
 import { ReportPage } from "@/pages/Report";
 import { SettingsGooglePage } from "@/pages/SettingsGoogle";
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="clients" element={<ClientsPage />} />
         <Route path="clients/:id" element={<ClientDetailPage />} />
         <Route path="categories" element={<CategoriesPage />} />
+        <Route path="clubs" element={<ClubsPage />} />
         <Route path="report" element={<ReportPage />} />
         <Route path="settings/google" element={<SettingsGooglePage />} />
         <Route path="sync" element={<SyncQueuePage />} />

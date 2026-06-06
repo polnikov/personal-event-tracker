@@ -122,19 +122,32 @@ def _to_local_iso(dt: datetime) -> str:
 def event_to_google_body(event: Event) -> dict:
     """Build the Google Calendar event payload.
 
-    Title  : "<Category> | <Client>" (drops the client side when absent).
-    Body   : notes verbatim, empty string when none — explicit so patch
-             clears it if the user removed the note later.
-    Guests : never invite anyone, never let invitees add more guests.
+    Title    : "<Category> | <LastName FirstName>" (drops the client side when
+               absent). Name is "Фамилия Имя" order to match the calendar.
+    Location : club name + address when an event has a club; empty otherwise.
+               Explicit "" so a patch clears it if the club was removed later.
+    Body     : notes verbatim, empty string when none — explicit so patch
+               clears it if the user removed the note later.
+    Guests   : never invite anyone, never let invitees add more guests.
     """
     cat = event.subcategory.category
     end_at = event.start_at + timedelta(minutes=event.duration_minutes)
     if event.client:
-        summary = f"{cat.name} | {event.client.full_name}"
+        client = event.client
+        name = f"{client.last_name or ''} {client.first_name or ''}".strip()
+        summary = f"{cat.name} | {name}" if name else cat.name
     else:
         summary = cat.name
+    location = ""
+    if event.club is not None:
+        location = (
+            f"{event.club.name}, {event.club.address}"
+            if event.club.address
+            else event.club.name
+        )
     body: dict = {
         "summary": summary,
+        "location": location,
         "description": event.notes or "",
         "start": {"dateTime": _to_local_iso(event.start_at), "timeZone": settings.TIMEZONE},
         "end": {"dateTime": _to_local_iso(end_at), "timeZone": settings.TIMEZONE},

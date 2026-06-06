@@ -15,7 +15,11 @@ import { ColorPicker } from "@/components/ColorPicker";
 import { DatePicker } from "@/components/DatePicker";
 import { IconPicker } from "@/components/IconPicker";
 import { AppIcon } from "@/components/phosphor";
-import { categories as categoriesApi, google as googleApi } from "@/lib/api";
+import {
+  categories as categoriesApi,
+  clubs as clubsApi,
+  google as googleApi,
+} from "@/lib/api";
 import { useOfflineRefresh } from "@/hooks/useOfflineRefresh";
 import { fmt } from "@/lib/format";
 import type { Category, Subcategory, SubcategoryPrice } from "@/types/api";
@@ -194,6 +198,19 @@ function CategoryFormModal({
   const [googleCalendarId, setGoogleCalendarId] = useState<string>(
     category?.google_calendar_id ?? "",
   );
+  const [defaultClubId, setDefaultClubId] = useState<string>(
+    category?.default_club_id != null ? String(category.default_club_id) : "",
+  );
+
+  const clubsQuery = useQuery({
+    queryKey: ["clubs", ""],
+    queryFn: () => clubsApi.list(""),
+    staleTime: 60_000,
+  });
+  const clubOptions = (clubsQuery.data ?? []).map((c) => ({
+    value: String(c.id),
+    label: c.address ? `${c.name} · ${c.address}` : c.name,
+  }));
 
   const googleStatus = useQuery({
     queryKey: ["google", "status"],
@@ -219,6 +236,7 @@ function CategoryFormModal({
         color,
         icon,
         google_calendar_id: googleCalendarId || null,
+        default_club_id: defaultClubId ? Number(defaultClubId) : null,
       };
       return isEdit
         ? categoriesApi.update(category!.id, payload)
@@ -269,6 +287,14 @@ function CategoryFormModal({
         </Field>
         <Field label="Иконка">
           <IconPicker value={icon} onChange={setIcon} color={color} />
+        </Field>
+        <Field label="Клуб по умолчанию">
+          <SearchableSelect
+            value={defaultClubId}
+            onChange={setDefaultClubId}
+            placeholder="— не выбран —"
+            options={clubOptions}
+          />
         </Field>
         <Field label="Синхронизация с Google Calendar">
           {googleStatus.data?.connected ? (

@@ -4,6 +4,7 @@ import type {
   Category,
   Client,
   ClientDetail,
+  Club,
   DashboardResponse,
   EventItem,
   EventListResponse,
@@ -166,6 +167,22 @@ export const clients = {
     }>(`/clients/${id}/monthly?year=${year}`),
 };
 
+// ---------- Clubs ----------
+
+export interface ClubPayload {
+  name: string;
+  address: string | null;
+}
+
+export const clubs = {
+  list: (q = "") => request<Club[]>(`/clubs${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  create: (payload: ClubPayload) =>
+    request<Club>("/clubs", { method: "POST", body: JSON.stringify(payload) }),
+  update: (id: number, payload: ClubPayload) =>
+    request<Club>(`/clubs/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+  remove: (id: number) => request<{ ok: true }>(`/clubs/${id}`, { method: "DELETE" }),
+};
+
 // ---------- Categories ----------
 
 export interface CategoryPayload {
@@ -173,6 +190,7 @@ export interface CategoryPayload {
   color: string;
   icon: string | null;
   google_calendar_id?: string | null;
+  default_club_id?: number | null;
 }
 
 export const categories = {
@@ -246,6 +264,7 @@ export const events = {
   create: (payload: {
     subcategory_id: number;
     client_id: number | null;
+    club_id: number | null;
     start_at: string;
     duration_minutes: number;
     notes: string | null;
@@ -258,6 +277,7 @@ export const events = {
     payload: {
       subcategory_id: number;
       client_id: number | null;
+      club_id: number | null;
       start_at: string;
       duration_minutes: number;
       notes: string | null;

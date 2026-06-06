@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bug,
+  Buildings,
   Calendar,
   CalendarDots,
   CalendarPlus,
@@ -23,6 +24,7 @@ import {
   google as googleApi,
   clients as clientsApi,
   categories as categoriesApi,
+  clubs as clubsApi,
 } from "@/lib/api";
 import { useOnline } from "@/hooks/useOnline";
 import { list as outboxList, subscribe as outboxSubscribe } from "@/lib/outbox";
@@ -41,12 +43,13 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Дашборд", Icon: GridFour, end: true },
   { to: "/calendar", label: "Календарь", Icon: CalendarDots, end: false },
   { to: "/events", label: "События", Icon: ListPlus, end: false },
+  { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
   { to: "/clients", label: "Клиенты", Icon: IdentificationCard, end: false },
   { to: "/categories", label: "Категории", Icon: Tag, end: false },
-  { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
-  { to: "/settings/google", label: "Настройки", Icon: GearSix, end: false },
+  { to: "/clubs", label: "Клубы", Icon: Buildings, end: false },
   { to: "/sync", label: "Очередь", Icon: CloudArrowUp, end: false },
   { to: "/debug", label: "Отладка", Icon: Bug, end: false },
+  { to: "/settings/google", label: "Настройки", Icon: GearSix, end: false },
 ];
 
 const MOBILE_TABS: NavItem[] = [
@@ -62,7 +65,7 @@ const MOBILE_TAB_ICON = 25;
 
 // Routes that live behind the "Ещё" sheet — keep the More tab highlighted
 // when the user is on any of these pages.
-const MORE_ROUTES = ["/categories", "/clients", "/sync", "/debug", "/settings"];
+const MORE_ROUTES = ["/categories", "/clubs", "/clients", "/sync", "/debug", "/settings"];
 
 export function Layout() {
   const location = useLocation();
@@ -97,6 +100,11 @@ export function Layout() {
   useQuery({
     queryKey: ["categories"],
     queryFn: () => categoriesApi.list(),
+    staleTime: 5 * 60_000,
+  });
+  useQuery({
+    queryKey: ["clubs", ""],
+    queryFn: () => clubsApi.list(""),
     staleTime: 5 * 60_000,
   });
 
@@ -356,6 +364,13 @@ export function Layout() {
                 <Tag size={22} weight="fill" />
               </span>
               <span>Категории</span>
+            </NavLink>
+
+            <NavLink to="/clubs" className="mobile-sheet-item">
+              <span className="mobile-sheet-item-icon">
+                <Buildings size={22} weight="fill" />
+              </span>
+              <span>Клубы</span>
             </NavLink>
 
             <NavLink to="/sync" className="mobile-sheet-item">

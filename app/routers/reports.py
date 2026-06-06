@@ -42,6 +42,7 @@ def _query_events(
         .options(
             selectinload(Event.subcategory).selectinload(Subcategory.category),
             selectinload(Event.client),
+            selectinload(Event.club),
         )
         .where(and_(Event.start_at >= start, Event.start_at < end))
     )

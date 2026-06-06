@@ -16,6 +16,13 @@ export interface Client {
   total_spent: string;
 }
 
+export interface Club {
+  id: number;
+  name: string;
+  address: string | null;
+  created_at: string;
+}
+
 export interface SubcategoryPrice {
   id: number;
   subcategory_id: number;
@@ -39,6 +46,7 @@ export interface Category {
   color: string;
   icon: string | null;
   google_calendar_id: string | null;
+  default_club_id: number | null;
   subcategories: Subcategory[];
 }
 
@@ -55,10 +63,17 @@ export interface EventClientRef {
   full_name: string;
 }
 
+export interface EventClubRef {
+  id: number;
+  name: string;
+  address: string | null;
+}
+
 export interface EventItem {
   id: number;
   subcategory_id: number;
   client_id: number | null;
+  club_id: number | null;
   start_at: string;
   end_at: string;
   duration_minutes: number;
@@ -69,6 +84,7 @@ export interface EventItem {
   notes: string | null;
   subcategory: EventSubcategoryRef;
   client: EventClientRef | null;
+  club: EventClubRef | null;
   /** Server-computed sync state vs. Google Calendar (optional for now;
    *  endpoints rolling this out: events.list, clients/detail, reports). */
   sync_status?: "ok" | "pending" | "failed";

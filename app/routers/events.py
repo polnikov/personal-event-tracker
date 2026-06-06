@@ -70,6 +70,7 @@ def list_events(
         .options(
             selectinload(Event.subcategory).selectinload(Subcategory.category),
             selectinload(Event.client),
+            selectinload(Event.club),
         )
         .order_by(Event.start_at.desc())
     )
@@ -162,6 +163,7 @@ def get_event(event_id: int, db: Session = Depends(get_db)):
         .options(
             selectinload(Event.subcategory).selectinload(Subcategory.category),
             selectinload(Event.client),
+            selectinload(Event.club),
         )
         .where(Event.id == event_id)
     ).scalar_one_or_none()
@@ -193,6 +195,7 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
     e = Event(
         subcategory_id=payload.subcategory_id,
         client_id=payload.client_id,
+        club_id=payload.club_id,
         start_at=payload.start_at,
         duration_minutes=payload.duration_minutes,
         hourly_rate_snapshot=rate,
@@ -209,6 +212,7 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
         .options(
             selectinload(Event.subcategory).selectinload(Subcategory.category),
             selectinload(Event.client),
+            selectinload(Event.club),
         )
         .where(Event.id == e.id)
     ).scalar_one()
@@ -235,6 +239,7 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
     subcategory_changed = payload.subcategory_id != e.subcategory_id
     e.subcategory_id = payload.subcategory_id
     e.client_id = payload.client_id
+    e.club_id = payload.club_id
     e.start_at = payload.start_at
     e.duration_minutes = payload.duration_minutes
     e.notes = (payload.notes or "").strip() or None
@@ -256,6 +261,7 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
         .options(
             selectinload(Event.subcategory).selectinload(Subcategory.category),
             selectinload(Event.client),
+            selectinload(Event.club),
         )
         .where(Event.id == event_id)
     ).scalar_one()
@@ -272,6 +278,7 @@ def delete_event(event_id: int, db: Session = Depends(get_db)):
         .options(
             selectinload(Event.subcategory).selectinload(Subcategory.category),
             selectinload(Event.client),
+            selectinload(Event.club),
         )
         .where(Event.id == event_id)
     ).scalar_one_or_none()

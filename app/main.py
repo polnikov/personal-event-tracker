@@ -15,6 +15,7 @@ from .idempotency import IdempotencyMiddleware
 from .routers.auth_router import router as auth_router, limiter as auth_limiter
 from .routers.categories import router as categories_router
 from .routers.clients import router as clients_router
+from .routers.clubs import router as clubs_router
 from .routers.events import router as events_router
 from .routers.dashboard import router as dashboard_router
 from .routers.calendar import router as calendar_router
@@ -67,6 +68,7 @@ app.include_router(dashboard_router)
 app.include_router(calendar_router)
 app.include_router(categories_router)
 app.include_router(clients_router)
+app.include_router(clubs_router)
 app.include_router(events_router)
 app.include_router(reports_router)
 app.include_router(google_router)

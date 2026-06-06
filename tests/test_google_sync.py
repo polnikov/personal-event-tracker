@@ -135,8 +135,11 @@ def test_to_local_iso_adds_moscow_offset(db_session):
 def test_event_to_google_body(db_session):
     ev = _make_event(db_session, with_client=True, notes="заметка")
     body = event_to_google_body(ev)
-    assert body["summary"] == "C | Иван Петров"
+    # Title uses "Категория | Фамилия Имя" order.
+    assert body["summary"] == "C | Петров Иван"
     assert body["description"] == "заметка"
+    # No club on this event → empty location (cleared on patch).
+    assert body["location"] == ""
     assert body["start"]["timeZone"] == settings.TIMEZONE
     assert body["start"]["dateTime"].endswith("+03:00")
     assert body["end"]["dateTime"].endswith("+03:00")
@@ -147,6 +150,23 @@ def test_event_to_google_body(db_session):
 def test_event_to_google_body_without_client(db_session):
     ev = _make_event(db_session, with_client=False)
     assert event_to_google_body(ev)["summary"] == "C"
+
+
+def test_event_to_google_body_location_from_club(db_session):
+    from app.models import Club
+
+    ev = _make_event(db_session, with_client=False)
+    # With name + address → "Name, Address".
+    club = Club(name="Корт №1", address="Москва, ул. Ленина, 1")
+    db_session.add(club)
+    db_session.flush()
+    ev.club_id = club.id
+    db_session.flush()
+    assert event_to_google_body(ev)["location"] == "Корт №1, Москва, ул. Ленина, 1"
+    # Name only → just the name.
+    club.address = None
+    db_session.flush()
+    assert event_to_google_body(ev)["location"] == "Корт №1"
 
 
 # ───────────── backoff ─────────────

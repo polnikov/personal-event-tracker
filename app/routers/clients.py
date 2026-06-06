@@ -152,6 +152,7 @@ def client_detail(client_id: int, db: Session = Depends(get_db)):
             .options(
                 selectinload(Event.subcategory).selectinload(Subcategory.category),
                 selectinload(Event.client),
+                selectinload(Event.club),
             )
             .where(Event.client_id == client_id)
             .order_by(Event.start_at.desc())

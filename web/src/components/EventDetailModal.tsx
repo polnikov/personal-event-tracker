@@ -48,6 +48,7 @@ export function EventDetailModal({
       return eventsApi.update(eventId, {
         subcategory_id: ev.subcategory_id,
         client_id: ev.client_id,
+        club_id: ev.club_id,
         start_at: local,
         duration_minutes: ev.duration_minutes,
         notes: ev.notes,
@@ -205,30 +206,35 @@ export function EventDetailModal({
               ) : (
                 <span className="cd2-name" />
               )}
-              <span className="cd2-meta">
-                <span className="cd2-price">{costFmt} ₽</span>
-                {taxPct > 0 && (
-                  <HandCoins
-                    className="cd2-flag"
-                    size={16}
-                    weight="duotone"
-                    aria-label={`Налог ${taxPct}%`}
-                  >
-                    <title>{`Налог ${taxPct}%`}</title>
-                  </HandCoins>
-                )}
-                {royaltyPct > 0 && (
-                  <SealPercent
-                    className="cd2-flag"
-                    size={16}
-                    weight="duotone"
-                    aria-label={`Роялти ${royaltyPct}%`}
-                  >
-                    <title>{`Роялти ${royaltyPct}%`}</title>
-                  </SealPercent>
-                )}
+              <span className="cd2-metacol">
+                <span className="cd2-meta">
+                  <span className="cd2-price">{costFmt} ₽</span>
+                  {taxPct > 0 && (
+                    <HandCoins
+                      className="cd2-flag"
+                      size={16}
+                      weight="duotone"
+                      aria-label={`Налог ${taxPct}%`}
+                    >
+                      <title>{`Налог ${taxPct}%`}</title>
+                    </HandCoins>
+                  )}
+                  {royaltyPct > 0 && (
+                    <SealPercent
+                      className="cd2-flag"
+                      size={16}
+                      weight="duotone"
+                      aria-label={`Роялти ${royaltyPct}%`}
+                    >
+                      <title>{`Роялти ${royaltyPct}%`}</title>
+                    </SealPercent>
+                  )}
+                </span>
+                {/* Club sits right-aligned directly under the cost. */}
+                {ev.club && <span className="cd2-club">{ev.club.name}</span>}
               </span>
             </div>
+            {/* Notes, when present, drop to their own full-width line below. */}
             {ev.notes && <div className="cd2-note">{ev.notes}</div>}
           </div>
         </div>

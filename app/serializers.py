@@ -4,7 +4,15 @@ from typing import Iterable
 from sqlalchemy.orm import Session
 
 from .models import Event, Subcategory
-from .schemas import EventClient, EventRead, EventSubcategory, SubcategoryRead, CategoryRead, SubcategoryPriceRead
+from .schemas import (
+    EventClient,
+    EventClub,
+    EventRead,
+    EventSubcategory,
+    SubcategoryRead,
+    CategoryRead,
+    SubcategoryPriceRead,
+)
 
 
 def event_to_schema(e: Event, *, sync_status: str = "ok") -> EventRead:
@@ -14,6 +22,7 @@ def event_to_schema(e: Event, *, sync_status: str = "ok") -> EventRead:
         id=e.id,
         subcategory_id=e.subcategory_id,
         client_id=e.client_id,
+        club_id=e.club_id,
         start_at=e.start_at,
         end_at=e.start_at + timedelta(minutes=e.duration_minutes),
         duration_minutes=e.duration_minutes,
@@ -30,6 +39,7 @@ def event_to_schema(e: Event, *, sync_status: str = "ok") -> EventRead:
             category_color=cat.color,
         ),
         client=EventClient(id=e.client.id, full_name=e.client.full_name) if e.client else None,
+        club=EventClub(id=e.club.id, name=e.club.name, address=e.club.address) if e.club else None,
         sync_status=sync_status,
     )
 
@@ -65,5 +75,6 @@ def category_to_schema(c) -> CategoryRead:
         color=c.color,
         icon=c.icon,
         google_calendar_id=c.google_calendar_id,
+        default_club_id=c.default_club_id,
         subcategories=[subcategory_to_schema(s) for s in sorted(c.subcategories, key=lambda x: x.name)],
     )

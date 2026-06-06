@@ -21,6 +21,7 @@ import {
 import {
   categories as categoriesApi,
   clients as clientsApi,
+  clubs as clubsApi,
   events as eventsApi,
   OfflineQueuedError,
 } from "@/lib/api";
@@ -31,6 +32,7 @@ import { DateTimePicker } from "@/components/DateTimePicker";
 const schema = z.object({
   subcategory_id: z.string().min(1, "Выберите подкатегорию"),
   client_id: z.string(),
+  club_id: z.string(),
   start_at: z.string().min(1, "Укажите дату/время"),
   duration_minutes: z.coerce.number().int().positive("Длительность > 0"),
   notes: z.string(),
@@ -90,9 +92,13 @@ export function EventForm({
   // Used to skip the initial reset from existing/copy data while letting
   // subsequent subcategory OR date changes drive a re-sync.
   const lastSyncedKey = useRef<string>("");
+  // Category whose default club we last auto-applied — lets us re-apply only
+  // when the selected subcategory's CATEGORY actually changes.
+  const lastClubCat = useRef<number | null>(null);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
   const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
+  const clubsList = useQuery({ queryKey: ["clubs", ""], queryFn: () => clubsApi.list("") });
   const existing = useQuery({
     queryKey: ["events", "detail", eventId],
     queryFn: () => eventsApi.detail(eventId!),
@@ -122,6 +128,7 @@ export function EventForm({
       return {
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
+        club_id: e.club_id ? String(e.club_id) : "",
         start_at: format(parseISO(e.start_at), "yyyy-MM-dd'T'HH:mm"),
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
@@ -139,6 +146,7 @@ export function EventForm({
       return {
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
+        club_id: e.club_id ? String(e.club_id) : "",
         start_at: `${todayDate}T${sourceTime}`,
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
@@ -151,6 +159,7 @@ export function EventForm({
     return {
       subcategory_id: "",
       client_id: prefillClient ?? "",
+      club_id: "",
       start_at: prefillStart || nowLocal,
       duration_minutes: 60,
       notes: "",
@@ -177,6 +186,8 @@ export function EventForm({
       setTaxEnabled(tax > 0);
       setRoyaltyEnabled(royalty > 0);
       lastSyncedKey.current = `${e.subcategory_id}@${format(parseISO(e.start_at), "yyyy-MM-dd'T'HH:mm")}`;
+      // Seed so the auto-fill effect doesn't clobber the event's stored club.
+      lastClubCat.current = e.subcategory.category_id;
     } else if (sourceForCopy.data) {
       const e = sourceForCopy.data;
       const tax = parseFloat(e.tax) || 0;
@@ -186,6 +197,8 @@ export function EventForm({
       const sourceTime = format(parseISO(e.start_at), "HH:mm");
       const todayDate = format(new Date(), "yyyy-MM-dd");
       lastSyncedKey.current = `${e.subcategory_id}@${todayDate}T${sourceTime}`;
+      // Copy keeps the source event's club; only a later category change auto-fills.
+      lastClubCat.current = e.subcategory.category_id;
     }
   }, [existing.data, sourceForCopy.data]);
 
@@ -199,6 +212,7 @@ export function EventForm({
       eventsApi.create({
         subcategory_id: Number(values.subcategory_id),
         client_id: values.client_id ? Number(values.client_id) : null,
+        club_id: values.club_id ? Number(values.club_id) : null,
         start_at: localIso(values.start_at),
         duration_minutes: values.duration_minutes,
         notes: values.notes || null,
@@ -213,6 +227,7 @@ export function EventForm({
       eventsApi.update(eventId!, {
         subcategory_id: Number(values.subcategory_id),
         client_id: values.client_id ? Number(values.client_id) : null,
+        club_id: values.club_id ? Number(values.club_id) : null,
         start_at: localIso(values.start_at),
         duration_minutes: values.duration_minutes,
         notes: values.notes || null,
@@ -258,6 +273,7 @@ export function EventForm({
   const durationValue = form.watch("duration_minutes");
   const subcatValue = form.watch("subcategory_id");
   const clientValue = form.watch("client_id");
+  const clubValue = form.watch("club_id");
   const recalculateValue = form.watch("recalculate_price");
   const priceValue = form.watch("price_per_hour");
   const taxValue = form.watch("tax");
@@ -284,6 +300,22 @@ export function EventForm({
       break;
     }
   }, [subcatValue, startAtValue, cats.data, form]);
+
+  // Auto-fill the club from the selected subcategory's CATEGORY default. Fires
+  // only when the category changes (not on every keystroke / date edit), so a
+  // user's manual club pick within the same category isn't overwritten. Edit
+  // mode keeps the event's stored club (lastClubCat seeded above); new events
+  // start with lastClubCat=null, so the first category pick applies its default.
+  useEffect(() => {
+    if (!subcatValue || !cats.data) return;
+    const subId = Number(subcatValue);
+    const cat = cats.data.find((c) => c.subcategories.some((s) => s.id === subId));
+    if (!cat || lastClubCat.current === cat.id) return;
+    lastClubCat.current = cat.id;
+    form.setValue("club_id", cat.default_club_id != null ? String(cat.default_club_id) : "", {
+      shouldDirty: true,
+    });
+  }, [subcatValue, cats.data, form]);
 
   const subcatGroups = useMemo(
     () =>
@@ -442,31 +474,46 @@ export function EventForm({
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 16,
-            padding: "10px 12px",
-            background: "var(--bg)",
-            borderRadius: "var(--r-md)",
-            alignItems: "baseline",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <span className="muted small">Сумма: </span>
-            <span className="mono" style={{ fontWeight: 500 }}>
-              {fmtMoney(calc.gross)} ₽
-            </span>
-          </div>
-          {(taxEnabled || royaltyEnabled) && (
+        <div className="form-grid-2 event-sum-club-row">
+          <div
+            className="event-sum-box"
+            style={{
+              display: "flex",
+              gap: 16,
+              padding: "10px 12px",
+              background: "var(--bg)",
+              borderRadius: "var(--r-md)",
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
             <div>
-              <span className="muted small">Чистыми: </span>
-              <span className="mono" style={{ fontWeight: 600 }}>
-                {fmtMoney(calc.net)} ₽
+              <span className="muted small">Сумма: </span>
+              <span className="mono" style={{ fontWeight: 500 }}>
+                {fmtMoney(calc.gross)} ₽
               </span>
             </div>
-          )}
+            {(taxEnabled || royaltyEnabled) && (
+              <div>
+                <span className="muted small">Чистыми: </span>
+                <span className="mono" style={{ fontWeight: 600 }}>
+                  {fmtMoney(calc.net)} ₽
+                </span>
+              </div>
+            )}
+          </div>
+
+          <Field label="Клуб">
+            <SearchableSelect
+              value={clubValue}
+              onChange={(v) => form.setValue("club_id", v, { shouldDirty: true })}
+              placeholder="— без клуба —"
+              options={(clubsList.data ?? []).map((c) => ({
+                value: String(c.id),
+                label: c.address ? `${c.name} · ${c.address}` : c.name,
+              }))}
+            />
+          </Field>
         </div>
 
         <div className={cn("collapsible", notesOpen && "is-open")}>
