@@ -8,17 +8,22 @@ import {
   CalendarPlus,
   ChartPieSlice,
   CloudArrowUp,
-  DotsThree,
   GearSix,
   GridFour,
   IdentificationCard,
+  List,
   ListNumbers,
   ListPlus,
+  Speedometer,
   Tag,
   UserPlus,
 } from "@phosphor-icons/react";
 import type { Icon as PhosphorIconType } from "@phosphor-icons/react";
-import { google as googleApi } from "@/lib/api";
+import {
+  google as googleApi,
+  clients as clientsApi,
+  categories as categoriesApi,
+} from "@/lib/api";
 import { useOnline } from "@/hooks/useOnline";
 import { list as outboxList, subscribe as outboxSubscribe } from "@/lib/outbox";
 import { cn } from "@/lib/utils";
@@ -45,11 +50,15 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const MOBILE_TABS: NavItem[] = [
-  { to: "/", label: "Дашборд", Icon: GridFour, end: true },
+  { to: "/", label: "Дашборд", Icon: Speedometer, end: true },
   { to: "/calendar", label: "Календарь", Icon: Calendar, end: false },
   { to: "/events", label: "События", Icon: ListNumbers, end: false },
   { to: "/report", label: "Отчёт", Icon: ChartPieSlice, end: false },
 ];
+
+// One icon size shared by every tab (incl. "Ещё") so they sit on the same
+// baseline; 15% up from the previous 22px.
+const MOBILE_TAB_ICON = 25;
 
 // Routes that live behind the "Ещё" sheet — keep the More tab highlighted
 // when the user is on any of these pages.
@@ -73,6 +82,24 @@ export function Layout() {
     staleTime: 15_000,
   });
   const failedCount = googleStatus.data?.failed ?? 0;
+
+  // Warm the reference-data caches (clients + categories) from the always-
+  // mounted shell so they're persisted and available offline. Without this, a
+  // user who goes offline and opens "Новое событие" without having visited a
+  // page that loads clients/categories first gets empty dropdowns. Long
+  // staleTime keeps it to one fetch per session while online. Same query keys
+  // as EventForm / Events so the data is shared, not duplicated.
+  useQuery({
+    queryKey: ["clients", ""],
+    queryFn: () => clientsApi.list(""),
+    staleTime: 5 * 60_000,
+  });
+  useQuery({
+    queryKey: ["categories"],
+    queryFn: () => categoriesApi.list(),
+    staleTime: 5 * 60_000,
+  });
+
   const online = useOnline();
   const [outbox, setOutbox] = useState({ pending: 0, failed: 0 });
   useEffect(() => {
@@ -226,7 +253,10 @@ export function Layout() {
               end={end}
               className={cn("mobile-tab", active && !inMore && "active")}
             >
-              <Icon size={22} weight={active && !inMore ? "fill" : "regular"} />
+              <Icon
+                size={MOBILE_TAB_ICON}
+                weight={active && !inMore ? "fill" : "regular"}
+              />
               <span>{label}</span>
             </NavLink>
           );
@@ -238,7 +268,10 @@ export function Layout() {
           aria-haspopup="dialog"
           aria-expanded={sheetOpen}
         >
-          <DotsThree size={26} weight={inMore || sheetOpen ? "fill" : "bold"} />
+          <List
+            size={MOBILE_TAB_ICON}
+            weight={inMore || sheetOpen ? "fill" : "regular"}
+          />
           <span>Ещё</span>
           {moreTabAlert && (
             <span
