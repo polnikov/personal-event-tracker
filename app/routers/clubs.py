@@ -16,11 +16,18 @@ router = APIRouter(
 
 @router.get("", response_model=list[ClubRead])
 def list_clubs(q: str | None = Query(None), db: Session = Depends(get_db)):
-    stmt = select(Club).order_by(Club.name)
-    if q:
-        like = f"%{q.strip()}%"
-        stmt = stmt.where(Club.name.ilike(like) | Club.address.ilike(like))
-    return [ClubRead.model_validate(c) for c in db.execute(stmt).scalars().all()]
+    clubs = db.execute(select(Club).order_by(Club.name)).scalars().all()
+    needle = (q or "").strip().lower()
+    if needle:
+        # SQLite's LIKE is ASCII-only case-insensitive and never folds
+        # Cyrillic, so narrow in Python with Unicode-aware str.lower()
+        # (matches how clients search works).
+        clubs = [
+            c
+            for c in clubs
+            if needle in c.name.lower() or needle in (c.address or "").lower()
+        ]
+    return [ClubRead.model_validate(c) for c in clubs]
 
 
 @router.post("", response_model=ClubRead, status_code=201)

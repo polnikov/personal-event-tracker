@@ -54,8 +54,8 @@ jobs:
         run: npx tsc -b
         working-directory: web
 
-      - name: Frontend tests (vitest run)
-        run: npx vitest run
+      - name: Frontend tests (vitest run + coverage)
+        run: npx vitest run --coverage
         working-directory: web
 
   build:

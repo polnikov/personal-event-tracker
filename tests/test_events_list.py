@@ -1,4 +1,7 @@
 import itertools
+from datetime import timedelta
+
+from app.clock import now_local
 
 from .helpers import make_category, make_client_record, make_subcategory
 
@@ -34,6 +37,40 @@ def test_future_past_split(auth_client):
     assert future["id"] in {e["id"] for e in body["future"]}
     assert past["id"] in {e["id"] for e in body["past"]}
     assert past["id"] not in {e["id"] for e in body["future"]}
+
+
+def _iso(dt):
+    return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def test_in_progress_event_counts_as_future(auth_client):
+    # Started 10 min ago, runs 60 min → end_at is still ~50 min ahead, so the
+    # split (by end_at, not start_at) must keep it in `future`.
+    sub = _subcategory(auth_client)
+    now = now_local()
+    ev = _create(auth_client, sub["id"], _iso(now - timedelta(minutes=10)))
+    body = auth_client.get("/api/events").json()
+    assert ev["id"] in {e["id"] for e in body["future"]}
+    assert ev["id"] not in {e["id"] for e in body["past"]}
+
+
+def test_finished_event_counts_as_past(auth_client):
+    # Ended an hour ago (start -120m, duration 60m) → past.
+    sub = _subcategory(auth_client)
+    now = now_local()
+    ev = _create(auth_client, sub["id"], _iso(now - timedelta(minutes=120)))
+    body = auth_client.get("/api/events").json()
+    assert ev["id"] in {e["id"] for e in body["past"]}
+    assert ev["id"] not in {e["id"] for e in body["future"]}
+
+
+def test_upcoming_includes_in_progress(auth_client):
+    # The upcoming feed filters on end_at > now, so an in-progress slot shows.
+    sub = _subcategory(auth_client)
+    now = now_local()
+    ev = _create(auth_client, sub["id"], _iso(now - timedelta(minutes=5)))
+    rows = auth_client.get("/api/events/upcoming").json()
+    assert ev["id"] in {r["id"] for r in rows}
 
 
 def test_future_events_sorted_ascending(auth_client):

@@ -26,6 +26,7 @@ import {
   OfflineQueuedError,
 } from "@/lib/api";
 import { calcEvent, effectivePrice } from "@/lib/eventCalc";
+import { defaultClubValue, findCategoryForSubcat } from "@/lib/clubAutofill";
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/DateTimePicker";
 
@@ -308,13 +309,10 @@ export function EventForm({
   // start with lastClubCat=null, so the first category pick applies its default.
   useEffect(() => {
     if (!subcatValue || !cats.data) return;
-    const subId = Number(subcatValue);
-    const cat = cats.data.find((c) => c.subcategories.some((s) => s.id === subId));
+    const cat = findCategoryForSubcat(cats.data, Number(subcatValue));
     if (!cat || lastClubCat.current === cat.id) return;
     lastClubCat.current = cat.id;
-    form.setValue("club_id", cat.default_club_id != null ? String(cat.default_club_id) : "", {
-      shouldDirty: true,
-    });
+    form.setValue("club_id", defaultClubValue(cat), { shouldDirty: true });
   }, [subcatValue, cats.data, form]);
 
   const subcatGroups = useMemo(
