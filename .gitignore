@@ -23,6 +23,9 @@ ENV/
 .coverage
 .coverage.*
 htmlcov/
+
+# Cygwin/MSYS bash crash dumps (Windows fork() failures)
+*.stackdump
 .tox/
 .nox/
 .mypy_cache/
@@ -49,6 +52,9 @@ data/
 backups/
 
 # ─── Node / frontend ────────────────────────────────────────────────────────
+# Real deps live in web/node_modules; a root one is only ever stray vitest
+# cache (.vite) from a command run in the wrong dir — ignore it too.
+node_modules/
 web/node_modules/
 web/dist/
 web/dist-ssr/
