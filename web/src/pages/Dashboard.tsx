@@ -116,8 +116,6 @@ export function DashboardPage() {
       dailySeries.reduce((s, srs) => s + (srs.values[i] || 0), 0),
     );
     const lastSeriesIdx = dailySeries.length - 1;
-    const fmtCompact = (v: number) =>
-      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     return {
       grid: { top: 55, right: 16, bottom: 44, left: 20, containLabel: true },
@@ -216,7 +214,7 @@ export function DashboardPage() {
                 dailyTotals[i] > 0 ? v : { value: v, label: { show: false } },
               )
             : s.values,
-        itemStyle: { color: s.color, borderRadius: [3, 3, 0, 0] },
+        itemStyle: { color: s.color, borderRadius: [8, 8, 8, 8] },
         emphasis: { focus: "series" as const },
         barMaxWidth: 24,
         label:
@@ -240,7 +238,7 @@ export function DashboardPage() {
                 fontWeight: 400,
                 formatter: (p: unknown) => {
                   const total = dailyTotals[(p as { dataIndex: number }).dataIndex];
-                  return total > 0 ? fmtCompact(total) : "";
+                  return total > 0 ? total.toLocaleString('ru-RU') : "";
                 },
               }
             : { show: false },
@@ -301,8 +299,8 @@ export function DashboardPage() {
             formatter: (p: unknown) => {
               const it = p as { value: number; percent: number };
               const v = it.value;
-              const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
-              return `${compact} ₽\n${it.percent.toFixed(0)}%`;
+              const formattedValue = Math.round(v).toLocaleString('ru-RU');
+              return `${formattedValue} ₽\n${it.percent.toFixed(0)}%`;
             },
             rich: {
               value: {
