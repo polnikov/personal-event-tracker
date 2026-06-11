@@ -137,7 +137,7 @@ export function ReportPage() {
           name: "Часы",
           type: "bar" as const,
           barMaxWidth: 18,
-          itemStyle: { borderRadius: 4 },
+          itemStyle: { borderRadius: 8 },
           label: {
             show: true,
             position: "right",
@@ -200,7 +200,7 @@ export function ReportPage() {
           name: "Чистый доход",
           type: "bar" as const,
           barMaxWidth: 18,
-          itemStyle: { borderRadius: 4 },
+          itemStyle: { borderRadius: 8 },
           label: {
             show: true,
             position: "right",
@@ -216,10 +216,10 @@ export function ReportPage() {
             formatter: (p: unknown) => {
               const it = p as { value: number };
               const v = it.value;
-              const compact = v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
+              const formattedValue = Math.round(v).toLocaleString('ru-RU');
               const pct = total > 0 ? (v / total) * 100 : 0;
-              return `${compact} ₽ · ${pct.toFixed(0)}%`;
-            },
+              return `${formattedValue} ₽ · ${pct.toFixed(0)}%`;
+            }
           },
           data: sorted.map((s) => ({
             value: Math.round(s.net),
