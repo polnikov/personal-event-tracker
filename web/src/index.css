@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted official InterVariable — the full font that still carries the
+   OpenType stylistic features (ss01 "Open digits", the cv character variants).
+   The @fontsource Inter builds strip those features during subsetting, so ss01
+   there was a silent no-op; only this upstream build actually renders the
+   alternate digits. One variable file covers Latin + Cyrillic + the 100–900
+   weight axis (~352 KB). */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('./fonts/InterVariable.woff2') format('woff2');
+}
+
 /* ============================================================
    Design system — modern minimal
    Inter + JetBrains Mono · warm off-white · soft sage accent
@@ -38,6 +52,13 @@
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Inter OpenType features applied project-wide: ss01 (Open digits — alternate
+     3 4 6 9 glyphs) + tnum (tabular figures for column-aligned numbers).
+     Add 'cv11' here for the single-story a if that letterform is wanted too. */
+  --font-feature-sans: 'ss01', 'tnum';
+  /* JetBrains Mono: tabular figures only (ss01/cv11 would alter mono glyphs). */
+  --font-feature-mono: 'tnum';
 }
 
 @layer base {
@@ -47,7 +68,7 @@
     font-family: var(--font-sans);
     background: var(--bg);
     color: var(--ink);
-    font-feature-settings: 'cv11', 'ss01';
+    font-feature-settings: var(--font-feature-sans);
     -webkit-font-smoothing: antialiased;
     font-size: 14px;
     line-height: 1.5;
@@ -58,7 +79,7 @@
   input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
 }
 
-.mono { font-family: var(--font-mono); font-feature-settings: 'tnum'; }
+.mono { font-family: var(--font-mono); font-feature-settings: var(--font-feature-mono); }
 .muted { color: var(--muted); }
 .mobile-only { display: none; }
 @media (max-width: 768px) {
@@ -78,6 +99,12 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   min-height: 100vh;
+  /* Center the whole shell (sidebar + content) on wide desktop screens, with
+     equal gutters on both edges. Cap = 240 sidebar + 1320 .page max-width +
+     2×36 .main horizontal padding. Below this width the shell fills the
+     viewport, so it's a no-op on laptops/mobile. */
+  max-width: 1632px;
+  margin-inline: auto;
 }
 .app[data-no-sidebar="true"] { grid-template-columns: 1fr; }
 
@@ -333,7 +360,7 @@
   color: #fff;
   font-size: 11px;
   font-weight: 600;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 .nav-icon { display: grid; place-items: center; color: var(--muted); }
 
@@ -450,7 +477,7 @@
   letter-spacing: 0.06em;
   color: var(--ink-2);
 }
-.section-meta { font-feature-settings: 'tnum'; }
+.section-meta { font-feature-settings: var(--font-feature-sans); }
 
 .back-link {
   font-size: 13px;
@@ -1033,7 +1060,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .datetimepicker-date { min-width: 0; }
 .datetimepicker-time {
   width: 100%;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 
 /* Calendar (react-day-picker) — all custom class names come from
@@ -1072,7 +1099,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 600;
   color: var(--ink);
   text-transform: capitalize;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 .rdp-dropdowns {
   display: inline-flex;
@@ -1095,7 +1122,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 500;
   color: var(--ink);
   cursor: pointer;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   text-transform: capitalize;
 }
 .rdp-dropdown-root:hover { border-color: color-mix(in oklab, var(--ink) 18%, transparent); }
@@ -1169,7 +1196,7 @@ input[type="number"] { -moz-appearance: textfield; }
   background: transparent;
   border-radius: 8px;
   font-size: 13px;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   color: var(--ink);
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -1469,7 +1496,7 @@ input[type="number"] { -moz-appearance: textfield; }
   color: var(--accent-ink);
   font-size: 11px;
   font-weight: 600;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 /* Right-aligned tail group inside the filter toggle: filtered-event
    count badge + chevron sit as a unit on the right. Uses inline-flex so
@@ -1632,7 +1659,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 32px;
   font-weight: 600;
   letter-spacing: -0.025em;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   margin-bottom: 10px;
 }
 .kpi-delta {
@@ -1711,7 +1738,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .stacked-bar-label {
   font-size: 10.5px;
   color: var(--muted);
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   height: 12px;
 }
 
@@ -1766,7 +1793,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 .event-mon {
   font-size: 10px;
@@ -1860,7 +1887,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .events-row-date-badge-day {
   font-size: 16px;
   font-weight: 600;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 .events-row-date-badge-wd {
   margin-top: 3px;
@@ -1872,7 +1899,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .events-row-time-start,
 .events-row-time-end {
   font-family: var(--font-mono);
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-mono);
   font-size: 13px;
   color: var(--ink-2);
   white-space: nowrap;
@@ -1993,7 +2020,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .events-row-cost {
   margin-left: 12px;
   font-family: var(--font-mono);
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-mono);
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
@@ -2112,7 +2139,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1.4;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 .day-group-today {
   font-size: 12.5px;
@@ -2164,7 +2191,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 500;
   font-size: 13.5px;
   text-transform: capitalize;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   min-width: 140px;
   text-align: center;
 }
@@ -2439,7 +2466,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .cal-num {
   font-size: 13px;
   font-weight: 500;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   align-self: flex-start;
   min-width: 24px;
   height: 24px;
@@ -2604,7 +2631,7 @@ input[type="number"] { -moz-appearance: textfield; }
   color: #FFFFFF;
   font-size: 10.5px;
   font-weight: 600;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   line-height: 1;
   box-shadow: 0 0 0 2px var(--surface);
 }
@@ -2662,7 +2689,7 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 0 8px;
   font-size: 13px;
   font-weight: 500;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   color: var(--ink);
   user-select: none;
 }
@@ -2717,7 +2744,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 10.5px;
   line-height: 1;
   color: var(--muted);
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   white-space: nowrap;
 }
 .week-time-col {
@@ -2811,7 +2838,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   margin-top: 2px;
 }
 .week-day.today {
@@ -2881,7 +2908,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .chart-card .card-head { gap: 12px; margin-bottom: 8px; }
 .chart-card .card-head-sum {
   font-family: var(--font-mono);
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-mono);
   font-size: 12.5px;
   color: var(--muted);
   white-space: nowrap;
@@ -2902,7 +2929,7 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 600;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
   line-height: 1.4;
   white-space: nowrap;
 }
@@ -3227,7 +3254,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .cd2-datebox-day {
   font-size: 16px;
   font-weight: 600;
-  font-feature-settings: 'tnum';
+  font-feature-settings: var(--font-feature-sans);
 }
 .cd2-datebox-wd {
   margin-top: 3px;
