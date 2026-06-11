@@ -149,10 +149,10 @@ export function DashboardPage() {
             .filter((it) => it.value)
             .map(
               (it) =>
-                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${it.color}"></span><span style="flex:1">${it.seriesName}</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(it.value)}</span></div>`,
+                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${it.color}"></span><span style="flex:1">${it.seriesName}</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(it.value)}</span></div>`,
             )
             .join("");
-          return `<div style="font-weight:600;font-size:13px">${dateLabel}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`;
+          return `<div style="font-weight:600;font-size:13px">${dateLabel}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${RUB(total)}</span></div>`;
         },
       },
       legend: {
@@ -232,7 +232,7 @@ export function DashboardPage() {
                 distance: 32,
                 color: "#2A2A2E",
                 fontFamily: "JetBrains Mono, ui-monospace, monospace",
-                fontFeatureSettings: "'tnum'",
+                fontFeatureSettings: "'ss01'",
                 fontSize: isMobile ? 11 : 12,
                 lineHeight: isMobile ? 11 : 12,
                 fontWeight: 400,
@@ -259,7 +259,7 @@ export function DashboardPage() {
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (p: unknown) => {
           const item = p as { name: string; value: number; percent: number; color: string };
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${item.color}"></span><span style="font-weight:500">${item.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${RUB(item.value)} · ${item.percent.toFixed(1)}%</div>`;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${item.color}"></span><span style="font-weight:500">${item.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${RUB(item.value)} · ${item.percent.toFixed(1)}%</div>`;
         },
       },
       legend: {
@@ -286,7 +286,7 @@ export function DashboardPage() {
             position: "inside",       // radial — label sits at end of leader line
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 12 : 12.5,
             fontWeight: 600,
             lineHeight: 15,
@@ -358,7 +358,7 @@ export function DashboardPage() {
           const idx = items[0].dataIndex;
           const monthDate = parse(data.chart.monthly_labels[idx], "yyyy-MM", new Date());
           const label = format(monthDate, "LLLL yyyy", { locale: ru });
-          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label}</div><div style="margin-top:4px;font-size:13px;font-feature-settings:'tnum'">${RUB(items[0].value)}</div>`;
+          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label}</div><div style="margin-top:4px;font-size:13px;font-feature-settings:'ss01'">${RUB(items[0].value)}</div>`;
         },
       },
       xAxis: {
@@ -417,7 +417,7 @@ export function DashboardPage() {
             verticalAlign: "middle",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,

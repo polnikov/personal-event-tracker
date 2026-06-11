@@ -121,7 +121,7 @@ export function ReportPage() {
         formatter: (p: unknown) => {
           const it = p as { name: string; value: number; color: string };
           const pct = total > 0 ? (it.value / total) * 100 : 0;
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${pct.toFixed(1)}%</div>`;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${pct.toFixed(1)}%</div>`;
         },
       },
       xAxis: { type: "value", show: false, splitLine: { show: false } },
@@ -146,7 +146,7 @@ export function ReportPage() {
             verticalAlign: "middle",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
             fontWeight: 400,
@@ -184,7 +184,7 @@ export function ReportPage() {
         formatter: (p: unknown) => {
           const it = p as { name: string; value: number; color: string };
           const pct = total > 0 ? (it.value / total) * 100 : 0;
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'tnum'">${RUB(it.value)} · ${pct.toFixed(1)}%</div>`;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${RUB(it.value)} · ${pct.toFixed(1)}%</div>`;
         },
       },
       xAxis: { type: "value", show: false, splitLine: { show: false } },
@@ -209,7 +209,7 @@ export function ReportPage() {
             verticalAlign: "middle",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
             fontWeight: 400,
@@ -282,7 +282,7 @@ export function ReportPage() {
             .sort((a, b) => b.val - a.val)
             .map(
               (c) =>
-                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c.color}"></span><span style="flex:1">${c.name}</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(c.val)}</span></div>`,
+                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c.color}"></span><span style="flex:1">${c.name}</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(c.val)}</span></div>`,
             )
             .join("");
           const catBlock = catRows
@@ -291,9 +291,9 @@ export function ReportPage() {
           return (
             `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label} ${year}</div>` +
             catBlock +
-            `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${netColor}"></span><span style="flex:1">Чистыми</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(net)}</span></div>` +
-            `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${taxColor}"></span><span style="flex:1">Налог</span><span style="font-weight:500;font-feature-settings:'tnum'">${RUB(tax)}</span></div>` +
-            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'tnum'">${RUB(total)}</span></div>`
+            `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${netColor}"></span><span style="flex:1">Чистыми</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(net)}</span></div>` +
+            `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${taxColor}"></span><span style="flex:1">Налог</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(tax)}</span></div>` +
+            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${RUB(total)}</span></div>`
           );
         },
       },
@@ -353,7 +353,7 @@ export function ReportPage() {
             verticalAlign: "middle" as const,
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,
