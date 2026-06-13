@@ -119,6 +119,7 @@ export function EventsPage() {
   const [monthFilter, setMonthFilter] = useState<string>("");
   const [clientFilter, setClientFilter] = useState<string>("");
   const [royaltyOnly, setRoyaltyOnly] = useState(false);
+  const [taxOnly, setTaxOnly] = useState(false);
   const [search, setSearch] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
@@ -140,6 +141,7 @@ export function EventsPage() {
     (monthFilter ? 1 : 0) +
     (clientFilter ? 1 : 0) +
     (royaltyOnly ? 1 : 0) +
+    (taxOnly ? 1 : 0) +
     (dateFrom ? 1 : 0) +
     (dateTo ? 1 : 0);
 
@@ -150,6 +152,7 @@ export function EventsPage() {
     setMonthFilter("");
     setClientFilter("");
     setRoyaltyOnly(false);
+    setTaxOnly(false);
     setDateFrom("");
     setDateTo("");
   };
@@ -220,7 +223,7 @@ export function EventsPage() {
   // Reset pagination whenever the visible slice changes underneath us.
   useEffect(
     () => setLimit(PAGE_SIZE),
-    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, search, dateFrom, dateTo],
+    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, taxOnly, search, dateFrom, dateTo],
   );
 
   // --- Filter pipeline ---
@@ -235,6 +238,7 @@ export function EventsPage() {
       if (monthFilter && d.getMonth() + 1 !== Number(monthFilter)) return false;
       if (clientFilter && (e.client?.id ?? -1) !== Number(clientFilter)) return false;
       if (royaltyOnly && (parseFloat(e.royalty) || 0) <= 0) return false;
+      if (taxOnly && (parseFloat(e.tax) || 0) <= 0) return false;
       if (dateFrom && dKey < dateFrom) return false;
       if (dateTo && dKey > dateTo) return false;
       if (q) {
@@ -257,7 +261,7 @@ export function EventsPage() {
       }
       return true;
     });
-  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, dateFrom, dateTo, q]);
+  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, taxOnly, dateFrom, dateTo, q]);
 
   // "Future" includes events whose end time is still ahead of now — that
   // covers tomorrow's events, today's not-yet-started events, and events
@@ -479,11 +483,18 @@ export function EventsPage() {
             </button>
           </div>
           <div className="events-filter-foot">
-            <Toggle
-              checked={royaltyOnly}
-              onChange={setRoyaltyOnly}
-              label="Роялти"
-            />
+            <div className="events-filter-toggles">
+              <Toggle
+                checked={royaltyOnly}
+                onChange={setRoyaltyOnly}
+                label="Роялти"
+              />
+              <Toggle
+                checked={taxOnly}
+                onChange={setTaxOnly}
+                label="Налог"
+              />
+            </div>
             <div className="events-filter-net">
               <span className="muted small">Чистыми</span>
               <span className="mono">{fmt.money(netTotal)} ₽</span>

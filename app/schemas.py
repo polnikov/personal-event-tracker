@@ -303,6 +303,7 @@ class ReportMonthly(BaseModel):
     month: int  # 1..12
     net: float
     tax_amount: float
+    hours: float = 0.0  # total event hours that month
 
 
 class ReportMonthlyCategory(BaseModel):
@@ -310,6 +311,7 @@ class ReportMonthlyCategory(BaseModel):
     name: str
     color: str
     net: list[float] = []  # 12 monthly net values (Jan..Dec)
+    hours: list[float] = []  # 12 monthly event-hour values (Jan..Dec)
 
 
 class ReportResponse(BaseModel):
@@ -331,9 +333,12 @@ class ReportResponse(BaseModel):
     #    month (drives the delta on "Чистый доход по подкатегориям").
     #  • prev_subcategory_hours_total — total event hours for the PREVIOUS
     #    calendar month (drives the delta on "Часы по подкатегориям").
+    #  • prev_monthly_hours_total — total event hours for the PREVIOUS calendar
+    #    year (drives the % delta on the "Часы по месяцам" card).
     prev_monthly_net_total: float = 0.0
     prev_subcategory_net_total: float = 0.0
     prev_subcategory_hours_total: float = 0.0
+    prev_monthly_hours_total: float = 0.0
 
 
 # ---------- Calendar ----------

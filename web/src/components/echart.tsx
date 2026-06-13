@@ -10,6 +10,7 @@ import {
 import { CanvasRenderer } from "echarts/renderers";
 import ReactECharts from "echarts-for-react/lib/core";
 import type { EChartsOption } from "echarts";
+import { cn } from "@/lib/utils";
 
 echarts.use([
   BarChart,
@@ -60,7 +61,7 @@ export function Echart({
       notMerge
       lazyUpdate
       style={{ height, width: "100%" }}
-      className={className}
+      className={cn("echart-root", className)}
       opts={{ renderer: "canvas" }}
     />
   );

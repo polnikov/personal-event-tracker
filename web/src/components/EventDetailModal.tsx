@@ -239,7 +239,7 @@ export function EventDetailModal({
           </div>
         </div>
       ) : (
-        <div className="form">
+        <div className="form reschedule-form">
           <div className="muted small">Текущее: {dateLine}</div>
           <label className="field">
             <div className="field-label">Новое время</div>

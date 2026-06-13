@@ -113,7 +113,7 @@ def report(
 
     # Monthly aggregation (whole year, filtered by category if any)
     monthly_buckets: dict[int, dict] = {
-        m: {"net": Decimal(0), "tax": Decimal(0)} for m in range(1, 13)
+        m: {"net": Decimal(0), "tax": Decimal(0), "minutes": 0} for m in range(1, 13)
     }
     for e in year_events:
         m = e.start_at.month
@@ -121,12 +121,14 @@ def report(
         tax_amt = e.total_cost * e.tax / Decimal(100)
         monthly_buckets[m]["net"] += net
         monthly_buckets[m]["tax"] += tax_amt
+        monthly_buckets[m]["minutes"] += e.duration_minutes
 
     monthly = [
         ReportMonthly(
             month=m,
             net=float(monthly_buckets[m]["net"]),
             tax_amount=float(monthly_buckets[m]["tax"]),
+            hours=round(monthly_buckets[m]["minutes"] / 60, 2),
         )
         for m in range(1, 13)
     ]
@@ -138,18 +140,25 @@ def report(
         cat = e.subcategory.category
         c = cat_monthly.setdefault(
             cat.id,
-            {"name": cat.name, "color": cat.color, "net": [Decimal(0)] * 12},
+            {
+                "name": cat.name,
+                "color": cat.color,
+                "net": [Decimal(0)] * 12,
+                "minutes": [0] * 12,
+            },
         )
         m = e.start_at.month - 1
         c["net"][m] += e.total_cost * (
             Decimal(1) - e.tax / Decimal(100) - e.royalty / Decimal(100)
         )
+        c["minutes"][m] += e.duration_minutes
     monthly_by_category = [
         ReportMonthlyCategory(
             category_id=cid,
             name=v["name"],
             color=v["color"],
             net=[float(x) for x in v["net"]],
+            hours=[round(x / 60, 2) for x in v["minutes"]],
         )
         for cid, v in cat_monthly.items()
     ]
@@ -192,6 +201,9 @@ def report(
         db, datetime(year - 1, 1, 1), datetime(year, 1, 1), category_id
     )
     prev_monthly_net_total = _sum_net(prev_year_events)
+    prev_monthly_hours_total = round(
+        sum(ev.duration_minutes for ev in prev_year_events) / 60, 2
+    )
 
     prev_period_ref = period_start - timedelta(days=1)
     prev_period_start = datetime(prev_period_ref.year, prev_period_ref.month, 1)
@@ -221,4 +233,5 @@ def report(
         prev_monthly_net_total=prev_monthly_net_total,
         prev_subcategory_net_total=prev_subcategory_net_total,
         prev_subcategory_hours_total=prev_subcategory_hours_total,
+        prev_monthly_hours_total=prev_monthly_hours_total,
     )

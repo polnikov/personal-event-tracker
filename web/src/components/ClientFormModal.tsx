@@ -73,7 +73,7 @@ export function ClientFormModal({
         </>
       }
     >
-      <form className="form" onSubmit={form.handleSubmit((v) => save.mutate(v))}>
+      <form className="form client-form" onSubmit={form.handleSubmit((v) => save.mutate(v))}>
         {save.isError && (
           <div className="login-error">
             {(save.error as Error).message || "Не удалось сохранить"}

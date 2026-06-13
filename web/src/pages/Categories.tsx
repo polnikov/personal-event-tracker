@@ -62,7 +62,7 @@ export function CategoriesPage() {
 
       <div className="grid grid-2 gap-md">
         {list.data?.map((cat) => (
-          <Card key={cat.id}>
+          <Card key={cat.id} className="cat-card">
             <div className="cat-card-head">
               <div className="cat-card-title">
                 <span

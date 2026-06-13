@@ -162,6 +162,11 @@
   /* Don't float over an open modal (overlay is portaled to <body>). */
   body:has(.modal-overlay) .mobile-tabbar { display: none; }
 
+  /* ECharts gives its DOM tooltip z-index:9999999, which otherwise covers the
+     fixed tabbar. Isolating each chart confines that z-index to the chart's
+     own stacking context (below the tabbar's z-index). */
+  .echart-root { isolation: isolate; }
+
   .mobile-tab {
     position: relative;
     display: flex;
@@ -652,6 +657,51 @@
   box-shadow: 0 0 0 3px rgba(42,42,46,0.06);
 }
 .textarea { resize: vertical; min-height: 64px; }
+
+/* EventForm + ClientForm + reschedule modal: every control reads as gently
+   pressed in. The inset is kept on focus and combined with each control's ring. */
+.event-form .input,
+.event-form .textarea,
+.event-form .select-trigger,
+.event-form .datepicker-trigger,
+.client-form .input,
+.client-form .textarea,
+.reschedule-form .input,
+.reschedule-form .datepicker-trigger {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+}
+.event-form .input:focus,
+.event-form .textarea:focus,
+.event-form .select-trigger:focus-visible,
+.event-form .select-trigger[data-state="open"],
+.client-form .input:focus,
+.client-form .textarea:focus,
+.reschedule-form .input:focus {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.16),
+    0 0 0 3px rgba(42, 42, 46, 0.06);
+}
+.event-form .datepicker-trigger:focus-visible,
+.reschedule-form .datepicker-trigger:focus-visible {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.16),
+    0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
+}
+/* Same pressed-in look for the duration preset chips and the summary tile. */
+.event-form .chip,
+.event-form .event-sum-box {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+}
+/* Inactive toggle track reads as a pressed groove; the active (filled)
+   track keeps its default look. Smaller blur to fit the 20px track, and the
+   focus ring is preserved alongside the inset. */
+.event-form .toggle-input:not(:checked) + .toggle-track {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+.event-form .toggle-input:not(:checked):focus-visible + .toggle-track {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22),
+    0 0 0 3px rgba(42, 42, 46, 0.15);
+}
 
 /* Round color picker */
 input[type="color"].color-round {
@@ -1309,6 +1359,20 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (max-width: 700px) { .form-grid-2 { grid-template-columns: 1fr; } }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-label { font-size: 12px; font-weight: 500; color: var(--ink-2); letter-spacing: 0.005em; }
+.field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.field-add-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.field-add-link:hover { text-decoration: underline; }
 .form-actions {
   display: flex;
   align-items: center;
@@ -1398,6 +1462,38 @@ input[type="number"] { -moz-appearance: textfield; }
 .chip:hover { background: var(--bg-2); }
 .chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
+/* Round "recalculate price" checkbox: inactive mirrors a pressed toggle
+   track (grey + inset shadow); active fills in a black inner dot. */
+.recalc-check {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 2px 0 0;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--line-2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.recalc-check::after {
+  content: "";
+  position: absolute;
+  inset: 4px;                  /* small gap from the checkbox edges */
+  border-radius: 999px;
+  background: var(--ink);      /* black dot when active */
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.recalc-check:checked::after { opacity: 1; }
+.recalc-check:focus-visible {
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22),
+    0 0 0 3px rgba(42, 42, 46, 0.12);
+}
+
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; }
 @media (max-width: 800px) {
   .filter-row { grid-template-columns: 1fr; }
@@ -1480,6 +1576,11 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+.events-filter-toggles {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 .events-filter-net {
   display: flex;
@@ -1888,6 +1989,9 @@ input[type="number"] { -moz-appearance: textfield; }
   color: color-mix(in oklab, var(--cat) 55%, var(--ink));
   line-height: 1;
   user-select: none;
+  /* Debossed: same pressed-in treatment as the avatar disc. */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
 }
 .events-row-date-badge-day {
   font-size: 16px;
@@ -2010,6 +2114,9 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background 0.12s, color 0.12s;
   white-space: nowrap;
   flex-shrink: 0;
+  /* Debossed: the green client chip reads as gently pressed in. */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
 }
 .events-row-client:hover {
   background: color-mix(in oklab, var(--accent-soft) 80%, var(--accent));
@@ -2145,6 +2252,8 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 600;
   line-height: 1.4;
   font-feature-settings: var(--font-feature-sans);
+  /* Light inset so the badge reads as gently pressed in. */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 .day-group-today {
   font-size: 12.5px;
@@ -2937,6 +3046,8 @@ input[type="number"] { -moz-appearance: textfield; }
   font-feature-settings: var(--font-feature-sans);
   line-height: 1.4;
   white-space: nowrap;
+  /* Light inset so the coloured chip reads as gently pressed in. */
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 /* Income up vs previous period — soft green, like a positive delta chip. */
 .card-head-pct.up {
@@ -3063,6 +3174,11 @@ input[type="number"] { -moz-appearance: textfield; }
 /* ============================================================
    Categories
    ============================================================ */
+/* Category card stretches to its grid row height; the subcat list grows so
+   the "add subcategory" button can be pinned to the bottom edge regardless
+   of how many subcategories the card holds. */
+.cat-card { display: flex; flex-direction: column; }
+.cat-card .subcat-list { flex: 1; }
 .cat-card-head {
   display: flex;
   justify-content: space-between;
@@ -3104,7 +3220,7 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: auto;            /* pin to the card's bottom edge */
   padding: 8px 10px;
   background: transparent;
   border: 1px dashed var(--line-2);
@@ -3153,7 +3269,8 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Sum box + Клуб share one row; bottom-align so the sum tile lines up with
    the club select (whose label sits above it). */
 .event-sum-club-row { align-items: end; }
-.event-sum-club-row .event-sum-box { min-height: 38px; box-sizing: border-box; }
+.event-sum-club-row .event-sum-box { height: 40.25px; box-sizing: border-box; }
+.event-sum-club-row .searchable-select .input { height: 40.25px; box-sizing: border-box; }
 /* Calendar reschedule modal: sized to the natural width of its footer
    button row, not a fixed value. width:max-content lets the modal hug
    the widest child (the 3 action buttons + gaps + padding); the buttons

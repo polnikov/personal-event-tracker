@@ -177,6 +177,7 @@ export interface ReportMonthly {
   month: number;
   net: number;
   tax_amount: number;
+  hours: number; // total event hours that month
 }
 
 export interface ReportMonthlyCategory {
@@ -184,6 +185,7 @@ export interface ReportMonthlyCategory {
   name: string;
   color: string;
   net: number[]; // 12 monthly net values (Jan..Dec)
+  hours: number[]; // 12 monthly event-hour values (Jan..Dec)
 }
 
 export interface ReportResponse {
@@ -207,6 +209,9 @@ export interface ReportResponse {
   /** Total event hours for the previous calendar month (same category
    *  filter) — MoM delta on the "Часы по подкатегориям" card. */
   prev_subcategory_hours_total?: number;
+  /** Total event hours for the previous calendar year (same category
+   *  filter) — YoY delta on the "Часы по месяцам" card. */
+  prev_monthly_hours_total?: number;
 }
 
 export interface CalendarEvent {

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronDown, Copy, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, Plus, Trash2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -29,6 +29,7 @@ import { calcEvent, effectivePrice } from "@/lib/eventCalc";
 import { defaultClubValue, findCategoryForSubcat } from "@/lib/clubAutofill";
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/DateTimePicker";
+import { ClientFormModal } from "@/components/ClientFormModal";
 
 const schema = z.object({
   subcategory_id: z.string().min(1, "Выберите подкатегорию"),
@@ -88,6 +89,7 @@ export function EventForm({
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [royaltyEnabled, setRoyaltyEnabled] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [creatingClient, setCreatingClient] = useState(false);
 
   // Tracks the last (subcategory, start_at) pair we synced price from.
   // Used to skip the initial reset from existing/copy data while letting
@@ -366,14 +368,24 @@ export function EventForm({
               groups={subcatGroups}
             />
           </Field>
-          <Field label="Клиент">
+          <div className="field">
+            <div className="field-label-row">
+              <span className="field-label">Клиент</span>
+              <button
+                type="button"
+                className="field-add-link"
+                onClick={() => setCreatingClient(true)}
+              >
+                <Plus size={13} /> Новый клиент
+              </button>
+            </div>
             <SearchableSelect
               value={clientValue}
               onChange={(v) => form.setValue("client_id", v)}
               placeholder="— без клиента —"
               options={(clientsList.data ?? []).map((c) => ({ value: String(c.id), label: c.full_name }))}
             />
-          </Field>
+          </div>
         </div>
 
         <div className="form-grid-2">
@@ -494,7 +506,7 @@ export function EventForm({
             {(taxEnabled || royaltyEnabled) && (
               <div>
                 <span className="muted small">Чистыми: </span>
-                <span className="mono" style={{ fontWeight: 600 }}>
+                <span className="mono" style={{ fontWeight: 500 }}>
                   {fmtMoney(calc.net)} ₽
                 </span>
               </div>
@@ -539,9 +551,9 @@ export function EventForm({
           <label className="meta-row" style={{ cursor: "pointer", alignItems: "flex-start" }}>
             <input
               type="checkbox"
+              className="recalc-check"
               checked={!!recalculateValue}
               onChange={(e) => form.setValue("recalculate_price", e.target.checked)}
-              style={{ marginTop: 3 }}
             />
             <span style={{ flex: 1 }}>
               Пересчитать цену по текущему тарифу
@@ -599,6 +611,16 @@ export function EventForm({
           </Button>
         </div>
       </form>
+
+      {creatingClient && (
+        <ClientFormModal
+          client={null}
+          onClose={() => setCreatingClient(false)}
+          onSaved={(saved) =>
+            form.setValue("client_id", String(saved.id), { shouldDirty: true })
+          }
+        />
+      )}
     </>
   );
 }

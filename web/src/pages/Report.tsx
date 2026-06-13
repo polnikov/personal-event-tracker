@@ -22,6 +22,34 @@ const SUBCAT_PALETTE = [
   "#00BFA5", "#7239EA",
 ];
 
+// Shade a hex color by a factor (below 1 darkens, above 1 lightens) while
+// keeping its hue. Used to light/shadow the edges of a bar.
+function shade(hex: string, factor: number): string {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return hex;
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  return `rgb(${clamp(((n >> 16) & 255) * factor)}, ${clamp(((n >> 8) & 255) * factor)}, ${clamp((n & 255) * factor)})`;
+}
+
+// Gradient across a bar's thickness so it reads as pressed-in (concave):
+// a shadowed leading edge fading to the base color and a lit trailing edge.
+// Horizontal bars shade along Y (top→bottom); vertical bars shade along X.
+function pressedFill(hex: string, vertical = false) {
+  return {
+    type: "linear" as const,
+    x: 0, y: 0,
+    x2: vertical ? 1 : 0,
+    y2: vertical ? 0 : 1,
+    colorStops: [
+      { offset: 0, color: shade(hex, 0.74) },
+      { offset: 0.5, color: hex },
+      { offset: 1, color: shade(hex, 1.1) },
+    ],
+  };
+}
+
 const ECHART_BASE_TEXT = {
   fontFamily: "Inter, system-ui, sans-serif",
   color: "#807A72",
@@ -119,9 +147,10 @@ export function ReportPage() {
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (p: unknown) => {
-          const it = p as { name: string; value: number; color: string };
+          const it = p as { name: string; value: number; dataIndex: number };
+          const dot = sorted[it.dataIndex]?.color ?? "#807A72";
           const pct = total > 0 ? (it.value / total) * 100 : 0;
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${pct.toFixed(1)}%</div>`;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${dot}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${pct.toFixed(1)}%</div>`;
         },
       },
       xAxis: { type: "value", show: false, splitLine: { show: false } },
@@ -159,7 +188,7 @@ export function ReportPage() {
           },
           data: sorted.map((s) => ({
             value: Number(s.hours.toFixed(2)),
-            itemStyle: { color: s.color },
+            itemStyle: { color: pressedFill(s.color) },
           })),
         },
       ],
@@ -182,9 +211,10 @@ export function ReportPage() {
         borderWidth: 1,
         textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
         formatter: (p: unknown) => {
-          const it = p as { name: string; value: number; color: string };
+          const it = p as { name: string; value: number; dataIndex: number };
+          const dot = sorted[it.dataIndex]?.color ?? "#807A72";
           const pct = total > 0 ? (it.value / total) * 100 : 0;
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${it.color}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${RUB(it.value)} · ${pct.toFixed(1)}%</div>`;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${dot}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${RUB(it.value)} · ${pct.toFixed(1)}%</div>`;
         },
       },
       xAxis: { type: "value", show: false, splitLine: { show: false } },
@@ -223,7 +253,7 @@ export function ReportPage() {
           },
           data: sorted.map((s) => ({
             value: Math.round(s.net),
-            itemStyle: { color: s.color },
+            itemStyle: { color: pressedFill(s.color) },
           })),
         },
       ],
@@ -394,6 +424,133 @@ export function ReportPage() {
     } as EChartsOption;
   }, [data.data, year, isMobile, categoryId]);
 
+  // Hours by month — bars stacked by category, styled like the "Часы по
+  // подкатегориям" bars (per-category colour + pressed-in gradient). Only the
+  // topmost segment of each month is rounded; a transparent cap series carries
+  // the month's total label above the stack.
+  const hoursMonthly: EChartsOption | null = useMemo(() => {
+    if (!data.data) return null;
+    const monthsHours = data.data.monthly.map((m) =>
+      Number((m.hours || 0).toFixed(2)),
+    );
+    if (monthsHours.reduce((s, v) => s + v, 0) <= 0) return null;
+    const fmtHours = (v: number) =>
+      v.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
+    const cats = data.data.monthly_by_category ?? [];
+    // Per month, the highest stacking index (topmost segment) that has hours —
+    // only that one gets the rounded top so the whole stack reads as one bar.
+    const topIdx = Array.from({ length: 12 }, (_, m) => {
+      let top = -1;
+      cats.forEach((c, i) => {
+        if ((c.hours?.[m] || 0) > 0) top = i;
+      });
+      return top;
+    });
+    const catSeries = cats.map((c, i) => ({
+      name: c.name,
+      type: "bar" as const,
+      stack: "hours",
+      barMaxWidth: 28,
+      data: c.hours.map((h, m) => ({
+        value: Number((h || 0).toFixed(2)),
+        itemStyle: {
+          color: pressedFill(c.color || "#807A72", true),
+          borderRadius: i === topIdx[m] ? [6, 6, 0, 0] : [0, 0, 0, 0],
+        },
+      })),
+      label: { show: false },
+    }));
+    // Invisible cap carrying each month's total label above the stack.
+    const totalCap = {
+      name: "Часы",
+      type: "bar" as const,
+      stack: "hours",
+      barMaxWidth: 28,
+      silent: true,
+      data: monthsHours.map(() => 0),
+      itemStyle: { color: "transparent" },
+      label: {
+        show: true,
+        position: "top" as const,
+        distance: 6,
+        color: "#2A2A2E",
+        fontFamily: "JetBrains Mono, ui-monospace, monospace",
+        fontFeatureSettings: "'ss01'",
+        fontSize: isMobile ? 10 : 11,
+        formatter: (p: unknown) => {
+          const t = monthsHours[(p as { dataIndex: number }).dataIndex];
+          return t > 0 ? fmtHours(t) : "";
+        },
+      },
+    };
+    return {
+      grid: { top: 25, right: 16, bottom: 5, left: GRID_LEFT_FLUSH, containLabel: true },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
+        borderRadius: 16,
+        borderColor: "#ECEAE3",
+        borderWidth: 1,
+        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        formatter: (params: unknown) => {
+          const items = params as Array<{ dataIndex: number }>;
+          if (!items.length) return "";
+          const idx = items[0].dataIndex;
+          const total = monthsHours[idx];
+          if (!total) return "";
+          const monthDate = parse(String(idx + 1), "M", new Date());
+          const label = format(monthDate, "LLLL", { locale: ru });
+          const catRows = cats
+            .map((c) => ({
+              name: c.name,
+              color: c.color || "#807A72",
+              val: c.hours?.[idx] || 0,
+            }))
+            .filter((c) => c.val > 0)
+            .sort((a, b) => b.val - a.val)
+            .map(
+              (c) =>
+                `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${c.color}"></span><span style="flex:1">${c.name}</span><span style="font-weight:500;font-feature-settings:'ss01'">${fmtHours(c.val)} ч</span></div>`,
+            )
+            .join("");
+          const catBlock = catRows
+            ? `${catRows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3"></div>`
+            : "";
+          return (
+            `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label} ${year}</div>` +
+            catBlock +
+            `<div style="display:flex;justify-content:space-between;gap:16px;font-size:12px;margin-top:2px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${fmtHours(total)} ч</span></div>`
+          );
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: MONTH_ABBR,
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
+      },
+      yAxis: {
+        type: "value",
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: {
+          ...ECHART_BASE_TEXT,
+          fontSize: 10.5,
+          inside: true,
+          align: "left",
+          verticalAlign: "bottom",
+          padding: [0, 0, 4, 0],
+          formatter: (v: number) => (v === 0 ? "" : fmtHours(v)),
+        },
+      },
+      series: [...catSeries, totalCap],
+    } as EChartsOption;
+  }, [data.data, year, isMobile]);
+
   const heatmapOption: EChartsOption | null = useMemo(
     () => weekdayMonthHeatmap(data.data?.weekday_month, isMobile),
     [data.data?.weekday_month, isMobile],
@@ -429,6 +586,10 @@ export function ReportPage() {
         }),
         { net: 0, tax: 0 },
       ),
+    [data.data],
+  );
+  const yearHoursTotal = useMemo(
+    () => (data.data?.monthly ?? []).reduce((s, m) => s + (m.hours || 0), 0),
     [data.data],
   );
 
@@ -599,6 +760,40 @@ export function ReportPage() {
         </div>
         {monthlyOption && (yearTotal.net > 0 || yearTotal.tax > 0) ? (
           <Echart option={monthlyOption} height={300} />
+        ) : (
+          <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
+        )}
+      </Card>
+
+      <Card>
+        <div className="card-head" style={{ alignItems: "flex-start" }}>
+          <div>
+            <div className="card-title">Часы по месяцам</div>
+            <div className="muted small" style={{ marginTop: 2 }}>{year}</div>
+          </div>
+          {hoursMonthly && (
+            <div style={{ textAlign: "right" }}>
+              <div className="muted small">
+                <span className="mono">
+                  {yearHoursTotal.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч
+                </span>
+              </div>
+              <div style={{ marginTop: 4 }}>
+                <PctChangePill
+                  current={yearHoursTotal}
+                  previous={data.data?.prev_monthly_hours_total ?? null}
+                  prevLabel={`${year - 1}`}
+                  unit="ч"
+                  formatPrev={(n) =>
+                    n.toLocaleString("ru-RU", { maximumFractionDigits: 1 })
+                  }
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        {hoursMonthly ? (
+          <Echart option={hoursMonthly} height={300} />
         ) : (
           <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
         )}
