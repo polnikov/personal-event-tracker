@@ -287,7 +287,7 @@ export function ClientDetailPage() {
           const monthDate = parse(String(idx + 1), "M", new Date());
           const monthLabel = format(monthDate, "LLLL", { locale: ru });
           const y = monthly.data?.year ?? year;
-          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${monthLabel} ${y}</div><div style="margin-top:4px;font-size:13px;font-feature-settings:'tnum'">${RUB(items[0].value)}</div>`;
+          return `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${monthLabel} ${y}</div><div style="margin-top:4px;font-size:13px;font-feature-settings:'ss01'">${RUB(items[0].value)}</div>`;
         },
       },
       xAxis: {
@@ -344,7 +344,7 @@ export function ClientDetailPage() {
             verticalAlign: "middle",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
             fontWeight: 600,
@@ -424,7 +424,7 @@ export function ClientDetailPage() {
             show: true,
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'tnum'",
+            fontFeatureSettings: "'ss01'",
             fontSize: 11,
             formatter: (p: unknown) => {
               const v = (p as { value: [number, number, number] }).value[2];
