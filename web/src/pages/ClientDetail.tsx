@@ -500,7 +500,7 @@ export function ClientDetailPage() {
             )}
             {client.telegram && (
               <div className="meta-row">
-                <span className="meta-icon"><Send size={14} strokeWidth={1.6} /></span>
+                <span className="meta-icon meta-icon--tg"><Send size={14} strokeWidth={1.6} /></span>
                 <a href={`https://t.me/${client.telegram}`} target="_blank" rel="noopener">
                   @{client.telegram}
                 </a>

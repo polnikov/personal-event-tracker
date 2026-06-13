@@ -126,7 +126,7 @@ export function ClientsPage() {
                 </div>
               )}
               {c.telegram && (
-                <div className="client-meta-row">
+                <div className="client-meta-row client-meta-row--tg">
                   <Send size={13} strokeWidth={1.6} />
                   <span>@{c.telegram}</span>
                 </div>
