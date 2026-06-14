@@ -149,7 +149,9 @@ export function EventForm({
       return {
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
-        club_id: e.club_id ? String(e.club_id) : "",
+        // Club comes from the source event's category default (applied by the
+        // club auto-fill effect), not copied verbatim.
+        club_id: "",
         start_at: `${todayDate}T${sourceTime}`,
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
@@ -200,8 +202,8 @@ export function EventForm({
       const sourceTime = format(parseISO(e.start_at), "HH:mm");
       const todayDate = format(new Date(), "yyyy-MM-dd");
       lastSyncedKey.current = `${e.subcategory_id}@${todayDate}T${sourceTime}`;
-      // Copy keeps the source event's club; only a later category change auto-fills.
-      lastClubCat.current = e.subcategory.category_id;
+      // Copy pulls the club from the source category's default — leave
+      // lastClubCat unset so the auto-fill effect applies it.
     }
   }, [existing.data, sourceForCopy.data]);
 
