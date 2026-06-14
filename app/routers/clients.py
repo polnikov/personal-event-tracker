@@ -61,7 +61,7 @@ def _find_duplicate(
 
 
 def _duplicate_message(c: Client) -> str:
-    parts = [f"{c.first_name} {c.last_name}".strip()]
+    parts = [c.full_name]
     if c.phone:
         parts.append(c.phone)
     return f"Клиент уже существует: {' · '.join(parts)}"
@@ -82,7 +82,7 @@ def _aggregate_client_stats(db: Session) -> dict[int, tuple[int, Decimal]]:
 
 @router.get("", response_model=list[ClientRead])
 def list_clients(q: str = "", db: Session = Depends(get_db)):
-    stmt = select(Client).order_by(Client.first_name, Client.last_name)
+    stmt = select(Client).order_by(Client.last_name, Client.first_name)
     if q:
         like = f"%{q.strip()}%"
         stmt = stmt.where(

@@ -697,11 +697,14 @@
 }
 /* Inactive toggle track reads as a pressed groove; the active (filled)
    track keeps its default look. Smaller blur to fit the 20px track, and the
-   focus ring is preserved alongside the inset. */
-.event-form .toggle-input:not(:checked) + .toggle-track {
+   focus ring is preserved alongside the inset. Applies in the EventForm and
+   the Events filter toggles. */
+.event-form .toggle-input:not(:checked) + .toggle-track,
+.events-filter-toggles .toggle-input:not(:checked) + .toggle-track {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
 }
-.event-form .toggle-input:not(:checked):focus-visible + .toggle-track {
+.event-form .toggle-input:not(:checked):focus-visible + .toggle-track,
+.events-filter-toggles .toggle-input:not(:checked):focus-visible + .toggle-track {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22),
     0 0 0 3px rgba(42, 42, 46, 0.15);
 }
@@ -2295,15 +2298,27 @@ input[type="number"] { -moz-appearance: textfield; }
    Calendar
    ============================================================ */
 .cal-nav {
+  /* Transparent flex group — its arrows + month pill sit on the shared
+     .cal-controls-actions track. */
   display: inline-flex;
   align-items: center;
-  background: var(--surface);
-  border-radius: var(--r-md);
-  padding: 2px;
-  box-shadow: var(--shadow-1);
-  gap: 0;
+  gap: 4px;
 }
+.cal-nav .icon-btn {
+  background: var(--surface);
+  border-radius: 999px;
+  color: var(--ink-2);
+  box-shadow: var(--shadow-1);
+}
+.cal-nav .icon-btn:hover { background: var(--surface); color: var(--ink); }
 .cal-month {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: var(--shadow-1);
   padding: 0 14px;
   font-weight: 500;
   font-size: 13.5px;
@@ -2387,23 +2402,27 @@ input[type="number"] { -moz-appearance: textfield; }
    as the primary "who is this for" picker. */
 .cal-client-filter .input { background: var(--surface); }
 
-/* View-switcher + nav stay grouped under one shared shadow on desktop;
-   children drop their own surface so the wrapper reads as a single card. */
+/* The view tabs and the nav pager share ONE grey pressed-in track; each
+   control drops its own track so their pills sit directly on the shared one. */
 .cal-controls-actions {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: var(--surface);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-2);
-  padding: 0;
+  gap: 4px;
+  background: var(--line-2);
+  border-radius: 19px;
+  padding: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14);
 }
 .cal-controls-actions .view-switcher,
 .cal-controls-actions .cal-nav {
   background: transparent;
   box-shadow: none;
   padding: 0;
+  border-radius: 0;
+  min-height: 0;
 }
+/* All pills on the shared track stand 32px tall. */
+.cal-controls-actions .view-switch-btn { height: 32px; }
 
 /* Search input width mirrors .events-search so the two pages line up. */
 .cal-search { width: 100%; }
@@ -2435,32 +2454,18 @@ input[type="number"] { -moz-appearance: textfield; }
   .cal-controls-actions {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    padding: 0;
-    background: transparent;
-    box-shadow: none;
+    gap: 4px;
   }
   .cal-controls-actions .view-switcher,
   .cal-controls-actions .cal-nav {
-    background: var(--surface);
-    box-shadow: var(--shadow-1);
-    padding: 2px;
     width: 100%;
     display: flex;
     justify-content: space-between;
   }
+  /* Both inherit the shared grey-track style from their base rules. */
   .cal-controls .view-switch-btn { flex: 1; padding: 6px 10px; font-size: 12.5px; }
   .cal-controls .cal-month { min-width: 0; flex: 1; font-size: 12.5px; text-align: center; }
 
-  /* View-switcher + cal-nav: 38px pill so they match the Поиск/Фильтры
-     contour above. The search input itself is handled app-wide by the
-     .input-wrap.has-icon mobile block (pill, no border, shadow-1, 38px,
-     13.5 font) so every search field across the app stays in sync. */
-  .cal-controls-actions .view-switcher,
-  .cal-controls-actions .cal-nav {
-    height: 38px;
-    border-radius: var(--r-xl);
-  }
   /* Filter card: drop the default .card shadow-2 for the lighter shadow-1
      and bump radius to pill so the collapsed toggle reads as a single
      pill-shaped tile, matching the row of controls below. */
@@ -2525,20 +2530,8 @@ input[type="number"] { -moz-appearance: textfield; }
      card surface behind them for the white field to contrast against. */
   .cal-controls .filter-row-cal-3 .select-trigger { background: var(--surface); }
 
-  /* View-switcher + nav wrapper: 38px tall, no shadow, and the same 1px
-     line border as the filter triggers (.select-trigger / .input) so the
-     whole row reads as one set of bordered tiles. Inner blocks already
-     drop their own shadow inside .cal-controls-actions, so the wrapper
-     border is the only contour. */
-  .cal-controls-actions {
-    height: 38px;
-    box-shadow: none;
-    border: 1px solid var(--line);
-  }
-  .cal-controls-actions .view-switcher,
-  .cal-controls-actions .cal-nav {
-    height: 38px;
-  }
+  /* The shared actions track is 32px pills + 3px padding = 38px, lining up
+     with the search row — no explicit height needed. */
 
   /* Search input lines up at 38px too — without this it sits ~37px
      (9px padding × 2 + 13.5px text + default line-height) and the
@@ -2614,7 +2607,9 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 11.5px;
   overflow: hidden;
   transition: background 0.12s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
+  /* Debossed: the event card reads as gently pressed into the day cell. */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
 }
 .cal-event:hover { background: color-mix(in oklab, var(--cat) 22%, white); }
 .cal-event-name {
@@ -2650,15 +2645,14 @@ input[type="number"] { -moz-appearance: textfield; }
 .view-switcher {
   display: inline-flex;
   align-items: stretch;
-  background: var(--surface);
-  border-radius: var(--r-md);
-  /* No outer padding or gap — the active tab's background fills its slot
-     edge-to-edge ("без окантовки"). First/last buttons borrow the outer
-     radius so the active fill still looks like a rounded pill at the ends.
-     No overflow:hidden so the corner badge can stick out above and past. */
-  padding: 0;
+  /* Pressed-in toggle-grey track; the active tab floats as a white pill
+     inset from the track edges via this padding. No overflow:hidden so the
+     corner badge can stick out above and past. */
+  background: var(--line-2);
+  border-radius: 19px;
+  padding: 3px;
   gap: 0;
-  box-shadow: var(--shadow-2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14);
   min-height: 38px;
 }
 /* When a Tabs lives directly inside .page (a column flex container), the
@@ -2676,12 +2670,12 @@ input[type="number"] { -moz-appearance: textfield; }
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-2);
-  border-radius: 0;
+  border-radius: 16px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
-.view-switch-btn:first-child { border-top-left-radius: var(--r-md); border-bottom-left-radius: var(--r-md); }
-.view-switch-btn:last-child  { border-top-right-radius: var(--r-md); border-bottom-right-radius: var(--r-md); }
+.view-switch-btn:first-child,
+.view-switch-btn:last-child { border-radius: 16px; }
 
 /* Mobile: tab switchers and search inputs app-wide get the Calendar
    search look — pill radius, surface fill, soft shadow-1 instead of the
@@ -2689,15 +2683,6 @@ input[type="number"] { -moz-appearance: textfield; }
    base radius/border rules so these equal-specificity overrides win by
    source order. */
 @media (max-width: 800px) {
-  .view-switcher { border-radius: var(--r-lg); }
-  .view-switch-btn:first-child {
-    border-top-left-radius: var(--r-lg);
-    border-bottom-left-radius: var(--r-lg);
-  }
-  .view-switch-btn:last-child {
-    border-top-right-radius: var(--r-lg);
-    border-bottom-right-radius: var(--r-lg);
-  }
   .input-wrap.has-icon .input {
     height: 38px;
     min-height: 38px;
@@ -2773,9 +2758,11 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .client-detail-notes-search .input { min-height: 38px; }
 .view-switch-btn:hover { color: var(--ink); }
+/* Active tab floats as a white pill on the pressed-in grey track. */
 .view-switch-btn.on {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
 }
 
 /* Year chevron pager — same surface/shadow/height as .view-switcher so
@@ -2890,7 +2877,9 @@ input[type="number"] { -moz-appearance: textfield; }
   overflow: hidden;
   transition: background 0.12s, transform 0.12s;
   z-index: 1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30);
+  /* Debossed: the event card reads as gently pressed into the day column. */
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
 }
 .week-time-event:hover {
   background: color-mix(in oklab, var(--cat) 22%, white);

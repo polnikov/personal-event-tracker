@@ -90,7 +90,7 @@ class Client(Base):
 
     @property
     def full_name(self) -> str:
-        return f"{self.first_name} {self.last_name}".strip()
+        return f"{self.last_name} {self.first_name}".strip()
 
 
 class Event(Base):

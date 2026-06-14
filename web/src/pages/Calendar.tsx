@@ -26,7 +26,7 @@ import {
   minsToY,
   yToMins,
 } from "@/lib/calendarGrid";
-import { fmt } from "@/lib/format";
+import { fmt, pluralize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { CalendarEvent } from "@/types/api";
 
@@ -228,7 +228,12 @@ export function CalendarPage() {
   return (
     <div className="page">
       <div className="page-head">
-        <h1 className="h1">Календарь</h1>
+        <div>
+          <h1 className="h1">Календарь</h1>
+          <div className="muted mobile-hide">
+            {filteredFeed.length} {pluralize(filteredFeed.length, "событие", "события", "событий")}
+          </div>
+        </div>
         <div className="page-head-actions">
           <Button
             className="mobile-hide"
