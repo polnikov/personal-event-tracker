@@ -19,7 +19,8 @@ import type { EventItem } from "@/types/api";
 import {
   Echart,
   ECHART_BASE_TEXT,
-  GRID_LEFT_FLUSH,
+  incomeBarFill,
+  PRESSED_LABEL_BOX,
   type EChartsOption,
 } from "@/components/echart";
 import { ClientFormModal } from "@/components/ClientFormModal";
@@ -269,6 +270,7 @@ export function ClientDetailPage() {
     ];
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
+    const maxMonthly = Math.max(0, ...monthly.data.values);
     return {
       grid: { top: 32, right: 0, bottom: 28, left: 0 },
       tooltip: {
@@ -309,45 +311,32 @@ export function ClientDetailPage() {
       },
       series: [
         {
-          type: "line" as const,
+          type: "bar" as const,
+          barMaxWidth: 28,
           data: monthly.data.values.map((v) =>
-            v > 0 ? v : { value: v, label: { show: false } },
+            v > 0
+              ? {
+                  value: v,
+                  itemStyle: {
+                    color: incomeBarFill(v, maxMonthly),
+                    borderRadius: [12, 12, 0, 0] as [number, number, number, number],
+                  },
+                }
+              : { value: v, label: { show: false } },
           ),
-          symbol: "circle",
-          symbolSize: 6,
-          showSymbol: true,
-          itemStyle: { color: "rgb(123, 182, 97)" },
-          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
-          areaStyle: {
-            color: {
-              type: "linear" as const,
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.82)" },
-                { offset: 1, color: "rgba(123, 182, 97, 0)" },
-              ],
-            },
-          },
           label: {
             show: true,
             position: "top",
-            distance: 12,
+            distance: 10,
             align: "center",
-            verticalAlign: "middle",
+            verticalAlign: "bottom",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
-            fontWeight: 600,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [4, 6, 4, 6],
-            shadowColor: "rgba(0, 0, 0, 0.12)",
-            shadowBlur: 6,
-            shadowOffsetY: 2,
+            fontWeight: 550,
+            ...PRESSED_LABEL_BOX,
             formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },

@@ -7,7 +7,7 @@ import {
   Card,
   Select,
 } from "@/components/design";
-import { Echart, GRID_LEFT_FLUSH, type EChartsOption } from "@/components/echart";
+import { Echart, PRESSED_LABEL_BOX, pressedFill, type EChartsOption } from "@/components/echart";
 import { PctChangePill } from "@/components/PctChangePill";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { fmt } from "@/lib/format";
@@ -21,34 +21,6 @@ const SUBCAT_PALETTE = [
   "#EC4899", "#0EA5E9", "#F1416C", "#FACA15", "#5E6278",
   "#00BFA5", "#7239EA",
 ];
-
-// Shade a hex color by a factor (below 1 darkens, above 1 lightens) while
-// keeping its hue. Used to light/shadow the edges of a bar.
-function shade(hex: string, factor: number): string {
-  const h = hex.replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-  const n = parseInt(full, 16);
-  if (Number.isNaN(n)) return hex;
-  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
-  return `rgb(${clamp(((n >> 16) & 255) * factor)}, ${clamp(((n >> 8) & 255) * factor)}, ${clamp((n & 255) * factor)})`;
-}
-
-// Gradient across a bar's thickness so it reads as pressed-in (concave):
-// a shadowed leading edge fading to the base color and a lit trailing edge.
-// Horizontal bars shade along Y (top→bottom); vertical bars shade along X.
-function pressedFill(hex: string, vertical = false) {
-  return {
-    type: "linear" as const,
-    x: 0, y: 0,
-    x2: vertical ? 1 : 0,
-    y2: vertical ? 0 : 1,
-    colorStops: [
-      { offset: 0, color: shade(hex, 0.74) },
-      { offset: 0.5, color: hex },
-      { offset: 1, color: shade(hex, 1.1) },
-    ],
-  };
-}
 
 const ECHART_BASE_TEXT = {
   fontFamily: "Inter, system-ui, sans-serif",
@@ -270,14 +242,85 @@ export function ReportPage() {
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
     const totalSeries = netSeries.map((n, i) => n + taxSeries[i]);
 
-    // "Все категории": add a net line per category alongside the total/tax
-    // lines (no value labels); the tooltip gains a per-category breakdown.
-    const cats =
-      categoryId === "" ? data.data.monthly_by_category ?? [] : [];
+    // Stacked bars: a net segment per category (category colours), plus a tax
+    // segment on top, summing to the month's total. When a single category is
+    // filtered, monthly_by_category already holds just that one.
+    const cats = data.data.monthly_by_category ?? [];
 
     const netColor = "oklch(0.62 0.13 145)";
-    // Match the tax line's colour (#DC2626) so the tooltip swatch agrees.
+    // Match the tax segment's colour (#DC2626) so the tooltip swatch agrees.
     const taxColor = "#DC2626";
+
+    // Per month, the topmost non-zero stacking segment (tax sits above the
+    // categories) — only that one gets the rounded top so the stack reads as
+    // one bar.
+    const topIdx = Array.from({ length: 12 }, (_, m) => {
+      let top = -1;
+      cats.forEach((c, i) => {
+        if (Math.round(c.net[m] || 0) > 0) top = i;
+      });
+      if (taxSeries[m] > 0) top = cats.length; // tax index = cats.length
+      return top;
+    });
+    const roundedTop = [6, 6, 0, 0];
+    const flat = [0, 0, 0, 0];
+
+    const catSeries = cats.map((c, i) => ({
+      name: c.name,
+      type: "bar" as const,
+      stack: "income",
+      barMaxWidth: 28,
+      data: c.net.map((v, m) => ({
+        value: Math.round(v || 0),
+        itemStyle: {
+          color: c.color || "#807A72",
+          borderRadius: i === topIdx[m] ? roundedTop : flat,
+        },
+      })),
+      label: { show: false },
+    }));
+    const taxBar = {
+      name: "Налог",
+      type: "bar" as const,
+      stack: "income",
+      barMaxWidth: 28,
+      data: taxSeries.map((v, m) => ({
+        value: v,
+        itemStyle: {
+          color: taxColor,
+          borderRadius: cats.length === topIdx[m] ? roundedTop : flat,
+        },
+      })),
+      label: { show: false },
+    };
+    // Invisible cap carrying each month's total (net + tax) label.
+    const totalCap = {
+      type: "bar" as const,
+      stack: "income",
+      barMaxWidth: 28,
+      silent: true,
+      // Zero months carry no label so the pressed-in pill doesn't render empty.
+      data: totalSeries.map((t) => (t > 0 ? 0 : { value: 0, label: { show: false } })),
+      itemStyle: { color: "transparent" },
+      label: {
+        show: true,
+        position: "top" as const,
+        distance: 10,
+        align: "center" as const,
+        verticalAlign: "bottom" as const,
+        color: "#2A2A2E",
+        fontFamily: "JetBrains Mono, ui-monospace, monospace",
+        fontFeatureSettings: "'ss01'",
+        fontSize: isMobile ? 11 : 12,
+        lineHeight: isMobile ? 11 : 12,
+        fontWeight: 550,
+        ...PRESSED_LABEL_BOX,
+        formatter: (p: unknown) => {
+          const t = totalSeries[(p as { dataIndex: number }).dataIndex];
+          return t > 0 ? fmtCompact(t) : "";
+        },
+      },
+    };
 
     return {
       grid: { top: 25, right: 0, bottom: 5, left: 0, containLabel: true },
@@ -344,75 +387,7 @@ export function ReportPage() {
         splitLine: { lineStyle: { color: "#ECEAE3" } },
         axisLabel: { show: false },
       },
-      series: [
-        {
-          type: "line" as const,
-          // Per-point label.show=false on zero months so an empty pill
-          // doesn't sit on the baseline.
-          data: totalSeries.map((v) =>
-            v > 0 ? v : { value: v, label: { show: false } },
-          ),
-          symbol: "circle",
-          symbolSize: 6,
-          showSymbol: true,
-          itemStyle: { color: "rgb(123, 182, 97)" },
-          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
-          areaStyle: {
-            color: {
-              type: "linear" as const,
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.82)" },
-                { offset: 1, color: "rgba(123, 182, 97, 0)" },
-              ],
-            },
-          },
-          label: {
-            show: true,
-            position: "top" as const,
-            distance: 12,
-            align: "center" as const,
-            verticalAlign: "middle" as const,
-            color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'ss01'",
-            fontSize: isMobile ? 11 : 12,
-            lineHeight: isMobile ? 11 : 12,
-            fontWeight: 600,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [4, 6, 4, 6],
-            shadowColor: "rgba(0, 0, 0, 0.12)",
-            shadowBlur: 6,
-            shadowOffsetY: 2,
-            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
-          },
-        },
-        {
-          name: "Налог",
-          type: "line" as const,
-          data: taxSeries,
-          symbol: "circle",
-          symbolSize: 5,
-          itemStyle: { color: "#DC2626" },
-          lineStyle: { color: "#DC2626", width: 1.5 },
-          label: { show: false },
-        },
-        ...cats.map((c) => ({
-          name: c.name,
-          type: "line" as const,
-          data: c.net.map((v) => Math.round(v)),
-          symbol: "circle",
-          symbolSize: 5,
-          showSymbol: false,
-          emphasis: { focus: "series" as const },
-          itemStyle: { color: c.color || "#807A72" },
-          lineStyle: { color: c.color || "#807A72", width: 1.5 },
-          label: { show: false },
-        })),
-      ],
+      series: [...catSeries, taxBar, totalCap],
     } as EChartsOption;
   }, [data.data, year, isMobile, categoryId]);
 
@@ -447,7 +422,7 @@ export function ReportPage() {
         value: Number((h || 0).toFixed(2)),
         itemStyle: {
           color: pressedFill(c.color || "#807A72", true),
-          borderRadius: i === topIdx[m] ? [6, 6, 0, 0] : [0, 0, 0, 0],
+          borderRadius: i === topIdx[m] ? [12, 12, 0, 0] : [0, 0, 0, 0],
         },
       })),
       label: { show: false },

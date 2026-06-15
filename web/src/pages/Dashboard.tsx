@@ -15,6 +15,7 @@ import {
   Echart,
   ECHART_BASE_TEXT,
   GRID_LEFT_FLUSH,
+  shade,
   type EChartsOption,
 } from "@/components/echart";
 import { categories as categoriesApi, dashboard as dashboardApi, events as eventsApi } from "@/lib/api";
@@ -30,6 +31,22 @@ const MONTH_ABBR = [
   "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
   "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
 ];
+
+const INCOME_GREEN = "#7BB661";
+// Income bar fill anchored at the zero baseline: every bar starts from the
+// same pale colour at value 0 and grows more saturated with its value (vs the
+// max), so the gradient reads as one field rising from 0.
+function incomeBarFill(value: number, max: number) {
+  const f = max > 0 ? value / max : 0; // 0..1 by value
+  return {
+    type: "linear" as const,
+    x: 0, y: 1, x2: 0, y2: 0, // start at the bar base (value 0)
+    colorStops: [
+      { offset: 0, color: shade(INCOME_GREEN, 1.32) }, // base @ 0 — pale
+      { offset: 1, color: shade(INCOME_GREEN, 1.32 - 0.4 * f) }, // top — saturated by value
+    ],
+  };
+}
 
 function netOfEvent(e: EventItem): number {
   const gross = parseFloat(e.total_cost) || 0;
@@ -327,6 +344,7 @@ export function DashboardPage() {
     );
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
+    const maxMonthly = Math.max(0, ...data.chart.monthly_values);
     return {
       grid: { top: 20, right: 0, bottom: 10, left: 0, containLabel: true },
       tooltip: {
@@ -366,47 +384,45 @@ export function DashboardPage() {
       },
       series: [
         {
-          type: "line" as const,
+          type: "bar" as const,
+          barMaxWidth: 28,
           // Per-point label.show is forced to false on zero values so empty
           // months don't render a stray label pill above the baseline.
           data: data.chart.monthly_values.map((v) =>
-            v > 0 ? v : { value: v, label: { show: false } },
+            v > 0
+              ? {
+                  value: v,
+                  itemStyle: {
+                    color: incomeBarFill(v, maxMonthly),
+                    borderRadius: [12, 12, 0, 0] as [number, number, number, number],
+                  },
+                }
+              : { value: v, label: { show: false } },
           ),
-          symbol: "circle",
-          symbolSize: 6,
-          showSymbol: true,
-          itemStyle: { color: "rgb(123, 182, 97)" },
-          lineStyle: { color: "rgb(123, 182, 97)", width: 2 },
-          areaStyle: {
-            color: {
-              type: "linear" as const,
-              x: 0, y: 0, x2: 0, y2: 1,
-              colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.82)" },
-                { offset: 1, color: "rgba(123, 182, 97, 0)" },
-              ],
-            },
-          },
           label: {
             show: true,
             position: "top",
-            distance: 12,
+            distance: 10,
             align: "center",
-            verticalAlign: "middle",
+            verticalAlign: "bottom",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 11 : 12,
             lineHeight: isMobile ? 11 : 12,
-            fontWeight: 600,
-            backgroundColor: "#FFFFFF",
-            borderColor: "#ECEAE3",
+            fontWeight: 550,
+            // Light pressed-in look: a recessed off-white fill with a slightly
+            // darker rim, and no downward drop shadow, so the pill reads as set
+            // into the card rather than raised above it. (ECharts canvas labels
+            // can't take a real inset shadow, so this approximates it.)
+            backgroundColor: "#F1EFE9",
+            borderColor: "#E2DFD6",
             borderWidth: 1,
             borderRadius: 6,
             padding: [4, 6, 4, 6],
-            shadowColor: "rgba(0, 0, 0, 0.12)",
-            shadowBlur: 6,
-            shadowOffsetY: 2,
+            shadowColor: "rgba(42, 42, 46, 0.06)",
+            shadowBlur: 2,
+            shadowOffsetY: 0,
             formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
           },
         },
