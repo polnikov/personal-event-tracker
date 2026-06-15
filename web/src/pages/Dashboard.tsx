@@ -118,7 +118,7 @@ export function DashboardPage() {
     const lastSeriesIdx = dailySeries.length - 1;
 
     return {
-      grid: { top: 55, right: 16, bottom: 44, left: 20, containLabel: true },
+      grid: { top: 55, right: 0, bottom: 44, left: 0, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -185,21 +185,7 @@ export function DashboardPage() {
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: {
-          ...ECHART_BASE_TEXT,
-          fontSize: 10.5,
-          inside: true,
-          align: "left",
-          verticalAlign: "bottom",
-          // Negative left-padding shifts the Y label out of the plot area
-          // back toward the card's title column, while grid.left keeps the
-          // first bar clear of the axis line.
-          padding: [0, 0, 4, -28],
-          // Skip the "0" tick so the bottom-most Y label doesn't sit on
-          // top of the first X-axis label.
-          formatter: (v: number) =>
-            v === 0 ? "" : v >= 1000 ? `${v / 1000}k` : String(v),
-        },
+        axisLabel: { show: false },
       },
       series: dailySeries.map((s, srsIdx) => ({
         name: s.name,
@@ -342,7 +328,7 @@ export function DashboardPage() {
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
     return {
-      grid: { top: 20, right: 5, bottom: 10, left: GRID_LEFT_FLUSH, containLabel: true },
+      grid: { top: 20, right: 0, bottom: 10, left: 0, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -376,15 +362,7 @@ export function DashboardPage() {
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: {
-          ...ECHART_BASE_TEXT,
-          fontSize: 10.5,
-          inside: true,
-          align: "left",
-          verticalAlign: "bottom",
-          padding: [0, 0, 4, 0],
-          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
-        },
+        axisLabel: { show: false },
       },
       series: [
         {

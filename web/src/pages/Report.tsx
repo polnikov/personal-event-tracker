@@ -280,7 +280,7 @@ export function ReportPage() {
     const taxColor = "#DC2626";
 
     return {
-      grid: { top: 25, right: 16, bottom: 5, left: GRID_LEFT_FLUSH, containLabel: true },
+      grid: { top: 25, right: 0, bottom: 5, left: 0, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -342,15 +342,7 @@ export function ReportPage() {
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: {
-          ...ECHART_BASE_TEXT,
-          fontSize: 10.5,
-          inside: true,
-          align: "left",
-          verticalAlign: "bottom",
-          padding: [0, 0, 4, 0],
-          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
-        },
+        axisLabel: { show: false },
       },
       series: [
         {
@@ -484,7 +476,7 @@ export function ReportPage() {
       },
     };
     return {
-      grid: { top: 25, right: 16, bottom: 5, left: GRID_LEFT_FLUSH, containLabel: true },
+      grid: { top: 25, right: 0, bottom: 5, left: 0, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -537,15 +529,7 @@ export function ReportPage() {
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: {
-          ...ECHART_BASE_TEXT,
-          fontSize: 10.5,
-          inside: true,
-          align: "left",
-          verticalAlign: "bottom",
-          padding: [0, 0, 4, 0],
-          formatter: (v: number) => (v === 0 ? "" : fmtHours(v)),
-        },
+        axisLabel: { show: false },
       },
       series: [...catSeries, totalCap],
     } as EChartsOption;

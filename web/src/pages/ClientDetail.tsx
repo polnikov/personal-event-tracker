@@ -270,7 +270,7 @@ export function ClientDetailPage() {
     const fmtCompact = (v: number) =>
       v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
     return {
-      grid: { top: 32, right: 16, bottom: 28, left: GRID_LEFT_FLUSH },
+      grid: { top: 32, right: 0, bottom: 28, left: 0 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -305,15 +305,7 @@ export function ClientDetailPage() {
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: "#ECEAE3" } },
-        axisLabel: {
-          ...ECHART_BASE_TEXT,
-          fontSize: 10.5,
-          inside: true,
-          align: "left",
-          verticalAlign: "bottom",
-          padding: [0, 0, 4, 0],
-          formatter: (v: number) => (v === 0 ? "" : fmtCompact(v)),
-        },
+        axisLabel: { show: false },
       },
       series: [
         {
