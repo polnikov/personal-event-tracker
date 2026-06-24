@@ -5,7 +5,7 @@ Wants=docker.service
 
 [Service]
 Type=oneshot
-WorkingDirectory=/opt/event-tracker
-ExecStart=/opt/event-tracker/scripts/backup-db.sh
+WorkingDirectory=/opt/docker/pet
+ExecStart=/opt/docker/pet/scripts/backup-db.sh
 Nice=10
 IOSchedulingClass=idle

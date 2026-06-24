@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-/opt/event-tracker}"
+APP_DIR="${APP_DIR:-/opt/docker/pet}"
 DB_PATH="${APP_DIR}/data/events.db"
 BACKUP_DIR="${APP_DIR}/backups"
 LOG_FILE="${BACKUP_DIR}/backup.log"
