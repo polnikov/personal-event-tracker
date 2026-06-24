@@ -20,7 +20,7 @@ jobs:
   deploy:
     # Auto-deploy only on a successful build; manual dispatch always runs.
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: [self-hosted, home-server]
     steps:
       - name: Show context
         run: |
@@ -30,13 +30,13 @@ jobs:
           docker compose version
 
       - name: Pull latest image
-        working-directory: /opt/event-tracker
+        working-directory: /opt/docker/pet
         env:
           IMAGE_TAG: ${{ github.event.inputs.image_tag || 'latest' }}
         run: docker compose pull
 
       - name: Recreate containers
-        working-directory: /opt/event-tracker
+        working-directory: /opt/docker/pet
         env:
           IMAGE_TAG: ${{ github.event.inputs.image_tag || 'latest' }}
         run: docker compose up -d --remove-orphans
@@ -45,10 +45,10 @@ jobs:
         run: docker image prune -f
 
       - name: Health check
-        working-directory: /opt/event-tracker
+        working-directory: /opt/docker/pet
         run: |
           for i in 1 2 3 4 5 6 7 8 9 10; do
-            if docker compose exec -T petracker python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"; then
+            if docker compose exec -T pet python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"; then
               echo "App is healthy"
               exit 0
             fi
@@ -56,5 +56,5 @@ jobs:
             sleep 3
           done
           echo "App did not become healthy in time"
-          docker compose logs --tail=80 petracker
+          docker compose logs --tail=80 pet
           exit 1
