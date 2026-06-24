@@ -40,6 +40,9 @@ htmlcov/
 # Local setup notes (paths, hostnames, references to secrets)
 SETUP.md
 
+# Local UI/UX guide (personal reference, ported to other projects)
+UI_UX_GUIDE.md
+
 # ─── Application data ───────────────────────────────────────────────────────
 data/
 *.db
