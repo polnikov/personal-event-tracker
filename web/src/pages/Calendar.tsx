@@ -38,7 +38,7 @@ const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDat
 
 export function CalendarPage() {
   const today = useMemo(() => new Date(), []);
-  const [view, setView] = useState<View>("week");
+  const [view, setView] = useState<View>("3days");
   const [cursor, setCursor] = useState(() => new Date());
   const [openEventId, setOpenEventId] = useState<number | null>(null);
   const [clientFilter, setClientFilter] = useState("");

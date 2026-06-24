@@ -273,7 +273,7 @@ export function ReportPage() {
       data: c.net.map((v, m) => ({
         value: Math.round(v || 0),
         itemStyle: {
-          color: c.color || "#807A72",
+          color: pressedFill(c.color || "#807A72", true),
           borderRadius: i === topIdx[m] ? roundedTop : flat,
         },
       })),
@@ -287,7 +287,7 @@ export function ReportPage() {
       data: taxSeries.map((v, m) => ({
         value: v,
         itemStyle: {
-          color: taxColor,
+          color: pressedFill(taxColor, true),
           borderRadius: cats.length === topIdx[m] ? roundedTop : flat,
         },
       })),
