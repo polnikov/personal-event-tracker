@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button, Card, Tabs } from "@/components/design";
 import { google as googleApi } from "@/lib/api";
 import type { GoogleOutboxRow } from "@/lib/api";
@@ -116,6 +116,12 @@ const OP_LABEL: Record<GoogleOutboxRow["op"], string> = {
   delete: "Удаление",
 };
 
+const OP_ICON: Record<GoogleOutboxRow["op"], typeof Plus> = {
+  create: Plus,
+  update: Pencil,
+  delete: Trash2,
+};
+
 const OP_COLOR: Record<GoogleOutboxRow["op"], { bg: string; fg: string }> = {
   create: { bg: "rgba(123, 182, 97, 0.18)", fg: "#3F7A2A" },
   update: { bg: "rgba(217, 168, 108, 0.22)", fg: "#8C5A1F" },
@@ -142,6 +148,7 @@ function OutboxRow({
   const dot = done ? "var(--accent)" : failed ? "var(--danger)" : "var(--muted)";
 
   const opColors = OP_COLOR[row.op];
+  const OpIcon = OP_ICON[row.op];
   const opBadgeStyle: React.CSSProperties = {
     display: "inline-grid",
     placeItems: "center",
@@ -183,8 +190,8 @@ function OutboxRow({
           style={{ background: dot }}
           title={done ? "Завершено" : failed ? "Ошибка" : "В очереди"}
         />
-        <span style={opBadgeStyle} title="Тип операции">
-          {OP_LABEL[row.op]}
+        <span style={opBadgeStyle} title={OP_LABEL[row.op]} aria-label={OP_LABEL[row.op]}>
+          <OpIcon size={14} strokeWidth={2.5} />
         </span>
         <span
           className={`debug-row-client${eventClickable ? " is-link" : ""}`}
@@ -229,8 +236,18 @@ function OutboxRow({
             </span>
           </div>
           <div className="meta-row">
-            <span className="muted small">Календарь:</span>
-            <span className="mono small">{row.calendar_id}</span>
+            {row.calendar_id ? (
+              <a
+                className="small"
+                href={`https://calendar.google.com/calendar/embed?src=${encodeURIComponent(row.calendar_id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Календарь
+              </a>
+            ) : (
+              <span className="muted small">Календарь</span>
+            )}
           </div>
           {row.google_event_id && (
             <div className="meta-row">
