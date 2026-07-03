@@ -2646,6 +2646,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* View switcher (Month / Week / List) */
 .view-switcher {
+  position: relative;
   display: inline-flex;
   align-items: stretch;
   /* Beige tabs track; the active tab floats as a white pill inset from the
@@ -2657,6 +2658,30 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 0;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14);
   min-height: 38px;
+}
+
+/* Transitions.dev "Tabs sliding": the white active pill is a single element
+   that slides + resizes between tabs instead of the fill snapping. Geometry
+   (transform/width/height/opacity) is set in JS from the active button's box;
+   see useSlidingPill. Sits under the button text (z-index 0). */
+.view-switch-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  will-change: transform, width;
+  transition:
+    transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.28s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-switch-pill { transition: none; }
 }
 /* When a Tabs lives directly inside .page (a column flex container), the
    default flex `align-items: stretch` makes the switcher span the full
@@ -2761,11 +2786,10 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .client-detail-notes-search .input { min-height: 38px; }
 .view-switch-btn:hover { color: var(--ink); }
-/* Active tab floats as a white pill on the pressed-in grey track. */
+/* Active tab: text sits above the sliding .view-switch-pill (which provides
+   the white fill + shadow). Keep the button itself transparent. */
 .view-switch-btn.on {
-  background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shadow-1);
 }
 
 /* Year chevron pager — same surface/shadow/height as .view-switcher so

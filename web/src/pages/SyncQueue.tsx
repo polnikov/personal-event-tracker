@@ -117,10 +117,10 @@ export function SyncQueuePage() {
   };
 
   return (
-    <div className="page">
+    <>
       <div className="page-head">
         <div>
-          <h1 className="h1">Очередь синхронизации</h1>
+          <h2 className="h2">Очередь синхронизации</h2>
           <div className="muted">
             Изменения, которые ждут отправки на сервер. Уходят автоматически при появлении сети.
           </div>
@@ -145,6 +145,6 @@ export function SyncQueuePage() {
           <Section title="Не удалось отправить" items={failed} />
         </>
       )}
-    </div>
+    </>
   );
 }

@@ -48,11 +48,11 @@ export function DebugPage() {
     });
 
   return (
-    <div className="page">
+    <>
       <div className="page-head">
         <div>
-          <h1 className="h1">Отладка</h1>
-          <div className="muted">Журнал синхронизации с Google Calendar</div>
+          <h2 className="h2">Журнал синхронизации</h2>
+          <div className="muted">Операции push-синхронизации с Google Calendar</div>
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export function DebugPage() {
         onClose={() => setOpenEventId(null)}
         onSaved={() => setOpenEventId(null)}
       />
-    </div>
+    </>
   );
 }
 

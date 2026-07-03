@@ -11,6 +11,7 @@ import { CategoriesPage } from "@/pages/Categories";
 import { ClubsPage } from "@/pages/Clubs";
 import { CalendarPage } from "@/pages/Calendar";
 import { ReportPage } from "@/pages/Report";
+import { SettingsPage } from "@/pages/Settings";
 import { SettingsGooglePage } from "@/pages/SettingsGoogle";
 import { SyncQueuePage } from "@/pages/SyncQueue";
 import { DebugPage } from "@/pages/Debug";
@@ -36,9 +37,15 @@ export default function App() {
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="clubs" element={<ClubsPage />} />
         <Route path="report" element={<ReportPage />} />
-        <Route path="settings/google" element={<SettingsGooglePage />} />
-        <Route path="sync" element={<SyncQueuePage />} />
-        <Route path="debug" element={<DebugPage />} />
+        <Route path="settings" element={<SettingsPage />}>
+          <Route index element={<Navigate to="google" replace />} />
+          <Route path="google" element={<SettingsGooglePage />} />
+          <Route path="queue" element={<SyncQueuePage />} />
+          <Route path="debug" element={<DebugPage />} />
+        </Route>
+        {/* Back-compat for old top-level routes / bookmarks */}
+        <Route path="sync" element={<Navigate to="/settings/queue" replace />} />
+        <Route path="debug" element={<Navigate to="/settings/debug" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

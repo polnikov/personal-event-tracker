@@ -11,6 +11,7 @@ import {
   MultiSelect,
   SearchableSelect,
   Select,
+  useSlidingPill,
 } from "@/components/design";
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
@@ -427,8 +428,10 @@ function ViewSwitcher({
     { value: "week", label: "Неделя" },
     { value: "3days", label: "3 дня" },
   ];
+  const { trackRef, pillRef } = useSlidingPill(value);
   return (
-    <div className="view-switcher">
+    <div ref={trackRef} className="view-switcher">
+      <span ref={pillRef} className="view-switch-pill" aria-hidden="true" />
       {opts.map((o) => (
         <button
           key={o.value}

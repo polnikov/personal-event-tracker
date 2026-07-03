@@ -2,13 +2,11 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Bug,
   Buildings,
   Calendar,
   CalendarDots,
   CalendarPlus,
   ChartPieSlice,
-  CloudArrowUp,
   GearSix,
   GridFour,
   IdentificationCard,
@@ -47,9 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/clients", label: "Клиенты", Icon: IdentificationCard, end: false },
   { to: "/categories", label: "Категории", Icon: Tag, end: false },
   { to: "/clubs", label: "Клубы", Icon: Buildings, end: false },
-  { to: "/sync", label: "Очередь", Icon: CloudArrowUp, end: false },
-  { to: "/debug", label: "Отладка", Icon: Bug, end: false },
-  { to: "/settings/google", label: "Настройки", Icon: GearSix, end: false },
+  { to: "/settings", label: "Настройки", Icon: GearSix, end: false },
 ];
 
 const MOBILE_TABS: NavItem[] = [
@@ -65,7 +61,7 @@ const MOBILE_TAB_ICON = 25;
 
 // Routes that live behind the "Ещё" sheet — keep the More tab highlighted
 // when the user is on any of these pages.
-const MORE_ROUTES = ["/categories", "/clubs", "/clients", "/sync", "/debug", "/settings"];
+const MORE_ROUTES = ["/categories", "/clubs", "/clients", "/settings"];
 
 export function Layout() {
   const location = useLocation();
@@ -77,7 +73,7 @@ export function Layout() {
   const [sheetEntered, setSheetEntered] = useState(false);
   const [newEventOpen, setNewEventOpen] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
-  // Lightweight poll for the failed-sync badge in the "Отладка" nav item.
+  // Lightweight poll for the failed-sync badge on the merged "Настройки" item.
   const googleStatus = useQuery({
     queryKey: ["google", "status"],
     queryFn: () => googleApi.status(),
@@ -135,6 +131,20 @@ export function Layout() {
   // the user knows something inside the sheet wants action.
   const moreTabAlert =
     outbox.failed > 0 || failedCount > 0 || googleBroken || outbox.pending > 0;
+
+  // Merged "Настройки" item folds in every signal the old Очередь/Отладка/
+  // Настройки items carried: failed client-sync, failed Google outbox, a
+  // broken Google token (danger), else the pending queue count (accent).
+  const settingsBadge: { text: string; danger: boolean } | null =
+    outbox.failed > 0
+      ? { text: `!${outbox.failed}`, danger: true }
+      : failedCount > 0
+        ? { text: String(failedCount), danger: true }
+        : googleBroken
+          ? { text: "!", danger: true }
+          : outbox.pending > 0
+            ? { text: String(outbox.pending), danger: false }
+            : null;
 
   // Close the sheet whenever the route changes (item tap that navigates).
   useEffect(() => setSheetOpen(false), [location.pathname]);
@@ -219,27 +229,17 @@ export function Layout() {
                   <Icon size={24} weight="fill" />
                 </span>
                 <span>{label}</span>
-                {to === "/debug" && failedCount > 0 && (
-                  <span className="nav-badge">{failedCount}</span>
-                )}
-                {to === "/settings/google" && googleBroken && (
-                  <span className="nav-badge" title="Проблема с подключением Google">!</span>
-                )}
-                {to === "/sync" && outbox.failed > 0 && (
-                  <span className="nav-badge" title="Не удалось отправить">
-                    {`!${outbox.failed}`}
-                  </span>
-                )}
-                {to === "/sync" && outbox.failed === 0 && outbox.pending > 0 && (
+                {to === "/settings" && settingsBadge && (
                   <span
                     className="nav-badge"
-                    title="Ожидают отправки"
-                    style={{
-                      background: "var(--accent-soft)",
-                      color: "var(--accent-ink)",
-                    }}
+                    title="Требуется внимание в разделе Настройки"
+                    style={
+                      settingsBadge.danger
+                        ? undefined
+                        : { background: "var(--accent-soft)", color: "var(--accent-ink)" }
+                    }
                   >
-                    {outbox.pending}
+                    {settingsBadge.text}
                   </span>
                 )}
               </NavLink>
@@ -373,48 +373,22 @@ export function Layout() {
               <span>Клубы</span>
             </NavLink>
 
-            <NavLink to="/sync" className="mobile-sheet-item">
-              <span className="mobile-sheet-item-icon">
-                <CloudArrowUp size={22} weight="fill" />
-              </span>
-              <span>Очередь</span>
-              {outbox.failed > 0 && (
-                <span className="nav-badge" title="Не удалось отправить">
-                  {`!${outbox.failed}`}
-                </span>
-              )}
-              {outbox.failed === 0 && outbox.pending > 0 && (
-                <span
-                  className="nav-badge"
-                  title="Ожидают отправки"
-                  style={{
-                    background: "var(--accent-soft)",
-                    color: "var(--accent-ink)",
-                  }}
-                >
-                  {outbox.pending}
-                </span>
-              )}
-            </NavLink>
-
-            <NavLink to="/debug" className="mobile-sheet-item">
-              <span className="mobile-sheet-item-icon">
-                <Bug size={22} weight="fill" />
-              </span>
-              <span>Отладка</span>
-              {failedCount > 0 && (
-                <span className="nav-badge">{failedCount}</span>
-              )}
-            </NavLink>
-
-            <NavLink to="/settings/google" className="mobile-sheet-item">
+            <NavLink to="/settings" className="mobile-sheet-item">
               <span className="mobile-sheet-item-icon">
                 <GearSix size={22} weight="fill" />
               </span>
               <span>Настройки</span>
-              {googleBroken && (
-                <span className="nav-badge" title="Проблема с подключением Google">
-                  !
+              {settingsBadge && (
+                <span
+                  className="nav-badge"
+                  title="Требуется внимание в разделе Настройки"
+                  style={
+                    settingsBadge.danger
+                      ? undefined
+                      : { background: "var(--accent-soft)", color: "var(--accent-ink)" }
+                  }
+                >
+                  {settingsBadge.text}
                 </span>
               )}
             </NavLink>

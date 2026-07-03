@@ -53,10 +53,10 @@ export function SettingsGooglePage() {
   const credsBroken = connected && !credsValid;
 
   return (
-    <div className="page">
+    <>
       <div className="page-head">
         <div>
-          <h1 className="h1">Настройки → Google Calendar</h1>
+          <h2 className="h2">Google Calendar</h2>
           <div className="muted">Push-синхронизация событий по категориям</div>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function SettingsGooglePage() {
               {failed > 0 && (
                 <>
                   Ошибок:{" "}
-                  <Link to="/debug?filter=failed" className="mono" style={{ color: "var(--danger)" }}>
+                  <Link to="/settings/debug?filter=failed" className="mono" style={{ color: "var(--danger)" }}>
                     {failed}
                   </Link>
                 </>
@@ -130,13 +130,13 @@ export function SettingsGooglePage() {
           <div className="muted small" style={{ marginTop: 12 }}>
             После подключения выберите календарь для каждой категории на странице{" "}
             <Link to="/categories">Категории</Link>. Журнал синхронизации —{" "}
-            <Link to="/debug">Отладка</Link>.
+            <Link to="/settings/debug">Отладка</Link>.
           </div>
         </div>
       </Card>
 
       {(!connected || credsBroken) && <ManualConnectCard />}
-    </div>
+    </>
   );
 }
 
