@@ -39,10 +39,10 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icon.png"],
       manifest: {
-        name: "Трекер событий",
-        short_name: "Трекер",
+        name: "PET",
+        short_name: "PET",
         description: "Личный трекер событий",
-        theme_color: "#2A9DA8",
+        theme_color: "#FAFAF7",
         background_color: "#FAFAF7",
         display: "standalone",
         start_url: "/",
