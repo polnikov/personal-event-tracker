@@ -52,6 +52,10 @@
   --shadow-3: 0 2px 6px rgba(42,42,46,0.05), 0 12px 32px -8px rgba(42,42,46,0.10), 0 24px 56px -16px rgba(42,42,46,0.10);
   --shadow-hover: 0 2px 4px rgba(42,42,46,0.05), 0 8px 24px -4px rgba(42,42,46,0.10), 0 20px 44px -12px rgba(42,42,46,0.12);
 
+  /* Transitions.dev "smooth out" easing — shared by the accordion-expand
+     dropdowns and the modal open/close scale. */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -756,8 +760,11 @@ input[type="color"].color-round::-moz-color-swatch { border: 0; border-radius: 9
   box-shadow: var(--shadow-3);
   padding: 12px;
   min-width: 220px;
-  transform-origin: top center;
-  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: grid;
+  animation: accordionExpand 250ms var(--ease-smooth-out);
+}
+.color-picker-pop[data-state="closed"] {
+  animation: accordionCollapse 250ms var(--ease-smooth-out);
 }
 .color-picker-label {
   font-size: 11px;
@@ -859,7 +866,7 @@ input[type="number"] { -moz-appearance: textfield; }
 
 /* Select — Radix dropdown: trigger button + portalled content.
    Styled to match the app's inputs (trigger) and Popover dropdowns (content),
-   reusing the shared `dropdownIn` open animation. */
+   reusing the shared `accordionExpand`/`accordionCollapse` animation. */
 .select-trigger {
   position: relative;
   display: inline-flex;
@@ -907,7 +914,12 @@ input[type="number"] { -moz-appearance: textfield; }
   display: grid;
   place-items: center;
   pointer-events: none;
+  transition: transform 250ms var(--ease-smooth-out);
 }
+/* Chevron morph (simplified as a flip, not a path redraw): points down
+   closed, up while the dropdown is open. Radix mirrors data-state from the
+   Select/Popover onto its (possibly custom) Trigger element. */
+.select-trigger[data-state="open"] .select-icon { transform: translateY(-50%) rotate(180deg); }
 .select-content {
   z-index: 130;
   min-width: var(--radix-select-trigger-width);
@@ -916,10 +928,17 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: var(--r-md);
   box-shadow: var(--shadow-3);
   padding: 4px;
-  transform-origin: var(--radix-select-content-transform-origin, top center);
-  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Radix forces an inline `display: flex` on this element itself, so the
+     grid/accordion animation lives on the .accordion-grid child instead. */
 }
-.select-viewport { max-height: 300px; overflow-y: auto; }
+.accordion-grid {
+  display: grid;
+  animation: accordionExpand 250ms var(--ease-smooth-out);
+}
+.select-content[data-state="closed"] .accordion-grid {
+  animation: accordionCollapse 250ms var(--ease-smooth-out);
+}
+.select-viewport { max-height: 300px; overflow-y: auto; min-height: 0; }
 .select-item {
   display: flex;
   align-items: center;
@@ -1014,23 +1033,27 @@ input[type="number"] { -moz-appearance: textfield; }
   pointer-events: none;
   display: grid;
   place-items: center;
+  transition: transform 250ms var(--ease-smooth-out);
 }
+.searchable-select[data-state="open"] .select-chev-static { transform: translateY(-50%) rotate(180deg); }
 .searchable-select-list {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
   z-index: 100;
-  max-height: 240px;
-  overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-3);
   padding: 4px;
-  transform-origin: top center;
-  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: grid;
+  animation: accordionExpand 250ms var(--ease-smooth-out);
 }
+.searchable-select-list[data-state="closed"] {
+  animation: accordionCollapse 250ms var(--ease-smooth-out);
+}
+.searchable-select-list > .accordion-inner { max-height: 240px; overflow-y: auto; }
 .searchable-select-item {
   display: block;
   width: 100%;
@@ -1062,9 +1085,16 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: var(--shadow-3);
   padding: 6px;
   z-index: 120;
-  transform-origin: var(--radix-popover-content-transform-origin, top center);
-  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: grid;
+  animation: accordionExpand 250ms var(--ease-smooth-out);
 }
+.popover-content[data-state="closed"] {
+  animation: accordionCollapse 250ms var(--ease-smooth-out);
+}
+/* Wraps every PopoverContent's children (see ui/popover.tsx) so multi-child
+   content (calendar, checkbox list, swatch grid…) collapses as one row
+   instead of each child getting its own implicit grid track. */
+.accordion-inner { min-height: 0; overflow: hidden; }
 
 .datepicker-trigger {
   display: inline-flex;
@@ -3262,8 +3292,9 @@ input[type="number"] { -moz-appearance: textfield; }
   background: rgba(42, 42, 46, 0.32);
   backdrop-filter: blur(6px);
   z-index: 100;
-  animation: fadeIn 0.18s ease;
 }
+.modal-overlay[data-state="open"] { animation: modalOverlayIn 250ms var(--ease-smooth-out); }
+.modal-overlay[data-state="closed"] { animation: modalOverlayOut 150ms var(--ease-smooth-out); }
 .modal-content {
   position: fixed;
   left: 50%;
@@ -3279,8 +3310,9 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-direction: column;
   max-height: 90vh;
   z-index: 101;
-  animation: popIn 0.2s ease;
 }
+.modal-content[data-state="open"] { animation: modalContentIn 250ms var(--ease-smooth-out); }
+.modal-content[data-state="closed"] { animation: modalContentOut 150ms var(--ease-smooth-out); }
 .modal-lg { max-width: 640px; }
 /* EventForm needs a touch more width so the 5 duration presets (…1,5ч 2ч)
    fit on one line inside the half-width duration column. */
@@ -3538,15 +3570,38 @@ a.cd2-name:hover {
   gap: 12px;
 }
 
-@keyframes fadeIn { from { opacity: 0; } }
-@keyframes popIn { from { opacity: 0; transform: translate(-50%, -48%) scale(0.98); } }
-/* Shared dropdown open: gentle fade + settle, eased out so it never jerks. */
-@keyframes dropdownIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* Transitions.dev "Modal open/close" (P7): scale + fade, faster on the way
+   out than the way in. Keyed off Radix's own [data-state], so Dialog's
+   Presence waits for the close animation before unmounting. */
+@keyframes modalOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalOverlayOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modalContentIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes modalContentOut {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+}
+/* Transitions.dev "Accordion" (P21): grid-template-rows 0fr → 1fr height
+   reveal (no JS measurement needed), fading in step. Used for every dropdown
+   (Select, MultiSelect, SearchableSelect, DatePicker/DateTimePicker,
+   ColorPicker). Keyframed rather than a plain transition so Radix — and the
+   custom dropdowns' own useDelayedUnmount — can detect the close animation
+   and wait for it before removing the element. */
+@keyframes accordionExpand {
+  from { grid-template-rows: 0fr; opacity: 0; }
+  to   { grid-template-rows: 1fr; opacity: 1; }
+}
+@keyframes accordionCollapse {
+  from { grid-template-rows: 1fr; opacity: 1; }
+  to   { grid-template-rows: 0fr; opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-content,
   .popover-content,
+  .accordion-grid,
   .searchable-select-list,
   .color-picker-pop { animation-duration: 0.01ms; }
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDelayedUnmount } from "@/components/design";
 
 // Metronic-style curated palette (5 cols × 4 rows = 20)
 const PRESETS = [
@@ -19,6 +20,7 @@ export function ColorPicker({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const popMounted = useDelayedUnmount(open);
 
   useEffect(() => {
     if (!open) return;
@@ -41,45 +43,47 @@ export function ColorPicker({
         aria-label="Выбрать цвет"
         title={value}
       />
-      {open && (
-        <div className="color-picker-pop">
-          <div className="color-picker-label">Палитра</div>
-          <div className="color-picker-grid">
-            {PRESETS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={cn("color-swatch", isSelected(c) && "selected")}
-                style={{ background: c }}
-                onClick={() => {
-                  onChange(c);
-                  setOpen(false);
-                }}
-                title={c}
-              >
-                {isSelected(c) && (
-                  <Check size={12} strokeWidth={3} color="#FFFFFF" />
-                )}
-              </button>
-            ))}
-          </div>
-          <div className="color-picker-custom">
-            <span className="muted small">Свой:</span>
-            <input
-              type="color"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="color-round"
-              style={{ width: 28, height: 28 }}
-            />
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              className="input"
-              style={{ fontFamily: "var(--font-mono)", flex: 1, minWidth: 0 }}
-              maxLength={7}
-            />
+      {popMounted && (
+        <div className="color-picker-pop" data-state={open ? "open" : "closed"}>
+          <div className="accordion-inner">
+            <div className="color-picker-label">Палитра</div>
+            <div className="color-picker-grid">
+              {PRESETS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={cn("color-swatch", isSelected(c) && "selected")}
+                  style={{ background: c }}
+                  onClick={() => {
+                    onChange(c);
+                    setOpen(false);
+                  }}
+                  title={c}
+                >
+                  {isSelected(c) && (
+                    <Check size={12} strokeWidth={3} color="#FFFFFF" />
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="color-picker-custom">
+              <span className="muted small">Свой:</span>
+              <input
+                type="color"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="color-round"
+                style={{ width: 28, height: 28 }}
+              />
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="input"
+                style={{ fontFamily: "var(--font-mono)", flex: 1, minWidth: 0 }}
+                maxLength={7}
+              />
+            </div>
           </div>
         </div>
       )}
