@@ -251,6 +251,10 @@ export function DashboardPage() {
 
   const pieOption: EChartsOption | null = useMemo(() => {
     if (!data || data.by_category.length === 0) return null;
+    // Sum per category — shown in the legend (the slices now carry only %).
+    const catValue = new Map(
+      data.by_category.map((c) => [c.name, parseFloat(c.cost) || 0]),
+    );
     return {
       tooltip: {
         trigger: "item",
@@ -274,45 +278,28 @@ export function DashboardPage() {
         itemHeight: 10,
         itemGap: 14,
         icon: "circle",
+        // Category sum moved here from the slice labels.
+        formatter: (name: string) => `${name} · ${RUB(catValue.get(name) ?? 0)}`,
       },
       series: [
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["30%", "80%"] : ["35%", "75%"],
+          radius: isMobile ? ["30%", "70%"] : ["35%", "70%"],
           center: ["50%", "40%"],
           padAngle: 2,
           avoidLabelOverlap: true,
           itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
           label: {
             show: true,
-            position: "inside",       // radial — label sits at end of leader line
+            position: "inside",
             color: "#2A2A2E",
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'ss01'",
             fontSize: isMobile ? 12 : 12.5,
             fontWeight: 600,
-            lineHeight: 15,
-            backgroundColor: "rgba(255, 255, 255, 0.6)",
-            extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-            borderColor: "#ECEAE3",
-            borderWidth: 1,
-            borderRadius: 6,
-            padding: [2, 6, 2, 6],
-            formatter: (p: unknown) => {
-              const it = p as { value: number; percent: number };
-              const v = it.value;
-              const formattedValue = Math.round(v).toLocaleString('ru-RU');
-              return `${formattedValue} ₽\n${it.percent.toFixed(0)}%`;
-            },
-            rich: {
-              value: {
-                align: 'left'
-              },
-              percent: {
-                align: 'left'
-              }
-            },
+            // Percent only, no backing pill.
+            formatter: (p: unknown) => `${(p as { percent: number }).percent.toFixed(0)}%`,
           },
           labelLine: {
             show: true,

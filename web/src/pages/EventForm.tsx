@@ -17,6 +17,7 @@ import {
   Select,
   Textarea,
   Toggle,
+  useDelayedUnmount,
 } from "@/components/design";
 import {
   categories as categoriesApi,
@@ -90,6 +91,11 @@ export function EventForm({
   const [royaltyEnabled, setRoyaltyEnabled] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [creatingClient, setCreatingClient] = useState(false);
+  // Keep the collapsible inputs mounted through their accordion-collapse
+  // animation after the toggle/section is turned off.
+  const taxMounted = useDelayedUnmount(taxEnabled);
+  const royaltyMounted = useDelayedUnmount(royaltyEnabled);
+  const notesMounted = useDelayedUnmount(notesOpen);
 
   // Tracks the last (subcategory, start_at) pair we synced price from.
   // Used to skip the initial reset from existing/copy data while letting
@@ -445,17 +451,21 @@ export function EventForm({
               }}
               label="Налог"
             />
-            {taxEnabled && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  style={{ maxWidth: "6rem" }}
-                  {...form.register("tax")}
-                />
-                <span className="muted small">% · {fmtMoney(calc.taxAmt)} ₽</span>
+            {taxMounted && (
+              <div className="form-accordion" data-state={taxEnabled ? "open" : "closed"}>
+                <div className="accordion-inner">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      style={{ maxWidth: "6rem" }}
+                      {...form.register("tax")}
+                    />
+                    <span className="muted small">% · {fmtMoney(calc.taxAmt)} ₽</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -470,17 +480,21 @@ export function EventForm({
               }}
               label="Роялти"
             />
-            {royaltyEnabled && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.5}
-                  style={{ maxWidth: "6rem" }}
-                  {...form.register("royalty")}
-                />
-                <span className="muted small">% · {fmtMoney(calc.royaltyAmt)} ₽</span>
+            {royaltyMounted && (
+              <div className="form-accordion" data-state={royaltyEnabled ? "open" : "closed"}>
+                <div className="accordion-inner">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      style={{ maxWidth: "6rem" }}
+                      {...form.register("royalty")}
+                    />
+                    <span className="muted small">% · {fmtMoney(calc.royaltyAmt)} ₽</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -538,13 +552,17 @@ export function EventForm({
             <span>Примечания</span>
             <ChevronDown size={16} className="collapsible-caret" />
           </button>
-          {notesOpen && (
-            <div className="collapsible-body">
-              <Textarea
-                rows={3}
-                placeholder="Дополнительная информация"
-                {...form.register("notes")}
-              />
+          {notesMounted && (
+            <div className="form-accordion" data-state={notesOpen ? "open" : "closed"}>
+              <div className="accordion-inner">
+                <div className="collapsible-body">
+                  <Textarea
+                    rows={3}
+                    placeholder="Дополнительная информация"
+                    {...form.register("notes")}
+                  />
+                </div>
+              </div>
             </div>
           )}
         </div>

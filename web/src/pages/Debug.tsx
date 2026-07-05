@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ChevronDown, Plus, Pencil, Trash2 } from "lucide-react";
-import { Button, Card, Tabs } from "@/components/design";
+import { Button, Card, Tabs, useDelayedUnmount } from "@/components/design";
 import { google as googleApi } from "@/lib/api";
 import type { GoogleOutboxRow } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
@@ -175,6 +175,9 @@ function OutboxRow({
     color: failed ? "#fff" : "var(--ink-2)",
   };
 
+  // Keep the panel mounted through its accordion-collapse animation.
+  const bodyMounted = useDelayedUnmount(expanded);
+
   const eventClickable = row.event_id !== null;
   // Когда событие удалено, клиент уже не доступен по join — показываем
   // снимок заголовка («Категория | Подкатегория · Клиент»), сохранённый
@@ -213,7 +216,9 @@ function OutboxRow({
           style={{ transform: expanded ? "rotate(180deg)" : "none", color: "var(--muted)" }}
         />
       </div>
-      {expanded && (
+      {bodyMounted && (
+        <div className="form-accordion" data-state={expanded ? "open" : "closed"}>
+          <div className="accordion-inner">
         <div className="debug-row-body">
           {row.subcategory_label && (
             <div className="meta-row">
@@ -273,6 +278,8 @@ function OutboxRow({
               </Button>
             </div>
           )}
+        </div>
+          </div>
         </div>
       )}
     </div>

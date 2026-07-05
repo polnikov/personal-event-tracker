@@ -1360,10 +1360,11 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 6px;
   padding: 4px 16px 14px;
   background: color-mix(in oklab, var(--bg) 60%, var(--surface));
-  font-size: 16px;
+  /* Match the row title (.debug-row-client) size. */
+  font-size: 13.5px;
 }
 /* Force the panel's labels/values to the panel font-size, overriding .small. */
-.debug-row-body .small { font-size: 16px; }
+.debug-row-body .small { font-size: 13.5px; }
 
 /* Collapsible block — used for the Notes field in EventForm. */
 .collapsible {
@@ -1391,6 +1392,21 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .collapsible.is-open .collapsible-caret { transform: rotate(180deg); }
 .collapsible-body { display: block; }
+
+/* Accordion-expand wrapper for EventForm's optional inputs (Примечания body,
+   Налог / Роялти inputs). grid-template-rows 0fr→1fr height reveal; the child
+   .accordion-inner clips overflow so it opens/collapses cleanly. Shares the
+   dropdowns' accordionExpand/Collapse keyframes + easing. */
+.form-accordion {
+  display: grid;
+  animation: accordionExpand 250ms var(--ease-smooth-out);
+}
+.form-accordion[data-state="closed"] {
+  animation: accordionCollapse 250ms var(--ease-smooth-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .form-accordion { animation-duration: 0.01ms; }
+}
 
 /* Form helpers */
 .form { display: flex; flex-direction: column; gap: 16px; }
