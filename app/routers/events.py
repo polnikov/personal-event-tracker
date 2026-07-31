@@ -8,7 +8,7 @@ from ..clock import now_local
 from ..database import get_db
 from ..google_sync import enqueue_for_event
 from ..google_sync_worker import kick_worker
-from ..models import Event, Subcategory
+from ..models import Event, Subcategory, Subscription
 from ..pricing import calc_total, get_price_at
 from ..schemas import (
     EventCreate,
@@ -17,7 +17,12 @@ from ..schemas import (
     EventUpdate,
     UpcomingEvent,
 )
-from ..serializers import event_to_schema, event_to_schema_with_sync, hydrate_sync_status_map
+from ..serializers import (
+    event_to_schema,
+    event_to_schema_with_sync,
+    hydrate_subscription_map,
+    hydrate_sync_status_map,
+)
 
 router = APIRouter(
     prefix="/api/events",
@@ -54,6 +59,35 @@ def _find_duplicate_event(
     if exclude_id is not None:
         stmt = stmt.where(Event.id != exclude_id)
     return db.execute(stmt).scalar_one_or_none()
+
+
+def _resolve_subscription(
+    db: Session,
+    subscription_id: int | None,
+    client_id: int | None,
+    subcategory_id: int,
+) -> Subscription | None:
+    """Validate the package link. Deliberately does NOT reject an exhausted
+    package: running a package into the negative is allowed, hiding it in the
+    form is a UI rule only."""
+    if subscription_id is None:
+        return None
+    s = db.get(Subscription, subscription_id)
+    if not s:
+        raise HTTPException(400, "Абонемент не найден")
+    if s.client_id != client_id:
+        raise HTTPException(400, "Абонемент принадлежит другому клиенту")
+    if s.subcategory_id != subcategory_id:
+        raise HTTPException(400, "Абонемент не подходит к выбранной подкатегории")
+    return s
+
+
+def _single_event_response(db: Session, e: Event):
+    """Serialize one event with its package balance (2 extra queries)."""
+    sub_map = hydrate_subscription_map(db, [e])
+    return event_to_schema(
+        e, subscription=sub_map.get(e.subscription_id) if e.subscription_id else None
+    )
 
 
 @router.get("", response_model=EventListResponse)
@@ -113,9 +147,10 @@ def list_events(
     past = [e for e in events if _has_ended(e)]
 
     sync_map = hydrate_sync_status_map(db, events)
+    sub_map = hydrate_subscription_map(db, events)
     return EventListResponse(
-        future=[event_to_schema_with_sync(e, sync_map) for e in future],
-        past=[event_to_schema_with_sync(e, sync_map) for e in past],
+        future=[event_to_schema_with_sync(e, sync_map, sub_map) for e in future],
+        past=[event_to_schema_with_sync(e, sync_map, sub_map) for e in past],
     )
 
 
@@ -169,7 +204,7 @@ def get_event(event_id: int, db: Session = Depends(get_db)):
     ).scalar_one_or_none()
     if not e:
         raise HTTPException(404)
-    return event_to_schema(e)
+    return _single_event_response(db, e)
 
 
 @router.post("", response_model=EventRead, status_code=201)
@@ -184,7 +219,14 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
         start_at=payload.start_at,
     ):
         raise HTTPException(409, DUPLICATE_MSG)
-    if payload.price_per_hour is not None:
+    package = _resolve_subscription(
+        db, payload.subscription_id, payload.client_id, payload.subcategory_id
+    )
+    # Package price wins over anything the client sent: the server is
+    # authoritative on what a package lesson costs.
+    if package is not None:
+        rate = package.price_per_lesson
+    elif payload.price_per_hour is not None:
         rate = payload.price_per_hour
     else:
         rate = get_price_at(db, payload.subcategory_id, payload.start_at)
@@ -196,6 +238,7 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
         subcategory_id=payload.subcategory_id,
         client_id=payload.client_id,
         club_id=payload.club_id,
+        subscription_id=payload.subscription_id,
         start_at=payload.start_at,
         duration_minutes=payload.duration_minutes,
         hourly_rate_snapshot=rate,
@@ -219,7 +262,7 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
     enqueue_for_event(db, e, op_hint="create")
     db.commit()
     kick_worker()
-    return event_to_schema(e)
+    return _single_event_response(db, e)
 
 
 @router.put("/{event_id}", response_model=EventRead)
@@ -235,18 +278,26 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
         exclude_id=event_id,
     ):
         raise HTTPException(409, DUPLICATE_MSG)
+    package = _resolve_subscription(
+        db, payload.subscription_id, payload.client_id, payload.subcategory_id
+    )
 
     subcategory_changed = payload.subcategory_id != e.subcategory_id
     e.subcategory_id = payload.subcategory_id
     e.client_id = payload.client_id
     e.club_id = payload.club_id
+    # Full replace, same as client_id/club_id: passing null unlinks the
+    # package and lets the tariff branches below re-price the event.
+    e.subscription_id = payload.subscription_id
     e.start_at = payload.start_at
     e.duration_minutes = payload.duration_minutes
     e.notes = (payload.notes or "").strip() or None
     e.tax = payload.tax
     e.royalty = payload.royalty
 
-    if payload.price_per_hour is not None:
+    if package is not None:
+        e.hourly_rate_snapshot = package.price_per_lesson
+    elif payload.price_per_hour is not None:
         e.hourly_rate_snapshot = payload.price_per_hour
     elif payload.recalculate_price or subcategory_changed:
         rate = get_price_at(db, payload.subcategory_id, payload.start_at)
@@ -268,7 +319,7 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
     enqueue_for_event(db, e, op_hint="update")
     db.commit()
     kick_worker()
-    return event_to_schema(e)
+    return _single_event_response(db, e)
 
 
 @router.delete("/{event_id}")

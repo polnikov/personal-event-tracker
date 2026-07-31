@@ -87,10 +87,46 @@ class Client(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     events: Mapped[list["Event"]] = relationship(back_populates="client")
+    subscriptions: Mapped[list["Subscription"]] = relationship(
+        back_populates="client", cascade="all, delete-orphan"
+    )
 
     @property
     def full_name(self) -> str:
         return f"{self.last_name} {self.first_name}".strip()
+
+
+class Subscription(Base):
+    """Prepaid package of lessons bought by a client for one subcategory.
+
+    One "занятие" equals one hour, so a 90-minute event consumes 1.5 lessons
+    and `price_per_lesson` doubles as the hourly rate for events booked
+    against the package. Balances are derived from the linked events (see
+    app/subscriptions.py) rather than stored, so they can never drift."""
+
+    __tablename__ = "subscriptions"
+    __table_args__ = (
+        Index("ix_subscription_client", "client_id"),
+        Index("ix_subscription_subcat", "subcategory_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    client_id: Mapped[int] = mapped_column(
+        ForeignKey("clients.id", ondelete="CASCADE"), nullable=False
+    )
+    subcategory_id: Mapped[int] = mapped_column(
+        ForeignKey("subcategories.id", ondelete="CASCADE"), nullable=False
+    )
+    lessons_total: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False)
+    price_per_lesson: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
+
+    client: Mapped[Client] = relationship(back_populates="subscriptions")
+    subcategory: Mapped[Subcategory] = relationship()
+    # Load-bearing: SQLite doesn't enforce ON DELETE SET NULL, so this
+    # relationship is what lets SQLAlchemy null out events.subscription_id
+    # when a package is deleted.
+    events: Mapped[list["Event"]] = relationship(back_populates="subscription")
 
 
 class Event(Base):
@@ -99,6 +135,7 @@ class Event(Base):
         Index("ix_event_start", "start_at"),
         Index("ix_event_client", "client_id"),
         Index("ix_event_subcat", "subcategory_id"),
+        Index("ix_event_subscription", "subscription_id"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -108,6 +145,12 @@ class Event(Base):
     )
     club_id: Mapped[int | None] = mapped_column(
         ForeignKey("clubs.id", ondelete="SET NULL"), nullable=True
+    )
+    # Set when the event is paid out of a prepaid package. The package price
+    # then acts as hourly_rate_snapshot and the event consumes
+    # duration_minutes from the package balance once it has ended.
+    subscription_id: Mapped[int | None] = mapped_column(
+        ForeignKey("subscriptions.id", ondelete="SET NULL"), nullable=True
     )
     start_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -134,6 +177,7 @@ class Event(Base):
     subcategory: Mapped[Subcategory] = relationship(back_populates="events")
     client: Mapped[Client | None] = relationship(back_populates="events")
     club: Mapped["Club | None"] = relationship("Club")
+    subscription: Mapped["Subscription | None"] = relationship(back_populates="events")
 
     @property
     def end_at(self) -> datetime:

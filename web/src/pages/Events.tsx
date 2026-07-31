@@ -120,6 +120,7 @@ export function EventsPage() {
   const [clientFilter, setClientFilter] = useState<string>("");
   const [royaltyOnly, setRoyaltyOnly] = useState(false);
   const [taxOnly, setTaxOnly] = useState(false);
+  const [subscriptionOnly, setSubscriptionOnly] = useState(false);
   const [search, setSearch] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
@@ -142,6 +143,7 @@ export function EventsPage() {
     (clientFilter ? 1 : 0) +
     (royaltyOnly ? 1 : 0) +
     (taxOnly ? 1 : 0) +
+    (subscriptionOnly ? 1 : 0) +
     (dateFrom ? 1 : 0) +
     (dateTo ? 1 : 0);
 
@@ -153,6 +155,7 @@ export function EventsPage() {
     setClientFilter("");
     setRoyaltyOnly(false);
     setTaxOnly(false);
+    setSubscriptionOnly(false);
     setDateFrom("");
     setDateTo("");
   };
@@ -223,7 +226,7 @@ export function EventsPage() {
   // Reset pagination whenever the visible slice changes underneath us.
   useEffect(
     () => setLimit(PAGE_SIZE),
-    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, taxOnly, search, dateFrom, dateTo],
+    [tab, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, taxOnly, subscriptionOnly, search, dateFrom, dateTo],
   );
 
   // --- Filter pipeline ---
@@ -239,6 +242,7 @@ export function EventsPage() {
       if (clientFilter && (e.client?.id ?? -1) !== Number(clientFilter)) return false;
       if (royaltyOnly && (parseFloat(e.royalty) || 0) <= 0) return false;
       if (taxOnly && (parseFloat(e.tax) || 0) <= 0) return false;
+      if (subscriptionOnly && !e.subscription) return false;
       if (dateFrom && dKey < dateFrom) return false;
       if (dateTo && dKey > dateTo) return false;
       if (q) {
@@ -261,7 +265,7 @@ export function EventsPage() {
       }
       return true;
     });
-  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, taxOnly, dateFrom, dateTo, q]);
+  }, [all, catFilter, subcatFilter, yearFilter, monthFilter, clientFilter, royaltyOnly, taxOnly, subscriptionOnly, dateFrom, dateTo, q]);
 
   // "Future" includes events whose end time is still ahead of now — that
   // covers tomorrow's events, today's not-yet-started events, and events
@@ -493,6 +497,11 @@ export function EventsPage() {
                 checked={taxOnly}
                 onChange={setTaxOnly}
                 label="Налог"
+              />
+              <Toggle
+                checked={subscriptionOnly}
+                onChange={setSubscriptionOnly}
+                label="Абонемент"
               />
             </div>
             <div className="events-filter-net">

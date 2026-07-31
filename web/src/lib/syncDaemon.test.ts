@@ -111,4 +111,20 @@ describe("flush", () => {
     await flush();
     expect(invalidate).toHaveBeenCalled();
   });
+
+  it("cross-invalidates clients and events, since packages tie them together", async () => {
+    const qc = new QueryClient();
+    startSyncDaemon(qc);
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+    await enqueue({
+      method: "POST",
+      url: "/clients/1/subscriptions",
+      body: { subcategory_id: 1, lessons_total: 10, price_per_lesson: 500 },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(okResponse()));
+    await flush();
+    const keys = invalidate.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey));
+    expect(keys).toContain(JSON.stringify(["clients"]));
+    expect(keys).toContain(JSON.stringify(["events"]));
+  });
 });

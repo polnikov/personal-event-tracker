@@ -38,6 +38,20 @@ export interface EventCalc {
  * and royalty as percentages of gross, net = gross − tax − royalty. Matches the
  * backend net formula total·(1 − tax/100 − royalty/100).
  */
+/**
+ * Lessons left on a package after accounting for one event. A past event is
+ * already inside the server-side `used` figure, so nothing is subtracted; a
+ * future one isn't, so its own minutes come off. Can go negative:
+ * over-consuming a package is allowed by design.
+ */
+export function remainingLessonsAfter(
+  remainingMinutes: number,
+  eventMinutes: number,
+  eventEnded: boolean,
+): number {
+  return (remainingMinutes - (eventEnded ? 0 : eventMinutes)) / 60;
+}
+
 export function calcEvent({
   price,
   minutes,

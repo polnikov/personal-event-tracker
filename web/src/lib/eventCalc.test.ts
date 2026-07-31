@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Subcategory } from "@/types/api";
 
-import { calcEvent, effectivePrice } from "./eventCalc";
+import { calcEvent, effectivePrice, remainingLessonsAfter } from "./eventCalc";
 
 function sub(partial: Partial<Subcategory>): Subcategory {
   return {
@@ -96,5 +96,23 @@ describe("calcEvent", () => {
     const r = calcEvent({ price: NaN, minutes: 60, tax: NaN, royalty: 0 });
     expect(r.gross).toBe(0);
     expect(r.net).toBe(0);
+  });
+});
+
+describe("remainingLessonsAfter", () => {
+  it("subtracts a future event, which the server hasn't counted yet", () => {
+    expect(remainingLessonsAfter(600, 60, false)).toBe(9);
+  });
+
+  it("subtracts nothing for a past event, already inside the used figure", () => {
+    expect(remainingLessonsAfter(600, 60, true)).toBe(10);
+  });
+
+  it("handles fractional durations", () => {
+    expect(remainingLessonsAfter(600, 90, false)).toBe(8.5);
+  });
+
+  it("passes a negative balance through — over-consumption is allowed", () => {
+    expect(remainingLessonsAfter(30, 60, false)).toBe(-0.5);
   });
 });

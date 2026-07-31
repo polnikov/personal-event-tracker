@@ -8,6 +8,7 @@ import {
   Card,
   IconButton,
   Input,
+  SubscriptionPill,
 } from "@/components/design";
 import { ClientFormModal } from "@/components/ClientFormModal";
 import { clients as clientsApi, OfflineQueuedError } from "@/lib/api";
@@ -117,7 +118,10 @@ export function ClientsPage() {
                 <Trash2 size={15} strokeWidth={1.6} />
               </IconButton>
             </div>
-            <div className="client-card-name">{c.full_name}</div>
+            <div className="client-card-nameline">
+              <div className="client-card-name">{c.full_name}</div>
+              <SubscriptionPill subs={c.subscriptions ?? []} />
+            </div>
             <div className="client-card-meta">
               {c.phone && (
                 <div className="client-meta-row">

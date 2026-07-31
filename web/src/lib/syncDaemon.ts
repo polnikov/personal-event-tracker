@@ -92,8 +92,12 @@ function invalidateForUrl(url: string): void {
     qc.invalidateQueries({ queryKey: ["calendar"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     qc.invalidateQueries({ queryKey: ["report"] });
+    // An event can consume a prepaid package, so client balances move too.
+    qc.invalidateQueries({ queryKey: ["clients"] });
   } else if (url.startsWith("/clients")) {
     qc.invalidateQueries({ queryKey: ["clients"] });
+    // Package edits change the badge shown on every linked event row.
+    qc.invalidateQueries({ queryKey: ["events"] });
   } else if (url.startsWith("/categories")) {
     qc.invalidateQueries({ queryKey: ["categories"] });
   }

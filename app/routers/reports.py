@@ -13,7 +13,11 @@ from ..schemas import (
     ReportResponse,
     ReportSubcatStat,
 )
-from ..serializers import event_to_schema_with_sync, hydrate_sync_status_map
+from ..serializers import (
+    event_to_schema_with_sync,
+    hydrate_subscription_map,
+    hydrate_sync_status_map,
+)
 
 router = APIRouter(
     prefix="/api/reports",
@@ -222,6 +226,7 @@ def report(
     )
 
     sync_map = hydrate_sync_status_map(db, royalty_events)
+    sub_map = hydrate_subscription_map(db, royalty_events)
     return ReportResponse(
         by_subcategory=by_subcategory,
         monthly=monthly,
@@ -229,7 +234,9 @@ def report(
         weekday_month=weekday_month,
         weekday_month_net=weekday_month_net,
         weekday_hour=weekday_hour,
-        events_with_royalty=[event_to_schema_with_sync(e, sync_map) for e in royalty_events],
+        events_with_royalty=[
+            event_to_schema_with_sync(e, sync_map, sub_map) for e in royalty_events
+        ],
         prev_monthly_net_total=prev_monthly_net_total,
         prev_subcategory_net_total=prev_subcategory_net_total,
         prev_subcategory_hours_total=prev_subcategory_hours_total,

@@ -11,6 +11,7 @@ import type {
   ReportResponse,
   Subcategory,
   SubcategoryPrice,
+  Subscription,
   UpcomingEvent,
 } from "@/types/api";
 
@@ -150,6 +151,12 @@ export interface ClientPayload {
   notes: string;
 }
 
+export interface SubscriptionPayload {
+  subcategory_id: number;
+  lessons_total: number;
+  price_per_lesson: number;
+}
+
 export const clients = {
   list: (q = "") => request<Client[]>(`/clients${q ? `?q=${encodeURIComponent(q)}` : ""}`),
   detail: (id: number) => request<ClientDetail>(`/clients/${id}`),
@@ -165,6 +172,18 @@ export const clients = {
       weekday_month: number[][];
       prev_year_total?: number;
     }>(`/clients/${id}/monthly?year=${year}`),
+  createSubscription: (clientId: number, payload: SubscriptionPayload) =>
+    request<Subscription>(`/clients/${clientId}/subscriptions`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateSubscription: (subId: number, payload: SubscriptionPayload) =>
+    request<Subscription>(`/clients/subscriptions/${subId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  removeSubscription: (subId: number) =>
+    request<{ ok: true }>(`/clients/subscriptions/${subId}`, { method: "DELETE" }),
 };
 
 // ---------- Clubs ----------
@@ -265,6 +284,7 @@ export const events = {
     subcategory_id: number;
     client_id: number | null;
     club_id: number | null;
+    subscription_id: number | null;
     start_at: string;
     duration_minutes: number;
     notes: string | null;
@@ -278,6 +298,7 @@ export const events = {
       subcategory_id: number;
       client_id: number | null;
       club_id: number | null;
+      subscription_id: number | null;
       start_at: string;
       duration_minutes: number;
       notes: string | null;

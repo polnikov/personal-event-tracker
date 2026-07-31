@@ -10,12 +10,18 @@ from .schemas import (
     EventRead,
     EventSubcategory,
     SubcategoryRead,
+    SubscriptionRead,
     CategoryRead,
     SubcategoryPriceRead,
 )
 
 
-def event_to_schema(e: Event, *, sync_status: str = "ok") -> EventRead:
+def event_to_schema(
+    e: Event,
+    *,
+    sync_status: str = "ok",
+    subscription: SubscriptionRead | None = None,
+) -> EventRead:
     sub = e.subcategory
     cat = sub.category
     return EventRead(
@@ -40,6 +46,7 @@ def event_to_schema(e: Event, *, sync_status: str = "ok") -> EventRead:
         ),
         client=EventClient(id=e.client.id, full_name=e.client.full_name) if e.client else None,
         club=EventClub(id=e.club.id, name=e.club.name, address=e.club.address) if e.club else None,
+        subscription=subscription,
         sync_status=sync_status,
     )
 
@@ -52,8 +59,23 @@ def hydrate_sync_status_map(db: Session, events: Iterable[Event]) -> dict[int, s
     return get_event_sync_statuses(db, ids)
 
 
-def event_to_schema_with_sync(e: Event, sync_map: dict[int, str]) -> EventRead:
-    return event_to_schema(e, sync_status=sync_map.get(e.id, "ok"))
+def hydrate_subscription_map(db: Session, events: Iterable[Event]):
+    """Batch-load the prepaid packages referenced by these events, keyed by
+    subscription id. Same O(1)-queries contract as hydrate_sync_status_map."""
+    from .subscriptions import hydrate_subscription_map as _impl
+    return _impl(db, list(events))
+
+
+def event_to_schema_with_sync(
+    e: Event,
+    sync_map: dict[int, str],
+    sub_map: dict[int, SubscriptionRead] | None = None,
+) -> EventRead:
+    return event_to_schema(
+        e,
+        sync_status=sync_map.get(e.id, "ok"),
+        subscription=(sub_map or {}).get(e.subscription_id) if e.subscription_id else None,
+    )
 
 
 def subcategory_to_schema(s: Subcategory) -> SubcategoryRead:

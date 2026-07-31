@@ -26,7 +26,8 @@ import {
   events as eventsApi,
   OfflineQueuedError,
 } from "@/lib/api";
-import { calcEvent, effectivePrice } from "@/lib/eventCalc";
+import { calcEvent, effectivePrice, remainingLessonsAfter } from "@/lib/eventCalc";
+import { fmt } from "@/lib/format";
 import { defaultClubValue, findCategoryForSubcat } from "@/lib/clubAutofill";
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/DateTimePicker";
@@ -36,6 +37,8 @@ const schema = z.object({
   subcategory_id: z.string().min(1, "Выберите подкатегорию"),
   client_id: z.string(),
   club_id: z.string(),
+  /** Prepaid package this event is booked against; "" = paid normally. */
+  subscription_id: z.string(),
   start_at: z.string().min(1, "Укажите дату/время"),
   duration_minutes: z.coerce.number().int().positive("Длительность > 0"),
   notes: z.string(),
@@ -138,6 +141,7 @@ export function EventForm({
         subcategory_id: String(e.subcategory_id),
         client_id: e.client_id ? String(e.client_id) : "",
         club_id: e.club_id ? String(e.club_id) : "",
+        subscription_id: e.subscription ? String(e.subscription.id) : "",
         start_at: format(parseISO(e.start_at), "yyyy-MM-dd'T'HH:mm"),
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
@@ -158,6 +162,9 @@ export function EventForm({
         // Club comes from the source event's category default (applied by the
         // club auto-fill effect), not copied verbatim.
         club_id: "",
+        // Kept, then dropped by the eligibility guard if the package no
+        // longer applies (exhausted, deleted, different subcategory).
+        subscription_id: e.subscription ? String(e.subscription.id) : "",
         start_at: `${todayDate}T${sourceTime}`,
         duration_minutes: e.duration_minutes,
         notes: e.notes || "",
@@ -171,6 +178,7 @@ export function EventForm({
       subcategory_id: "",
       client_id: prefillClient ?? "",
       club_id: "",
+      subscription_id: "",
       start_at: prefillStart || nowLocal,
       duration_minutes: 60,
       notes: "",
@@ -224,6 +232,7 @@ export function EventForm({
         subcategory_id: Number(values.subcategory_id),
         client_id: values.client_id ? Number(values.client_id) : null,
         club_id: values.club_id ? Number(values.club_id) : null,
+        subscription_id: values.subscription_id ? Number(values.subscription_id) : null,
         start_at: localIso(values.start_at),
         duration_minutes: values.duration_minutes,
         notes: values.notes || null,
@@ -239,6 +248,7 @@ export function EventForm({
         subcategory_id: Number(values.subcategory_id),
         client_id: values.client_id ? Number(values.client_id) : null,
         club_id: values.club_id ? Number(values.club_id) : null,
+        subscription_id: values.subscription_id ? Number(values.subscription_id) : null,
         start_at: localIso(values.start_at),
         duration_minutes: values.duration_minutes,
         notes: values.notes || null,
@@ -286,9 +296,42 @@ export function EventForm({
   const clientValue = form.watch("client_id");
   const clubValue = form.watch("club_id");
   const recalculateValue = form.watch("recalculate_price");
+  const subscriptionValue = form.watch("subscription_id");
+  // Keeps the package picker mounted through its collapse animation.
+  const subAccordionMounted = useDelayedUnmount(!!subscriptionValue);
   const priceValue = form.watch("price_per_hour");
   const taxValue = form.watch("tax");
   const royaltyValue = form.watch("royalty");
+
+  // Packages the selected client can spend on the selected subcategory.
+  // The event's own package is always kept in the list while editing —
+  // otherwise opening an old event whose package is now exhausted would
+  // silently unlink it on save.
+  const eligibleSubs = useMemo(() => {
+    const clientId = Number(clientValue);
+    const subId = Number(subcatValue);
+    const own = existing.data?.subscription ?? null;
+    const list = (clientsList.data ?? [])
+      .find((c) => c.id === clientId)
+      ?.subscriptions?.filter((s) => s.subcategory_id === subId && !s.is_exhausted) ?? [];
+    if (own && own.client_id === clientId && own.subcategory_id === subId) {
+      return list.some((s) => s.id === own.id) ? list : [own, ...list];
+    }
+    return list;
+  }, [clientsList.data, clientValue, subcatValue, existing.data]);
+
+  const selectedSub = useMemo(
+    () => eligibleSubs.find((s) => String(s.id) === subscriptionValue) ?? null,
+    [eligibleSubs, subscriptionValue],
+  );
+
+  // Drop a selection that no longer applies (client changed, subcategory
+  // changed, package exhausted). Covers copy mode too.
+  useEffect(() => {
+    if (subscriptionValue && !eligibleSubs.some((s) => String(s.id) === subscriptionValue)) {
+      form.setValue("subscription_id", "");
+    }
+  }, [eligibleSubs, subscriptionValue, form]);
 
   // Re-sync the price whenever the subcategory OR start_at changes.
   // Picks the most recent historical price whose effective_from ≤ the
@@ -297,8 +340,20 @@ export function EventForm({
   // Initial load from an existing event / copy seeds lastSyncedKey with
   // the loaded pair so the very first run is skipped — the snapshot
   // price stays put until the user actually edits subcategory or date.
+  // A selected package overrides the tariff entirely: its lesson price IS the
+  // hourly rate. The sync key is deliberately different from the tariff one,
+  // so unchecking the box makes the next run re-sync the tariff price.
   useEffect(() => {
     if (!subcatValue || !cats.data) return;
+    if (selectedSub) {
+      const key = `sub:${selectedSub.id}`;
+      if (key === lastSyncedKey.current) return;
+      form.setValue("price_per_hour", parseFloat(selectedSub.price_per_lesson) || 0, {
+        shouldDirty: true,
+      });
+      lastSyncedKey.current = key;
+      return;
+    }
     const key = `${subcatValue}@${startAtValue}`;
     if (key === lastSyncedKey.current) return;
     const subId = Number(subcatValue);
@@ -310,7 +365,7 @@ export function EventForm({
       lastSyncedKey.current = key;
       break;
     }
-  }, [subcatValue, startAtValue, cats.data, form]);
+  }, [subcatValue, startAtValue, cats.data, selectedSub, form]);
 
   // Auto-fill the club from the selected subcategory's CATEGORY default. Fires
   // only when the category changes (not on every keystroke / date edit), so a
@@ -436,9 +491,56 @@ export function EventForm({
             min={0}
             step={1}
             style={{ maxWidth: "12rem" }}
+            disabled={!!selectedSub}
             {...form.register("price_per_hour")}
           />
+          {selectedSub && <span className="muted small">Цена из абонемента</span>}
         </Field>
+
+        {eligibleSubs.length > 0 && (
+          <div className="field abon-field">
+            <label className="meta-row abon-row">
+              <input
+                type="checkbox"
+                className="recalc-check"
+                checked={!!subscriptionValue}
+                onChange={(e) =>
+                  form.setValue(
+                    "subscription_id",
+                    e.target.checked ? String(eligibleSubs[0].id) : "",
+                  )
+                }
+              />
+              <span style={{ flex: 1 }}>
+                По абонементу
+                <span className="muted small" style={{ display: "block" }}>
+                  {selectedSub
+                    ? `Осталось ${fmt.lessons(Math.max(0, selectedSub.lessons_remaining))} из ${fmt.lessons(selectedSub.lessons_total)}`
+                    : "Списать занятие из оплаченного пакета"}
+                </span>
+              </span>
+            </label>
+            {subAccordionMounted && eligibleSubs.length > 1 && (
+              <div
+                className="form-accordion"
+                data-state={subscriptionValue ? "open" : "closed"}
+              >
+                <div className="accordion-inner">
+                  <div style={{ marginTop: 6 }}>
+                    <Select
+                      value={subscriptionValue}
+                      onChange={(v) => form.setValue("subscription_id", v)}
+                      options={eligibleSubs.map((s) => ({
+                        value: String(s.id),
+                        label: `${s.subcategory_name} · осталось ${fmt.lessons(Math.max(0, s.lessons_remaining))} из ${fmt.lessons(s.lessons_total)}`,
+                      }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="form-grid-2 tax-royalty-row">
           <div className="field">
@@ -524,6 +626,27 @@ export function EventForm({
                 <span className="muted small">Чистыми: </span>
                 <span className="mono" style={{ fontWeight: 500 }}>
                   {fmtMoney(calc.net)} ₽
+                </span>
+              </div>
+            )}
+            {selectedSub && (
+              <div>
+                <span className="muted small">Спишется: </span>
+                <span className="mono" style={{ fontWeight: 500 }}>
+                  {fmt.lessons(durationValue / 60)}
+                </span>
+                <span className="muted small">
+                  {" "}· останется{" "}
+                  {fmt.lessons(
+                    Math.max(
+                      0,
+                      remainingLessonsAfter(
+                        selectedSub.remaining_minutes,
+                        durationValue,
+                        false,
+                      ),
+                    ),
+                  )}
                 </span>
               </div>
             )}

@@ -15,6 +15,44 @@ class AuthMe(BaseModel):
     authenticated: bool
 
 
+# ---------- Subscriptions ----------
+
+class SubscriptionBase(BaseModel):
+    subcategory_id: int
+    lessons_total: Decimal = Field(gt=0)
+    price_per_lesson: Decimal = Field(ge=0)
+
+
+class SubscriptionCreate(SubscriptionBase):
+    pass
+
+
+class SubscriptionUpdate(SubscriptionBase):
+    pass
+
+
+class SubscriptionRead(BaseModel):
+    """Balance is computed, never stored. Money stays Decimal (serialised as a
+    string, like every other amount); lesson counts are plain numbers so the
+    UI can do arithmetic without parsing. remaining_minutes is the exact
+    integer the exhaustion boundary is decided on."""
+
+    id: int
+    client_id: int
+    subcategory_id: int
+    subcategory_name: str
+    category_id: int
+    category_name: str
+    category_color: str
+    price_per_lesson: Decimal
+    lessons_total: float
+    lessons_used: float
+    lessons_remaining: float
+    remaining_minutes: int
+    is_exhausted: bool
+    created_at: datetime
+
+
 # ---------- Clients ----------
 
 class ClientBase(BaseModel):
@@ -46,6 +84,7 @@ class ClientRead(BaseModel):
     created_at: datetime
     events_count: int = 0
     total_spent: Decimal = Decimal(0)
+    subscriptions: list[SubscriptionRead] = []
 
 
 # ---------- Clubs ----------
@@ -181,6 +220,10 @@ class EventRead(BaseModel):
     subcategory: EventSubcategory
     client: EventClient | None = None
     club: EventClub | None = None
+    # Present when the event is booked against a prepaid package. Balances are
+    # as of the response; the UI subtracts this event's own minutes when it
+    # hasn't ended yet to show "останется после этого".
+    subscription: SubscriptionRead | None = None
     # Computed from open google_sync_outbox rows (see serializers.py).
     # "ok" — no pending sync, or category isn't synced to Google.
     # "pending" — at least one open outbox row with attempts < threshold.
@@ -192,6 +235,7 @@ class EventCreate(BaseModel):
     subcategory_id: int
     client_id: int | None = None
     club_id: int | None = None
+    subscription_id: int | None = None
     start_at: datetime
     duration_minutes: int = Field(gt=0)
     notes: str | None = None
@@ -204,6 +248,7 @@ class EventUpdate(BaseModel):
     subcategory_id: int
     client_id: int | None = None
     club_id: int | None = None
+    subscription_id: int | None = None
     start_at: datetime
     duration_minutes: int = Field(gt=0)
     notes: str | None = None

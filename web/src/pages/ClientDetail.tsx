@@ -15,7 +15,7 @@ import {
   Tabs,
   buildEventLineIconMaps,
 } from "@/components/design";
-import type { EventItem } from "@/types/api";
+import type { EventItem, Subscription } from "@/types/api";
 import {
   Echart,
   ECHART_BASE_TEXT,
@@ -23,7 +23,9 @@ import {
   PRESSED_LABEL_BOX,
   type EChartsOption,
 } from "@/components/echart";
+import { AppIcon } from "@/components/phosphor";
 import { ClientFormModal } from "@/components/ClientFormModal";
+import { SubscriptionFormModal } from "@/components/SubscriptionFormModal";
 import { categories as categoriesApi, clients as clientsApi } from "@/lib/api";
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
@@ -92,6 +94,42 @@ function groupByMonth(events: EventItem[], orderDesc = true): MonthGroup[] {
     orderDesc ? b.key.localeCompare(a.key) : a.key.localeCompare(b.key),
   );
   return groups;
+}
+
+/** Prepaid-package chip in the stats box: category and subcategory, each with
+ *  its own icon, plus "осталось | всего" lessons. Icons come from the shared
+ *  category maps rather than the subscription payload. */
+function SubChip({
+  sub,
+  icons,
+  onClick,
+}: {
+  sub: Subscription;
+  icons: ReturnType<typeof buildEventLineIconMaps>;
+  onClick: () => void;
+}) {
+  const color = icons.catColors.get(sub.category_id) || sub.category_color;
+  const catIcon = icons.catIcons.get(sub.category_id);
+  const subIcon = icons.subcatIcons.get(sub.subcategory_id);
+  return (
+    <button
+      type="button"
+      className={`sub-chip${sub.is_exhausted ? " is-done" : ""}`}
+      onClick={onClick}
+    >
+      <span className="sub-chip-part">
+        {catIcon && <AppIcon name={catIcon} size={13} weight="duotone" color={color} />}
+        <span className="sub-chip-name">{sub.category_name}</span>
+      </span>
+      <span className="sub-chip-part">
+        {subIcon && <AppIcon name={subIcon} size={13} weight="duotone" color={color} />}
+        <span className="sub-chip-name">{sub.subcategory_name}</span>
+      </span>
+      <span className="sub-chip-num mono">
+        {fmt.lessons(Math.max(0, sub.lessons_remaining))} | {fmt.lessons(sub.lessons_total)}
+      </span>
+    </button>
+  );
 }
 
 function MonthGroupedEvents({
@@ -199,6 +237,8 @@ export function ClientDetailPage() {
   const clientId = Number(id);
   const isMobile = useIsMobile();
   const [editing, setEditing] = useState(false);
+  // null = closed; { sub: null } = create; { sub } = edit that package.
+  const [subModal, setSubModal] = useState<{ sub: Subscription | null } | null>(null);
   const [tab, setTab] = useState<TabKey>("future");
   const [year, setYear] = useState<number>(() => new Date().getFullYear());
   const [notesQuery, setNotesQuery] = useState("");
@@ -470,8 +510,23 @@ export function ClientDetailPage() {
               <div className="ds-num mono">{fmt.money(client.total_spent)} ₽</div>
               <div className="ds-lab muted small">всего</div>
             </div>
+            {/* Full-width row of its own so a package line never has to
+                squeeze into one half of the stats grid. */}
+            {(client.subscriptions ?? []).length > 0 && (
+              <div className="ds-subs">
+                {(client.subscriptions ?? []).map((s) => (
+                  <SubChip
+                    key={s.id}
+                    sub={s}
+                    icons={icons}
+                    onClick={() => setSubModal({ sub: s })}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
+          <div className="client-detail-metarow">
           <div className="client-detail-meta">
             {client.phone && (
               <div className="meta-row">
@@ -493,6 +548,26 @@ export function ClientDetailPage() {
                 <span>{client.notes}</span>
               </div>
             )}
+          </div>
+
+          <div className="client-detail-subs">
+            <div className="client-detail-subs-head">
+              <span className="muted small">Абонементы</span>
+              <IconButton
+                className="tone-accent xsmall"
+                aria-label="Добавить абонемент"
+                onClick={() => setSubModal({ sub: null })}
+              >
+                <Plus size={12} strokeWidth={2.2} />
+              </IconButton>
+            </div>
+            {/* Chips live in the stats box above; this column keeps only the
+                add affordance. Fall back to [] — a payload restored from the
+                offline cache predates this field. */}
+            {(client.subscriptions ?? []).length === 0 && (
+              <span className="muted small">нет</span>
+            )}
+          </div>
           </div>
 
           <div className="client-detail-actions">
@@ -521,6 +596,14 @@ export function ClientDetailPage() {
 
         {editing && (
           <ClientFormModal client={client} onClose={() => setEditing(false)} />
+        )}
+
+        {subModal && (
+          <SubscriptionFormModal
+            clientId={client.id}
+            subscription={subModal.sub}
+            onClose={() => setSubModal(null)}
+          />
         )}
 
         <div className="stack-md">

@@ -612,8 +612,16 @@
 }
 .icon-btn:hover { background: var(--bg-2); color: var(--ink); }
 .icon-btn.small { width: 26px; height: 26px; }
+/* Fits inside a text line box (e.g. next to a 13.5px meta row). */
+.icon-btn.xsmall { width: 20px; height: 20px; border-radius: 7px; }
 .icon-btn.tone-danger { color: var(--danger); }
 .icon-btn.tone-danger:hover { background: var(--danger-soft); color: var(--danger); }
+/* Add affordances (e.g. "+ абонемент") — accent-tinted rather than muted. */
+.icon-btn.tone-accent { color: var(--accent-ink); background: var(--accent-soft); }
+.icon-btn.tone-accent:hover {
+  background: color-mix(in oklab, var(--accent-soft) 80%, var(--accent));
+  color: var(--accent-ink);
+}
 
 /* ============================================================
    Inputs
@@ -1643,6 +1651,16 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 8px;
 }
 .events-filter-net .mono { font-size: 14px; font-weight: 500; }
+/* Three toggles plus the net figure no longer fit one phone line — drop the
+   figure onto its own row. */
+@media (max-width: 640px) {
+  .events-filter-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .events-filter-toggles { flex-wrap: wrap; gap: 12px 16px; }
+}
 .events-filters-count {
   display: inline-grid;
   place-items: center;
@@ -2124,7 +2142,10 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-left: 12px;
   min-width: 0;
 }
-.events-row-marks .events-row-notes { order: 1; margin-left: 0; }
+/* Desktop order: royalty, tax, package, note. The flags keep the implicit
+   order 0, so only the last two need explicit values. */
+.events-row-marks .events-row-abon { order: 1; }
+.events-row-marks .events-row-notes { order: 2; margin-left: 0; }
 .events-row-flag {
   display: grid;
   place-items: center;
@@ -2157,23 +2178,59 @@ input[type="number"] { -moz-appearance: textfield; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Portalled through Radix (see NotesPill); surface/border/shadow and the
+   accordion open/close animation come from .popover-content. */
 .events-row-notes-pop {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 0;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-3);
   padding: 8px 12px;
   font-size: 13px;
   color: var(--ink);
   white-space: normal;
   width: 260px;
   max-width: calc(100vw - 32px);
-  z-index: 110;
   cursor: default;
 }
+
+/* Subscription pill — calendar-sync icon with a tap popover listing what's
+   left on the prepaid package. Lives in .events-row-marks, directly left of
+   the notes icon on both breakpoints (see the order rules there). */
+.events-row-abon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.events-row-abon-icon {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.events-row-abon.is-done .events-row-abon-icon { color: var(--muted); }
+/* Rendered through the Radix portal (see SubscriptionPill), so it escapes
+   the `overflow: hidden` on .event-table and flips away from screen edges.
+   Surface/border/shadow come from .popover-content. */
+.events-row-abon-pop {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  cursor: default;
+}
+.events-row-abon-pop .accordion-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.events-row-abon-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  justify-content: space-between;
+}
+.events-row-abon-name { color: var(--muted); }
+.events-row-abon-num { font-weight: 500; }
 
 .events-row-client {
   margin-left: auto;                   /* push client + cost to the right */
@@ -2249,25 +2306,21 @@ input[type="number"] { -moz-appearance: textfield; }
     grid-area: cost;
     justify-self: end;
   }
-  /* Notes + flags: icons only on row 2, right-aligned under the cost
-     column. Flags follow the note icon here (DOM order). */
+  /* Icons only on row 2, right-aligned under the cost column. Mobile order
+     is the DOM order: package, note, royalty, tax — the package icon stays
+     directly left of the note, same as on desktop. */
   .events-row-marks {
     grid-area: notes;
     justify-self: end;
   }
+  .events-row-marks .events-row-abon { order: -1; }
   .events-row-marks .events-row-notes { order: 0; }
   .events-row-notes { max-width: none; }
   .events-row-notes-text { display: none; }
-  .events-row-notes-pop {
-    /* Mobile: open horizontally to the LEFT of the icon, centred on
-       its vertical midline. The icon lives in the rightmost mobile
-       grid cell so a 260px popover fits comfortably to its left. */
-    top: 50%;
-    bottom: auto;
-    left: auto;
-    right: calc(100% + 8px);
-    transform: translateY(-50%);
-  }
+  /* Both popovers are portalled, so the row grid no longer affects them and
+     Radix keeps them clear of the screen edges. Only cap the width. */
+  .events-row-abon-pop { max-width: calc(100vw - 24px); }
+  .events-row-notes-pop { width: min(260px, calc(100vw - 24px)); }
 }
 
 /* ============================================================
@@ -3166,11 +3219,19 @@ input[type="number"] { -moz-appearance: textfield; }
   background: var(--accent-soft);
   color: var(--accent-ink);
 }
+/* Name line: the subscription icon is pushed to the card's far right edge. */
+.client-card-nameline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
 .client-card-name {
   font-size: 16px;
   font-weight: 550;
   letter-spacing: -0.01em;
-  margin-bottom: 8px;
+  min-width: 0;
 }
 .client-card-meta { display: flex; flex-direction: column; gap: 4px; }
 .client-card-no-contacts { color: var(--danger); }
@@ -3224,13 +3285,98 @@ input[type="number"] { -moz-appearance: textfield; }
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
     inset 0 -1px 2px rgba(255, 255, 255, 0.28);
 }
+/* Keeps a long package chip from blowing the 1fr column out. */
+.client-detail-stats > * { min-width: 0; }
 .ds-num { font-size: 22px; font-weight: 550; letter-spacing: -0.02em; }
 .ds-lab { margin-top: 2px; }
+/* Contacts on the left, prepaid packages on the right. */
+.client-detail-metarow {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
 .client-detail-meta {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.client-detail-subs {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+/* Height matches a .meta-row line box so the label and "+" sit level with
+   the phone row across the card. */
+.client-detail-subs-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+}
+/* Package chips sit inside the stats box, under the events count. Flat —
+   the debossed inset of .events-row-client would fight the stat box's own
+   pressed-in treatment. */
+.ds-subs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  min-width: 0;
+}
+/* Names and icons ride as plain text; only the lesson count is badged. */
+.sub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  max-width: 100%;
+  text-align: left;
+  /* Wraps between parts rather than truncating — the whole line has to stay
+     readable on a phone. */
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+/* Icon + name travel together; the 4px pair gap reads tighter than the
+   8px between category, subcategory and the count. */
+.sub-chip-part {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.sub-chip-name { white-space: nowrap; }
+.sub-chip-num {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: border-color 0.12s, color 0.12s;
+}
+.sub-chip:hover .sub-chip-num { border-color: var(--line-2); color: var(--ink); }
+.sub-chip.is-done { color: var(--muted); }
+
+/* Stays a two-column row on phones too — the packages column just gets
+   tighter rather than dropping below the contacts. */
+@media (max-width: 768px) {
+  .client-detail-metarow { gap: 10px; }
+  .client-detail-subs { align-items: flex-end; }
+  .ds-subs { margin-top: 8px; }
 }
 .meta-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
 .meta-row a:hover { color: var(--accent-ink); text-decoration: underline; }

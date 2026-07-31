@@ -7,15 +7,27 @@ from sqlalchemy.orm import Session, selectinload
 from ..auth import require_auth
 from ..clock import now_local
 from ..database import get_db
-from ..models import Client, Event, Subcategory
+from ..models import Client, Event, Subcategory, Subscription
 from ..schemas import (
     ClientCreate,
     ClientDetailResponse,
     ClientRead,
     ClientStatsByCategory,
     ClientUpdate,
+    SubscriptionCreate,
+    SubscriptionRead,
+    SubscriptionUpdate,
 )
-from ..serializers import event_to_schema_with_sync, hydrate_sync_status_map
+from ..serializers import (
+    event_to_schema_with_sync,
+    hydrate_subscription_map,
+    hydrate_sync_status_map,
+)
+from ..subscriptions import (
+    client_subscriptions_map,
+    subscription_to_schema,
+    used_minutes_map,
+)
 
 router = APIRouter(
     prefix="/api/clients",
@@ -94,6 +106,7 @@ def list_clients(q: str = "", db: Session = Depends(get_db)):
         )
     clients = db.execute(stmt).scalars().all()
     stats = _aggregate_client_stats(db)
+    subs = client_subscriptions_map(db)
     return [
         ClientRead(
             id=c.id,
@@ -106,6 +119,7 @@ def list_clients(q: str = "", db: Session = Depends(get_db)):
             created_at=c.created_at,
             events_count=stats.get(c.id, (0, Decimal(0)))[0],
             total_spent=stats.get(c.id, (0, Decimal(0)))[1],
+            subscriptions=subs.get(c.id, []),
         )
         for c in clients
     ]
@@ -132,11 +146,16 @@ def create_client(payload: ClientCreate, db: Session = Depends(get_db)):
     )
 
 
-def _client_with_stats(c: Client, count: int, total: Decimal) -> ClientRead:
+def _client_with_stats(
+    c: Client,
+    count: int,
+    total: Decimal,
+    subscriptions: list[SubscriptionRead] | None = None,
+) -> ClientRead:
     return ClientRead(
         id=c.id, first_name=c.first_name, last_name=c.last_name, full_name=c.full_name,
         phone=c.phone, telegram=c.telegram, notes=c.notes, created_at=c.created_at,
-        events_count=count, total_spent=total,
+        events_count=count, total_spent=total, subscriptions=subscriptions or [],
     )
 
 
@@ -181,10 +200,12 @@ def client_detail(client_id: int, db: Session = Depends(get_db)):
     past = [e for e in events if e.start_at < now]
 
     sync_map = hydrate_sync_status_map(db, events)
+    sub_map = hydrate_subscription_map(db, events)
+    subs = client_subscriptions_map(db, [client_id]).get(client_id, [])
     return ClientDetailResponse(
-        client=_client_with_stats(client, total_events, total_cost),
-        future_events=[event_to_schema_with_sync(e, sync_map) for e in future],
-        past_events=[event_to_schema_with_sync(e, sync_map) for e in past],
+        client=_client_with_stats(client, total_events, total_cost, subs),
+        future_events=[event_to_schema_with_sync(e, sync_map, sub_map) for e in future],
+        past_events=[event_to_schema_with_sync(e, sync_map, sub_map) for e in past],
         total_events=total_events,
         total_minutes=total_minutes,
         total_cost=total_cost,
@@ -270,6 +291,96 @@ def delete_client(client_id: int, db: Session = Depends(get_db)):
     c = db.get(Client, client_id)
     if not c:
         raise HTTPException(404)
+    # SQLite doesn't enforce ON DELETE SET NULL, so unlink the client's events
+    # from its packages before the cascade removes them.
+    sub_ids = [
+        r[0]
+        for r in db.execute(
+            select(Subscription.id).where(Subscription.client_id == client_id)
+        ).all()
+    ]
+    if sub_ids:
+        db.execute(
+            Event.__table__.update()
+            .where(Event.subscription_id.in_(sub_ids))
+            .values(subscription_id=None)
+        )
     db.delete(c)
+    db.commit()
+    return {"ok": True}
+
+
+# ---------- Subscriptions (prepaid packages) ----------
+# Child routes hang off this router the same way subcategories hang off
+# categories: parented on create, flat by id afterwards. Two-segment paths
+# never collide with the one-segment /{client_id} routes above.
+
+
+def _load_subscription(db: Session, sub_id: int) -> Subscription:
+    s = db.execute(
+        select(Subscription)
+        .options(selectinload(Subscription.subcategory).selectinload(Subcategory.category))
+        .where(Subscription.id == sub_id)
+    ).scalar_one_or_none()
+    if not s:
+        raise HTTPException(404)
+    return s
+
+
+def _subscription_response(db: Session, sub_id: int) -> SubscriptionRead:
+    s = _load_subscription(db, sub_id)
+    return subscription_to_schema(s, used_minutes_map(db, [s.id]).get(s.id, 0))
+
+
+@router.post("/{client_id}/subscriptions", response_model=SubscriptionRead, status_code=201)
+def create_subscription(
+    client_id: int, payload: SubscriptionCreate, db: Session = Depends(get_db)
+):
+    if not db.get(Client, client_id):
+        raise HTTPException(404)
+    if not db.get(Subcategory, payload.subcategory_id):
+        raise HTTPException(400, "Подкатегория не найдена")
+    s = Subscription(
+        client_id=client_id,
+        subcategory_id=payload.subcategory_id,
+        lessons_total=payload.lessons_total,
+        price_per_lesson=payload.price_per_lesson,
+    )
+    db.add(s)
+    db.commit()
+    db.refresh(s)
+    return _subscription_response(db, s.id)
+
+
+@router.put("/subscriptions/{sub_id}", response_model=SubscriptionRead)
+def update_subscription(
+    sub_id: int, payload: SubscriptionUpdate, db: Session = Depends(get_db)
+):
+    s = db.get(Subscription, sub_id)
+    if not s:
+        raise HTTPException(404)
+    if not db.get(Subcategory, payload.subcategory_id):
+        raise HTTPException(400, "Подкатегория не найдена")
+    s.subcategory_id = payload.subcategory_id
+    s.lessons_total = payload.lessons_total
+    s.price_per_lesson = payload.price_per_lesson
+    db.commit()
+    return _subscription_response(db, sub_id)
+
+
+@router.delete("/subscriptions/{sub_id}")
+def delete_subscription(sub_id: int, db: Session = Depends(get_db)):
+    s = db.get(Subscription, sub_id)
+    if not s:
+        raise HTTPException(404)
+    # Events keep their money (rate + total are snapshots) and simply lose the
+    # package marker. Done with an explicit UPDATE because SQLite ignores the
+    # ON DELETE SET NULL declared on the model.
+    db.execute(
+        Event.__table__.update()
+        .where(Event.subscription_id == sub_id)
+        .values(subscription_id=None)
+    )
+    db.delete(s)
     db.commit()
     return {"ok": True}

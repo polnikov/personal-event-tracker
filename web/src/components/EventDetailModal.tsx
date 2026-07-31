@@ -49,6 +49,9 @@ export function EventDetailModal({
         subcategory_id: ev.subcategory_id,
         client_id: ev.client_id,
         club_id: ev.club_id,
+        // Update replaces the link wholesale, so it has to be carried over
+        // here or a reschedule would silently unlink the package.
+        subscription_id: ev.subscription?.id ?? null,
         start_at: local,
         duration_minutes: ev.duration_minutes,
         notes: ev.notes,

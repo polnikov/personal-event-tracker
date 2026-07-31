@@ -3,6 +3,29 @@ export interface AuthMe {
   authenticated: boolean;
 }
 
+/**
+ * Prepaid package of lessons. One lesson equals one hour, so a 90-minute
+ * event consumes 1.5 and `price_per_lesson` doubles as the hourly rate.
+ * Balances are server-computed as of the response; only ended events count.
+ */
+export interface Subscription {
+  id: number;
+  client_id: number;
+  subcategory_id: number;
+  subcategory_name: string;
+  category_id: number;
+  category_name: string;
+  category_color: string;
+  price_per_lesson: string;
+  lessons_total: number;
+  lessons_used: number;
+  lessons_remaining: number;
+  /** Exact integer the exhaustion boundary is decided on. */
+  remaining_minutes: number;
+  is_exhausted: boolean;
+  created_at: string;
+}
+
 export interface Client {
   id: number;
   first_name: string;
@@ -14,6 +37,7 @@ export interface Client {
   created_at: string;
   events_count: number;
   total_spent: string;
+  subscriptions: Subscription[];
 }
 
 export interface Club {
@@ -85,6 +109,8 @@ export interface EventItem {
   subcategory: EventSubcategoryRef;
   client: EventClientRef | null;
   club: EventClubRef | null;
+  /** Set when the event is paid out of a prepaid package. */
+  subscription: Subscription | null;
   /** Server-computed sync state vs. Google Calendar (optional for now;
    *  endpoints rolling this out: events.list, clients/detail, reports). */
   sync_status?: "ok" | "pending" | "failed";

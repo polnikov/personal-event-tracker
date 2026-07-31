@@ -9,6 +9,12 @@ export const fmt = {
     return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(n);
   },
 
+  /** Lesson counts are fractional (1 lesson = 1 hour), so 90 min reads
+   *  as "1,5". Trailing zeros are dropped: 8 stays "8", not "8,0". */
+  lessons(value: number): string {
+    return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value);
+  },
+
   duration(minutes: number): string {
     if (minutes < 60) return `${minutes} мин`;
     const h = Math.floor(minutes / 60);

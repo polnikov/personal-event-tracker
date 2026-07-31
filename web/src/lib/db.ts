@@ -25,7 +25,7 @@ export interface OutboxEntry {
 export interface IdMapEntry {
   tmpId: string;
   realId: number;
-  kind: "event" | "client" | "category" | "subcategory" | "price";
+  kind: "event" | "client" | "category" | "subcategory" | "price" | "subscription";
   v: 1;
 }
 
