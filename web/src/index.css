@@ -2114,6 +2114,24 @@ input[type="number"] { -moz-appearance: textfield; }
   text-overflow: ellipsis;
 }
 
+/* Marks group — notes pill plus the royalty/tax flags. DOM order is the
+   mobile order (note, royalty, tax); on desktop the note is pushed to the
+   end via order, so the flags sit to its left. */
+.events-row-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+  min-width: 0;
+}
+.events-row-marks .events-row-notes { order: 1; margin-left: 0; }
+.events-row-flag {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
 /* Notes pill — chat icon + inline text on desktop; icon-only with
    click-popover on mobile. Lives between sub and client. */
 .events-row-notes {
@@ -2231,12 +2249,14 @@ input[type="number"] { -moz-appearance: textfield; }
     grid-area: cost;
     justify-self: end;
   }
-  /* Notes: icon only on row 2, right-aligned under the cost column. */
-  .events-row-notes {
+  /* Notes + flags: icons only on row 2, right-aligned under the cost
+     column. Flags follow the note icon here (DOM order). */
+  .events-row-marks {
     grid-area: notes;
     justify-self: end;
-    max-width: none;
   }
+  .events-row-marks .events-row-notes { order: 0; }
+  .events-row-notes { max-width: none; }
   .events-row-notes-text { display: none; }
   .events-row-notes-pop {
     /* Mobile: open horizontally to the LEFT of the icon, centred on
