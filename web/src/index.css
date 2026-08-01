@@ -1651,6 +1651,8 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 8px;
 }
 .events-filter-net .mono { font-size: 14px; font-weight: 500; }
+/* The badge brings its own margin-left, which would stack with the flex gap. */
+.events-filter-net .day-group-count-badge { margin-left: 0; }
 /* Three toggles plus the net figure no longer fit one phone line — drop the
    figure onto its own row. */
 @media (max-width: 640px) {

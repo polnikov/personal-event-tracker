@@ -507,6 +507,11 @@ export function EventsPage() {
             <div className="events-filter-net">
               <span className="muted small">Чистыми</span>
               <span className="mono">{fmt.money(netTotal)} ₽</span>
+              {/* Counts the same set the sum is taken over — both tabs, not
+                  just the visible one. */}
+              <span className="day-group-count-badge" title="Событий по фильтрам">
+                {filtered.length}
+              </span>
             </div>
           </div>
         </div>
