@@ -3332,11 +3332,12 @@ input[type="number"] { -moz-appearance: textfield; }
   min-width: 0;
 }
 /* Chip + its optional note trigger. The note can't sit inside .sub-chip
-   (button in button), so it rides alongside and stays vertically centred on
-   the chip's first line when the chip wraps. */
+   (button in button), so it rides alongside. Centred rather than top-aligned:
+   the 16px icon box is shorter than the ~22px chip (the lesson badge carries
+   padding and a border), so flex-start left it visibly off. */
 .sub-chip-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
   max-width: 100%;
   min-width: 0;
@@ -3396,7 +3397,34 @@ input[type="number"] { -moz-appearance: textfield; }
 .meta-row a:hover { color: var(--accent-ink); text-decoration: underline; }
 .meta-icon { color: var(--muted); display: grid; place-items: center; }
 .meta-icon--tg { color: var(--tg); }
-.meta-note { display: flex; gap: 10px; font-size: 13px; color: var(--ink-2); padding-top: 4px; }
+/* Package note in the event form: under the picker when the client has
+   several packages, right under the "Осталось …" line when there is one.
+   Same first-line icon alignment as .meta-note. */
+.abon-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+}
+.abon-note-icon {
+  display: grid;
+  place-items: center;
+  height: 1.5em;
+  flex-shrink: 0;
+}
+
+.meta-note {
+  display: flex;
+  /* Top-aligned, and the icon box is exactly one line tall (body line-height
+     is 1.5), so on a wrapped note the icon sits on the first line instead of
+     stretching and centring itself against the whole block. */
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+  padding-top: 4px;
+}
+.meta-note .meta-icon { height: 1.5em; }
 .client-detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* Header actions: aligned with the app's primary/secondary tokens,

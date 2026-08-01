@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ChevronDown, Copy, Plus, Trash2 } from "lucide-react";
+import { ChatCircleDots } from "@phosphor-icons/react";
 import {
   Button,
   Card,
@@ -74,6 +75,19 @@ interface EventFormProps {
   /** Optional handler for the "Copy" action; falls back to opening a
    *  fresh form in copy mode via onSaved-style navigation if not provided. */
   onCopy?: (id: number) => void;
+}
+
+/** Note stored on the picked package. A span (not a div) because the
+ *  single-package variant renders inside the checkbox <label>. */
+function SubNoteLine({ note }: { note: string }) {
+  return (
+    <span className="abon-note muted small">
+      <span className="abon-note-icon">
+        <ChatCircleDots size={13} weight="duotone" />
+      </span>
+      <span>{note}</span>
+    </span>
+  );
 }
 
 /** Pure form body — no page chrome, no URL coupling. Render inside a
@@ -324,6 +338,7 @@ export function EventForm({
     () => eligibleSubs.find((s) => String(s.id) === subscriptionValue) ?? null,
     [eligibleSubs, subscriptionValue],
   );
+  const selectedSubNote = selectedSub?.notes?.trim() || null;
 
   // Drop a selection that no longer applies (client changed, subcategory
   // changed, package exhausted). Covers copy mode too.
@@ -518,6 +533,11 @@ export function EventForm({
                     ? `Осталось ${fmt.lessons(Math.max(0, selectedSub.lessons_remaining))} из ${fmt.lessons(selectedSub.lessons_total)}`
                     : "Списать занятие из оплаченного пакета"}
                 </span>
+                {/* With a single package there is no picker to hang the note
+                    under, so it follows the balance line instead. */}
+                {eligibleSubs.length === 1 && selectedSubNote && (
+                  <SubNoteLine note={selectedSubNote} />
+                )}
               </span>
             </label>
             {subAccordionMounted && eligibleSubs.length > 1 && (
@@ -535,6 +555,7 @@ export function EventForm({
                         label: `${s.subcategory_name} · осталось ${fmt.lessons(Math.max(0, s.lessons_remaining))} из ${fmt.lessons(s.lessons_total)}`,
                       }))}
                     />
+                    {selectedSubNote && <SubNoteLine note={selectedSubNote} />}
                   </div>
                 </div>
               </div>
