@@ -3328,7 +3328,11 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-  margin-top: 4px;
+  /* Hairline off the stat numbers. --line-2 rather than --line: the box is
+     filled with --bg, which --line is too close to to read as a rule. */
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-2);
   min-width: 0;
 }
 /* Chip + its optional note trigger. The note can't sit inside .sub-chip
