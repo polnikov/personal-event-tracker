@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { SubscriptionPill } from "./design";
+import { NotesPill, SubscriptionPill } from "./design";
 import type { Subscription } from "@/types/api";
 
 function makeSub(over: Partial<Subscription> = {}): Subscription {
@@ -18,6 +18,7 @@ function makeSub(over: Partial<Subscription> = {}): Subscription {
     lessons_remaining: 9,
     remaining_minutes: 540,
     is_exhausted: false,
+    notes: null,
     created_at: "2026-01-01T00:00:00",
     ...over,
   };
@@ -72,5 +73,19 @@ describe("SubscriptionPill", () => {
     );
     fireEvent.click(screen.getByRole("button"));
     expect(onRowClick).not.toHaveBeenCalled();
+  });
+});
+
+describe("NotesPill", () => {
+  it("shows the text inline by default", () => {
+    render(<NotesPill notes="оплатил переводом" />);
+    expect(screen.getByText("оплатил переводом")).toBeTruthy();
+  });
+
+  it("iconOnly hides the inline text and reveals it on click", () => {
+    render(<NotesPill notes="оплатил переводом" iconOnly />);
+    expect(screen.queryByText("оплатил переводом")).toBeNull();
+    fireEvent.click(screen.getByRole("button"));
+    expect(screen.getByText("оплатил переводом")).toBeTruthy();
   });
 });

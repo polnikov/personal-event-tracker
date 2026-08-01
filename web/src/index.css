@@ -3331,6 +3331,20 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-top: 4px;
   min-width: 0;
 }
+/* Chip + its optional note trigger. The note can't sit inside .sub-chip
+   (button in button), so it rides alongside and stays vertically centred on
+   the chip's first line when the chip wraps. */
+.sub-chip-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+}
+/* Reuses NotesPill wholesale (same popover + accordion animation as event
+   notes), so only the row-specific margin needs unsetting here. */
+.sub-chip-note.events-row-notes { margin-left: 0; }
+
 /* Names and icons ride as plain text; only the lesson count is badged. */
 .sub-chip {
   display: inline-flex;

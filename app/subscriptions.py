@@ -68,6 +68,7 @@ def subscription_to_schema(s: Subscription, used_minutes: int) -> SubscriptionRe
         lessons_remaining=remaining_minutes / 60,
         remaining_minutes=remaining_minutes,
         is_exhausted=remaining_minutes <= 0,
+        notes=s.notes,
         created_at=s.created_at,
     )
 

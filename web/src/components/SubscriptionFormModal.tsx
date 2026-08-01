@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Field, Input, Modal, Select } from "@/components/design";
+import { Button, Field, Input, Modal, Select, Textarea } from "@/components/design";
 import { categories as categoriesApi, clients as clientsApi, OfflineQueuedError } from "@/lib/api";
 import { effectivePrice } from "@/lib/eventCalc";
 import type { Subscription } from "@/types/api";
@@ -13,6 +13,7 @@ const schema = z.object({
   subcategory_id: z.string().min(1, "Выберите подкатегорию"),
   lessons_total: z.coerce.number().gt(0, "Больше нуля"),
   price_per_lesson: z.coerce.number().min(0),
+  notes: z.string(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -41,6 +42,7 @@ export function SubscriptionFormModal({
       subcategory_id: subscription ? String(subscription.subcategory_id) : "",
       lessons_total: subscription ? subscription.lessons_total : 10,
       price_per_lesson: subscription ? parseFloat(subscription.price_per_lesson) || 0 : 0,
+      notes: subscription?.notes || "",
     },
   });
 
@@ -76,6 +78,7 @@ export function SubscriptionFormModal({
         subcategory_id: Number(values.subcategory_id),
         lessons_total: values.lessons_total,
         price_per_lesson: values.price_per_lesson,
+        notes: values.notes.trim() || null,
       };
       return subscription
         ? clientsApi.updateSubscription(subscription.id, payload)
@@ -191,6 +194,9 @@ export function SubscriptionFormModal({
             />
           </Field>
         </div>
+        <Field label="Примечание">
+          <Textarea rows={2} placeholder="Что важно помнить" {...form.register("notes")} />
+        </Field>
         <div className="muted small">
           Одно занятие равно одному часу: событие на 1,5 часа спишет 1,5 занятия.
         </div>

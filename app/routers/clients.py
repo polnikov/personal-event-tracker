@@ -327,6 +327,15 @@ def _load_subscription(db: Session, sub_id: int) -> Subscription:
     return s
 
 
+def _clean_notes(value: str | None) -> str | None:
+    """Blank input means "no note" — store NULL so the UI's `notes ? …` checks
+    don't light up the note icon for an empty string."""
+    if value is None:
+        return None
+    text = value.strip()
+    return text or None
+
+
 def _subscription_response(db: Session, sub_id: int) -> SubscriptionRead:
     s = _load_subscription(db, sub_id)
     return subscription_to_schema(s, used_minutes_map(db, [s.id]).get(s.id, 0))
@@ -345,6 +354,7 @@ def create_subscription(
         subcategory_id=payload.subcategory_id,
         lessons_total=payload.lessons_total,
         price_per_lesson=payload.price_per_lesson,
+        notes=_clean_notes(payload.notes),
     )
     db.add(s)
     db.commit()
@@ -364,6 +374,7 @@ def update_subscription(
     s.subcategory_id = payload.subcategory_id
     s.lessons_total = payload.lessons_total
     s.price_per_lesson = payload.price_per_lesson
+    s.notes = _clean_notes(payload.notes)
     db.commit()
     return _subscription_response(db, sub_id)
 

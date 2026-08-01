@@ -119,6 +119,7 @@ class Subscription(Base):
     )
     lessons_total: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False)
     price_per_lesson: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     client: Mapped[Client] = relationship(back_populates="subscriptions")

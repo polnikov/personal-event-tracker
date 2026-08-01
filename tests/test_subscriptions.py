@@ -92,6 +92,37 @@ def test_update_and_delete(auth_client):
     assert auth_client.get(f"/api/clients/{cl['id']}").json()["client"]["subscriptions"] == []
 
 
+def test_notes_round_trip_and_blank_is_null(auth_client):
+    sub, cl, package = _setup(auth_client)
+    assert package["notes"] is None
+
+    r = auth_client.put(
+        f"/api/clients/subscriptions/{package['id']}",
+        json={
+            "subcategory_id": sub["id"],
+            "lessons_total": "10",
+            "price_per_lesson": "500",
+            "notes": "  оплатил переводом  ",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["notes"] == "оплатил переводом"
+    assert _fetch(auth_client, cl["id"], package["id"])["notes"] == "оплатил переводом"
+
+    # Whitespace-only clears the note rather than storing a blank string.
+    r = auth_client.put(
+        f"/api/clients/subscriptions/{package['id']}",
+        json={
+            "subcategory_id": sub["id"],
+            "lessons_total": "10",
+            "price_per_lesson": "500",
+            "notes": "   ",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["notes"] is None
+
+
 # ---------- Balance arithmetic ----------
 
 

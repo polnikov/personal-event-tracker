@@ -155,6 +155,7 @@ export interface SubscriptionPayload {
   subcategory_id: number;
   lessons_total: number;
   price_per_lesson: number;
+  notes: string | null;
 }
 
 export const clients = {

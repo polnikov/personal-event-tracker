@@ -12,6 +12,7 @@ import {
   EventLineRow,
   IconButton,
   Input,
+  NotesPill,
   Tabs,
   buildEventLineIconMaps,
 } from "@/components/design";
@@ -98,7 +99,9 @@ function groupByMonth(events: EventItem[], orderDesc = true): MonthGroup[] {
 
 /** Prepaid-package chip in the stats box: category and subcategory, each with
  *  its own icon, plus "осталось | всего" lessons. Icons come from the shared
- *  category maps rather than the subscription payload. */
+ *  category maps rather than the subscription payload. A note, when present,
+ *  hangs to the right of the chip as its own trigger — it can't live inside
+ *  the chip, which is already a button. */
 function SubChip({
   sub,
   icons,
@@ -112,23 +115,26 @@ function SubChip({
   const catIcon = icons.catIcons.get(sub.category_id);
   const subIcon = icons.subcatIcons.get(sub.subcategory_id);
   return (
-    <button
-      type="button"
-      className={`sub-chip${sub.is_exhausted ? " is-done" : ""}`}
-      onClick={onClick}
-    >
-      <span className="sub-chip-part">
-        {catIcon && <AppIcon name={catIcon} size={13} weight="duotone" color={color} />}
-        <span className="sub-chip-name">{sub.category_name}</span>
-      </span>
-      <span className="sub-chip-part">
-        {subIcon && <AppIcon name={subIcon} size={13} weight="duotone" color={color} />}
-        <span className="sub-chip-name">{sub.subcategory_name}</span>
-      </span>
-      <span className="sub-chip-num mono">
-        {fmt.lessons(Math.max(0, sub.lessons_remaining))} | {fmt.lessons(sub.lessons_total)}
-      </span>
-    </button>
+    <div className="sub-chip-row">
+      <button
+        type="button"
+        className={`sub-chip${sub.is_exhausted ? " is-done" : ""}`}
+        onClick={onClick}
+      >
+        <span className="sub-chip-part">
+          {catIcon && <AppIcon name={catIcon} size={13} weight="duotone" color={color} />}
+          <span className="sub-chip-name">{sub.category_name}</span>
+        </span>
+        <span className="sub-chip-part">
+          {subIcon && <AppIcon name={subIcon} size={13} weight="duotone" color={color} />}
+          <span className="sub-chip-name">{sub.subcategory_name}</span>
+        </span>
+        <span className="sub-chip-num mono">
+          {fmt.lessons(Math.max(0, sub.lessons_remaining))} | {fmt.lessons(sub.lessons_total)}
+        </span>
+      </button>
+      {sub.notes ? <NotesPill notes={sub.notes} iconOnly className="sub-chip-note" /> : null}
+    </div>
   );
 }
 

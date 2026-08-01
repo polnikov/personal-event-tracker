@@ -23,6 +23,7 @@ export interface Subscription {
   /** Exact integer the exhaustion boundary is decided on. */
   remaining_minutes: number;
   is_exhausted: boolean;
+  notes: string | null;
   created_at: string;
 }
 

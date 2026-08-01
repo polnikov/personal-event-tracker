@@ -21,6 +21,7 @@ class SubscriptionBase(BaseModel):
     subcategory_id: int
     lessons_total: Decimal = Field(gt=0)
     price_per_lesson: Decimal = Field(ge=0)
+    notes: str | None = None
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -50,6 +51,7 @@ class SubscriptionRead(BaseModel):
     lessons_remaining: float
     remaining_minutes: int
     is_exhausted: bool
+    notes: str | None = None
     created_at: datetime
 
 
