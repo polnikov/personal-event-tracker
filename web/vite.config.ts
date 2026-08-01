@@ -85,6 +85,23 @@ export default defineConfig({
               expiration: { maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 },
             },
           },
+          // Fonts. Vite emits them under /assets with a content hash, but the
+          // default Workbox globPatterns (js/css/html/ico/png/svg) skip woff
+          // files, so before this rule every load re-fetched ~350 KB of
+          // InterVariable from the network — and a slow link turned that into
+          // NS_ERROR_NET_TIMEOUT. CacheFirst instead of precache on purpose:
+          // a failed precache request aborts the whole SW install, a failed
+          // runtime fetch only misses the cache.
+          {
+            urlPattern: ({ url, request }) =>
+              request.destination === "font" || /\.(?:woff2?|ttf|otf)$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fonts-v1",
+              expiration: { maxEntries: 40, maxAgeSeconds: 365 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
           // Non-GET (POST/PUT/PATCH/DELETE) requests are intentionally not
           // listed here: Workbox only intercepts methods it has a rule for,
           // so mutations pass straight through to the browser fetch. The

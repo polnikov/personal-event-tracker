@@ -87,16 +87,31 @@ WEB_DIST = settings.BASE_DIR / "web" / "dist"
 if WEB_DIST.is_dir():
     INDEX_HTML = WEB_DIST / "index.html"
 
+    class ImmutableStaticFiles(StaticFiles):
+        """StaticFiles that marks every response as immutable.
+
+        Vite content-hashes every filename under /assets, so a given URL can
+        never change content. Plain StaticFiles only sends ETag/Last-Modified,
+        which made the browser revalidate ~30 files (chunks + font subsets) on
+        every load; over a slow link one of those conditional requests would
+        time out (NS_ERROR_NET_TIMEOUT on the Inter woff2).
+        """
+
+        def file_response(self, *args, **kwargs):
+            response = super().file_response(*args, **kwargs)
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return response
+
     app.mount(
         "/assets",
-        StaticFiles(directory=WEB_DIST / "assets"),
+        ImmutableStaticFiles(directory=WEB_DIST / "assets"),
         name="spa-assets",
     )
 
     # SPA shell + Service Worker + manifest must NOT be HTTP-cached or the
     # browser keeps booting yesterday's code after a deploy. Hashed assets
-    # under /assets/* are immutable URLs (Vite content-hashes the filename),
-    # so they're safe with default StaticFiles caching.
+    # under /assets/* are immutable URLs, so they get the long-lived
+    # Cache-Control set above.
     _NO_CACHE_FILES = {"sw.js", "registerSW.js", "manifest.webmanifest"}
     _NO_CACHE_PREFIXES = ("workbox-",)
     _NO_CACHE_HEADERS = {"Cache-Control": "no-cache, must-revalidate"}
