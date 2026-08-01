@@ -209,6 +209,7 @@ export interface CategoryPayload {
   name: string;
   color: string;
   icon: string | null;
+  hidden: boolean;
   google_calendar_id?: string | null;
   default_club_id?: number | null;
 }
@@ -226,6 +227,7 @@ export const categories = {
       name: string;
       initial_price: number;
       icon: string | null;
+      hidden: boolean;
       effective_from: string | null;
     },
   ) =>
@@ -235,7 +237,7 @@ export const categories = {
     }),
   updateSubcategory: (
     subId: number,
-    payload: { name: string; icon: string | null },
+    payload: { name: string; icon: string | null; hidden: boolean },
   ) =>
     request<Subcategory>(`/categories/subcategories/${subId}`, {
       method: "PUT",

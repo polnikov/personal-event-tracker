@@ -3,7 +3,15 @@ import type { Category, Subcategory } from "@/types/api";
 import { defaultClubValue, findCategoryForSubcat } from "./clubAutofill";
 
 function sub(id: number): Subcategory {
-  return { id, category_id: 0, name: `S${id}`, icon: null, prices: [], current_price: null };
+  return {
+    id,
+    category_id: 0,
+    name: `S${id}`,
+    icon: null,
+    hidden: false,
+    prices: [],
+    current_price: null,
+  };
 }
 
 function cat(id: number, subIds: number[], defaultClubId: number | null): Category {
@@ -12,6 +20,7 @@ function cat(id: number, subIds: number[], defaultClubId: number | null): Catego
     name: `C${id}`,
     color: "#000",
     icon: null,
+    hidden: false,
     google_calendar_id: null,
     default_club_id: defaultClubId,
     subcategories: subIds.map(sub),

@@ -22,6 +22,53 @@ def test_category_crud(auth_client):
     assert all(c["id"] != cat["id"] for c in listing)
 
 
+def test_hidden_flag_defaults_off_and_round_trips(auth_client):
+    cat = make_category(auth_client)
+    sub = make_subcategory(auth_client, cat["id"])
+    assert cat["hidden"] is False
+    assert sub["hidden"] is False
+
+    upd = auth_client.put(
+        f"/api/categories/{cat['id']}",
+        json={"name": cat["name"], "color": cat["color"], "hidden": True},
+    )
+    assert upd.status_code == 200, upd.text
+    assert upd.json()["hidden"] is True
+
+    upd = auth_client.put(
+        f"/api/categories/subcategories/{sub['id']}",
+        json={"name": sub["name"], "hidden": True},
+    )
+    assert upd.status_code == 200, upd.text
+    assert upd.json()["hidden"] is True
+
+    # Hiding is a picker-side concern only: the listing still carries both, so
+    # events already booked under them keep rendering their name and colour.
+    listing = auth_client.get("/api/categories").json()
+    shown = next(c for c in listing if c["id"] == cat["id"])
+    assert shown["hidden"] is True
+    assert [s["hidden"] for s in shown["subcategories"]] == [True]
+
+
+def test_hidden_subcategory_still_accepts_events(auth_client):
+    """The flag is never retroactive — the API keeps booking against it."""
+    cat = make_category(auth_client)
+    sub = make_subcategory(auth_client, cat["id"])
+    auth_client.put(
+        f"/api/categories/subcategories/{sub['id']}",
+        json={"name": sub["name"], "hidden": True},
+    )
+    r = auth_client.post(
+        "/api/events",
+        json={
+            "subcategory_id": sub["id"],
+            "start_at": "2026-03-01T10:00:00",
+            "duration_minutes": 60,
+        },
+    )
+    assert r.status_code == 201, r.text
+
+
 def test_subcategory_with_initial_price(auth_client):
     cat = make_category(auth_client)
     sub = make_subcategory(auth_client, cat["id"], name="Сплит", initial_price="150.00")

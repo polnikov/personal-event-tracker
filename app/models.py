@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from sqlalchemy import String, Integer, ForeignKey, DateTime, Numeric, Text, Index
+from sqlalchemy import Boolean, String, Integer, ForeignKey, DateTime, Numeric, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .clock import now_local
 from .database import Base
@@ -25,6 +25,9 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     color: Mapped[str] = mapped_column(String(7), default="#3b82f6")
     icon: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # Hidden categories drop out of the pickers and filters, but keep serving
+    # the events already booked under them — the flag is never retroactive.
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     google_calendar_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Club pre-selected for events created under this category (optional).
     default_club_id: Mapped[int | None] = mapped_column(
@@ -46,6 +49,7 @@ class Subcategory(Base):
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     icon: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=now_local)
 
     category: Mapped[Category] = relationship(back_populates="subcategories")

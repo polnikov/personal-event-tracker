@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Coins, Edit3, Plus, Trash2, X } from "lucide-react";
+import { Check, Coins, Edit3, EyeOff, Plus, Trash2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -10,6 +10,7 @@ import {
   Input,
   Modal,
   SearchableSelect,
+  Toggle,
 } from "@/components/design";
 import { ColorPicker } from "@/components/ColorPicker";
 import { DatePicker } from "@/components/DatePicker";
@@ -80,6 +81,11 @@ export function CategoriesPage() {
                   {cat.icon && <AppIcon name={cat.icon} size={16} weight="duotone" color="#FFFFFF" />}
                 </span>
                 <span className="h3">{cat.name}</span>
+                {cat.hidden && (
+                  <span className="cat-hidden-mark" title="Скрыта из списков выбора">
+                    <EyeOff size={14} strokeWidth={1.6} />
+                  </span>
+                )}
               </div>
               <div style={{ display: "flex", gap: 4 }}>
                 <IconButton
@@ -109,6 +115,11 @@ export function CategoriesPage() {
                       <AppIcon name={sub.icon} size={16} weight="duotone" color={cat.color} />
                     )}
                     <span>{sub.name}</span>
+                    {sub.hidden && (
+                      <span className="cat-hidden-mark" title="Скрыта из списков выбора">
+                        <EyeOff size={13} strokeWidth={1.6} />
+                      </span>
+                    )}
                   </div>
                   <div className="subcat-price mono">
                     {sub.current_price ? `${fmt.money(sub.current_price)} ₽` : "—"}
@@ -201,6 +212,7 @@ function CategoryFormModal({
   const [defaultClubId, setDefaultClubId] = useState<string>(
     category?.default_club_id != null ? String(category.default_club_id) : "",
   );
+  const [hidden, setHidden] = useState(category?.hidden ?? false);
 
   const clubsQuery = useQuery({
     queryKey: ["clubs", ""],
@@ -235,6 +247,7 @@ function CategoryFormModal({
         name: name.trim(),
         color,
         icon,
+        hidden,
         google_calendar_id: googleCalendarId || null,
         default_club_id: defaultClubId ? Number(defaultClubId) : null,
       };
@@ -296,6 +309,13 @@ function CategoryFormModal({
             options={clubOptions}
           />
         </Field>
+        <div className="field">
+          <Toggle checked={hidden} onChange={setHidden} label="Скрыть из списков выбора" />
+          <div className="muted small">
+            Категория и её подкатегории пропадут из выбора при создании события,
+            добавлении абонемента и из фильтров. Уже созданные события не меняются.
+          </div>
+        </div>
         <Field label="Синхронизация с Google Calendar">
           {googleStatus.data?.connected ? (
             <SearchableSelect
@@ -322,6 +342,7 @@ function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => v
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [icon, setIcon] = useState<string | null>(null);
+  const [hidden, setHidden] = useState(false);
   const [effectiveFrom, setEffectiveFrom] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
@@ -331,6 +352,7 @@ function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => v
         name: name.trim(),
         initial_price: Number(price),
         icon,
+        hidden,
         effective_from: effectiveFrom ? `${effectiveFrom}T00:00:00` : null,
       }),
     onSuccess: () => {
@@ -397,6 +419,9 @@ function NewSubcategoryModal({ cat, onClose }: { cat: Category; onClose: () => v
         <Field label="Иконка">
           <IconPicker value={icon} onChange={setIcon} color={cat.color} />
         </Field>
+        <div className="field">
+          <Toggle checked={hidden} onChange={setHidden} label="Скрыть из списков выбора" />
+        </div>
         <button type="submit" hidden />
       </form>
     </Modal>
@@ -418,10 +443,11 @@ function EditSubcategoryModal({
   const onQueued = useOfflineRefresh(["categories"]);
   const [name, setName] = useState(sub.name);
   const [icon, setIcon] = useState<string | null>(sub.icon);
+  const [hidden, setHidden] = useState(sub.hidden);
 
   const save = useMutation({
     mutationFn: () =>
-      categoriesApi.updateSubcategory(sub.id, { name: name.trim(), icon }),
+      categoriesApi.updateSubcategory(sub.id, { name: name.trim(), icon, hidden }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["categories"] });
       onClose();
@@ -466,6 +492,13 @@ function EditSubcategoryModal({
         <Field label="Иконка">
           <IconPicker value={icon} onChange={setIcon} color={cat.color} />
         </Field>
+        <div className="field">
+          <Toggle checked={hidden} onChange={setHidden} label="Скрыть из списков выбора" />
+          <div className="muted small">
+            Подкатегория пропадёт из выбора и фильтров. Уже созданные события
+            не меняются.
+          </div>
+        </div>
         <button type="submit" hidden />
       </form>
     </Modal>

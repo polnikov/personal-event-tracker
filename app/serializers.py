@@ -85,6 +85,7 @@ def subcategory_to_schema(s: Subcategory) -> SubcategoryRead:
         category_id=s.category_id,
         name=s.name,
         icon=s.icon,
+        hidden=s.hidden,
         prices=[SubcategoryPriceRead.model_validate(p) for p in s.prices],
         current_price=current,
     )
@@ -96,6 +97,7 @@ def category_to_schema(c) -> CategoryRead:
         name=c.name,
         color=c.color,
         icon=c.icon,
+        hidden=c.hidden,
         google_calendar_id=c.google_calendar_id,
         default_club_id=c.default_club_id,
         subcategories=[subcategory_to_schema(s) for s in sorted(c.subcategories, key=lambda x: x.name)],

@@ -17,6 +17,7 @@ import {
   buildEventLineIconMaps,
 } from "@/components/design";
 import { categories as categoriesApi, clients as clientsApi, events as eventsApi } from "@/lib/api";
+import { visibleCategories, visibleSubcatsFlat } from "@/lib/catVisibility";
 import { fmt, pluralize } from "@/lib/format";
 import type { EventItem } from "@/types/api";
 import { EventFormModal } from "@/pages/EventForm";
@@ -185,13 +186,9 @@ export function EventsPage() {
   // otherwise show all. Category is already in its own filter, so the label
   // is the subcategory name only.
   const subcatOptions = useMemo(() => {
-    const out: { value: string; label: string }[] = [];
-    for (const c of cats.data ?? []) {
-      if (catFilter && c.id !== Number(catFilter)) continue;
-      for (const s of c.subcategories) {
-        out.push({ value: String(s.id), label: s.name });
-      }
-    }
+    const out = visibleSubcatsFlat(cats.data, catFilter ? Number(catFilter) : null).map(
+      (s) => ({ value: String(s.id), label: s.name }),
+    );
     out.sort((a, b) => a.label.localeCompare(b.label, "ru"));
     return out;
   }, [cats.data, catFilter]);
@@ -323,7 +320,10 @@ export function EventsPage() {
   );
 
   // --- Select options ---
-  const catOptions = (cats.data ?? []).map((c) => ({ value: String(c.id), label: c.name }));
+  const catOptions = visibleCategories(cats.data).map((c) => ({
+    value: String(c.id),
+    label: c.name,
+  }));
   const yearOptions = availableYears.map((y) => ({ value: String(y), label: String(y) }));
   const monthOptions = availableMonths.map((m) => ({
     value: String(m),

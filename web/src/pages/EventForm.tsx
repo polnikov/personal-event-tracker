@@ -27,6 +27,7 @@ import {
   events as eventsApi,
   OfflineQueuedError,
 } from "@/lib/api";
+import { visibleSubcatGroups } from "@/lib/catVisibility";
 import { calcEvent, effectivePrice, remainingLessonsAfter } from "@/lib/eventCalc";
 import { fmt } from "@/lib/format";
 import { defaultClubValue, findCategoryForSubcat } from "@/lib/clubAutofill";
@@ -395,13 +396,15 @@ export function EventForm({
     form.setValue("club_id", defaultClubValue(cat), { shouldDirty: true });
   }, [subcatValue, cats.data, form]);
 
+  // Hidden categories/subcategories drop out, except the one this event is
+  // already booked under — hiding must not rewrite an existing event on save.
   const subcatGroups = useMemo(
     () =>
-      (cats.data ?? []).map((c) => ({
-        label: c.name,
-        options: c.subcategories.map((s) => ({ value: String(s.id), label: s.name })),
+      visibleSubcatGroups(cats.data, subcatValue ? Number(subcatValue) : null).map((g) => ({
+        label: g.category.name,
+        options: g.subcategories.map((s) => ({ value: String(s.id), label: s.name })),
       })),
-    [cats.data],
+    [cats.data, subcatValue],
   );
 
   const endLabel = useMemo(() => {

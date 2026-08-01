@@ -3463,6 +3463,8 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-bottom: 16px;
 }
 .cat-card-title { display: flex; align-items: center; gap: 12px; }
+/* Marks an entry kept out of the pickers and filters. */
+.cat-hidden-mark { display: grid; place-items: center; color: var(--muted); }
 .cat-color-block {
   width: 14px;
   height: 14px;

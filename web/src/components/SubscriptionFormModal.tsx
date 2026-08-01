@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Field, Input, Modal, Select, Textarea } from "@/components/design";
 import { categories as categoriesApi, clients as clientsApi, OfflineQueuedError } from "@/lib/api";
+import { visibleCategories, visibleSubcats } from "@/lib/catVisibility";
 import { effectivePrice } from "@/lib/eventCalc";
 import type { Subscription } from "@/types/api";
 
@@ -50,10 +51,25 @@ export function SubscriptionFormModal({
   const subcatValue = form.watch("subcategory_id");
   const priceTouched = useRef(subscription !== null);
 
+  // Hidden entries drop out of both pickers, except the pair this package is
+  // already tied to — hiding must not rewrite an existing package on save.
+  const catOptions = useMemo(
+    () =>
+      visibleCategories(cats.data, subscription?.category_id ?? null).map((c) => ({
+        value: String(c.id),
+        label: c.name,
+      })),
+    [cats.data, subscription],
+  );
+
   const subOptions = useMemo(() => {
     const cat = (cats.data ?? []).find((c) => String(c.id) === categoryValue);
-    return (cat?.subcategories ?? []).map((s) => ({ value: String(s.id), label: s.name }));
-  }, [cats.data, categoryValue]);
+    if (!cat) return [];
+    return visibleSubcats(cat, subscription?.subcategory_id ?? null).map((s) => ({
+      value: String(s.id),
+      label: s.name,
+    }));
+  }, [cats.data, categoryValue, subscription]);
 
   // Changing the category invalidates the subcategory choice.
   useEffect(() => {
@@ -154,10 +170,7 @@ export function SubscriptionFormModal({
               value={categoryValue}
               onChange={(v) => form.setValue("category_id", v)}
               placeholder="Выберите"
-              options={(cats.data ?? []).map((c) => ({
-                value: String(c.id),
-                label: c.name,
-              }))}
+              options={catOptions}
             />
           </Field>
           <Field label="Подкатегория" error={form.formState.errors.subcategory_id?.message}>

@@ -137,6 +137,7 @@ class SubcategoryRead(BaseModel):
     category_id: int
     name: str
     icon: str | None = None
+    hidden: bool = False
     prices: list[SubcategoryPriceRead] = []
     current_price: Decimal | None = None
 
@@ -145,12 +146,14 @@ class SubcategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     initial_price: Decimal = Field(gt=0)
     icon: str | None = None
+    hidden: bool = False
     effective_from: datetime | None = None
 
 
 class SubcategoryUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     icon: str | None = None
+    hidden: bool = False
 
 
 class CategoryRead(BaseModel):
@@ -160,6 +163,9 @@ class CategoryRead(BaseModel):
     name: str
     color: str
     icon: str | None = None
+    # Hidden entries stay in the payload — the clients need them to render
+    # existing events — and are filtered out of pickers on the UI side only.
+    hidden: bool = False
     google_calendar_id: str | None = None
     default_club_id: int | None = None
     subcategories: list[SubcategoryRead] = []
@@ -169,6 +175,7 @@ class CategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     color: str = "#0969da"
     icon: str | None = None
+    hidden: bool = False
     google_calendar_id: str | None = None
     default_club_id: int | None = None
 
@@ -177,6 +184,7 @@ class CategoryUpdate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     color: str
     icon: str | None = None
+    hidden: bool = False
     google_calendar_id: str | None = None
     default_club_id: int | None = None
 

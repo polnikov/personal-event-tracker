@@ -10,6 +10,7 @@ import {
 import { Echart, PRESSED_LABEL_BOX, pressedFill, type EChartsOption } from "@/components/echart";
 import { PctChangePill } from "@/components/PctChangePill";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
+import { visibleCategories } from "@/lib/catVisibility";
 import { fmt } from "@/lib/format";
 import { MONTH_ABBR, weekdayHourHeatmap, weekdayMonthHeatmap } from "@/lib/heatmap";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -617,7 +618,10 @@ export function ReportPage() {
               onChange={(v) => setCategoryId(v === "all" ? "" : v)}
               options={[
                 { value: "all", label: "Все категории" },
-                ...((cats.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))),
+                ...visibleCategories(cats.data).map((c) => ({
+                  value: String(c.id),
+                  label: c.name,
+                })),
               ]}
             />
           </div>

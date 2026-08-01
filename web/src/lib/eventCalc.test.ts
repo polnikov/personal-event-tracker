@@ -10,6 +10,7 @@ function sub(partial: Partial<Subcategory>): Subcategory {
     category_id: 1,
     name: "Персональная",
     icon: null,
+    hidden: false,
     prices: [],
     current_price: null,
     ...partial,

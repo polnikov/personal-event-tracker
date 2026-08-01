@@ -48,6 +48,7 @@ def create_category(payload: CategoryCreate, db: Session = Depends(get_db)):
         name=payload.name.strip(),
         color=payload.color,
         icon=payload.icon,
+        hidden=payload.hidden,
         google_calendar_id=(payload.google_calendar_id or None),
         default_club_id=payload.default_club_id,
     )
@@ -65,6 +66,7 @@ def update_category(cat_id: int, payload: CategoryUpdate, db: Session = Depends(
     cat.name = payload.name.strip()
     cat.color = payload.color
     cat.icon = payload.icon
+    cat.hidden = payload.hidden
     cat.google_calendar_id = payload.google_calendar_id or None
     cat.default_club_id = payload.default_club_id
     db.commit()
@@ -87,7 +89,12 @@ def create_subcategory(cat_id: int, payload: SubcategoryCreate, db: Session = De
     cat = db.get(Category, cat_id)
     if not cat:
         raise HTTPException(404)
-    sub = Subcategory(category_id=cat_id, name=payload.name.strip(), icon=payload.icon)
+    sub = Subcategory(
+        category_id=cat_id,
+        name=payload.name.strip(),
+        icon=payload.icon,
+        hidden=payload.hidden,
+    )
     db.add(sub)
     db.flush()
     db.add(
@@ -117,6 +124,7 @@ def update_subcategory(sub_id: int, payload: SubcategoryUpdate, db: Session = De
         raise HTTPException(404)
     sub.name = payload.name.strip()
     sub.icon = payload.icon
+    sub.hidden = payload.hidden
     db.commit()
     sub = (
         db.execute(

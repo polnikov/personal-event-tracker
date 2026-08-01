@@ -61,6 +61,8 @@ export interface Subcategory {
   category_id: number;
   name: string;
   icon: string | null;
+  /** Kept out of the pickers and filters; existing events are unaffected. */
+  hidden: boolean;
   prices: SubcategoryPrice[];
   current_price: string | null;
 }
@@ -70,6 +72,8 @@ export interface Category {
   name: string;
   color: string;
   icon: string | null;
+  /** Kept out of the pickers and filters; existing events are unaffected. */
+  hidden: boolean;
   google_calendar_id: string | null;
   default_club_id: number | null;
   subcategories: Subcategory[];

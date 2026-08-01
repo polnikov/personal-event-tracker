@@ -20,6 +20,7 @@ import {
   categories as categoriesApi,
   clients as clientsApi,
 } from "@/lib/api";
+import { visibleCategories, visibleSubcatsFlat } from "@/lib/catVisibility";
 import {
   HOUR_COUNT,
   HOUR_HEIGHT,
@@ -70,13 +71,9 @@ export function CalendarPage() {
 
   // Subcategory options cascade off the selected category — empty cat → all.
   const subcatOptions = useMemo(() => {
-    const out: { value: string; label: string }[] = [];
-    for (const c of cats.data ?? []) {
-      if (catFilter && c.id !== Number(catFilter)) continue;
-      for (const s of c.subcategories) {
-        out.push({ value: String(s.id), label: s.name });
-      }
-    }
+    const out = visibleSubcatsFlat(cats.data, catFilter ? Number(catFilter) : null).map(
+      (s) => ({ value: String(s.id), label: s.name }),
+    );
     out.sort((a, b) => a.label.localeCompare(b.label, "ru"));
     return out;
   }, [cats.data, catFilter]);
@@ -316,7 +313,7 @@ export function CalendarPage() {
                   value={catFilter}
                   onChange={setCatFilter}
                   placeholder="Все категории"
-                  options={(cats.data ?? []).map((c) => ({
+                  options={visibleCategories(cats.data).map((c) => ({
                     value: String(c.id),
                     label: c.name,
                   }))}
