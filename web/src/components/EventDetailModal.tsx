@@ -3,12 +3,12 @@ import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Copy, History, Pencil } from "lucide-react";
+import { Copy, History, Pencil, Trash2 } from "lucide-react";
 import { HandCoins, SealPercent } from "@phosphor-icons/react";
 import { Button, Modal } from "@/components/design";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { EventFormModal } from "@/pages/EventForm";
-import { events as eventsApi } from "@/lib/api";
+import { events as eventsApi, OfflineQueuedError } from "@/lib/api";
 import { fmt } from "@/lib/format";
 
 /**
@@ -41,6 +41,15 @@ export function EventDetailModal({
     if (ev) setNewStart(format(parseISO(ev.start_at), "yyyy-MM-dd'T'HH:mm"));
   }, [ev?.start_at]);
 
+  // Both reschedule and delete touch the same derived views.
+  const invalidateAfterEventMutation = () => {
+    qc.invalidateQueries({ queryKey: ["calendar"] });
+    qc.invalidateQueries({ queryKey: ["events"] });
+    qc.invalidateQueries({ queryKey: ["clients"] });
+    qc.invalidateQueries({ queryKey: ["report"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+  };
+
   const reschedule = useMutation({
     mutationFn: () => {
       if (!ev) throw new Error("Загрузка");
@@ -62,12 +71,24 @@ export function EventDetailModal({
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["calendar"] });
-      qc.invalidateQueries({ queryKey: ["events"] });
-      qc.invalidateQueries({ queryKey: ["clients"] });
-      qc.invalidateQueries({ queryKey: ["report"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateAfterEventMutation();
       onClose();
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: () => eventsApi.remove(eventId),
+    onSuccess: () => {
+      invalidateAfterEventMutation();
+      onClose();
+    },
+    onError: (err: Error) => {
+      // Offline → the delete sits in the outbox; treat it as done so the
+      // modal closes and the lists refresh once the daemon flushes.
+      if (err instanceof OfflineQueuedError) {
+        invalidateAfterEventMutation();
+        onClose();
+      }
     },
   });
 
@@ -165,6 +186,17 @@ export function EventDetailModal({
               onClick={() => setForm("copy")}
             >
               Копировать
+            </Button>
+            <Button
+              className="cd2-btn"
+              variant="danger"
+              icon={<Trash2 size={14} />}
+              disabled={remove.isPending}
+              onClick={() => {
+                if (confirm("Удалить событие?")) remove.mutate();
+              }}
+            >
+              Удалить
             </Button>
             <Button
               className="cd2-btn"

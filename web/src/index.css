@@ -3956,7 +3956,7 @@ a.cd2-name:hover {
      just full-width. The hero bleeds to the edges via .cd2's -22px margin,
      so restore the 22px body/footer padding the generic mobile rules shrink
      (otherwise the hero over-bleeds past the rounded corners). Footer stacks
-     into two rows: Перенести + Копировать, then Редактировать full width. */
+     into a 2x2 grid: Перенести + Копировать, then Удалить + Редактировать. */
   .modal-content:has(.cd2) .modal-body {
     padding: 22px 22px 10px;
   }
@@ -3967,9 +3967,6 @@ a.cd2-name:hover {
   .modal-content:has(.cd2) .modal-foot > .btn {
     flex: 1 1 calc(50% - 3px);
     padding: 10px 6px;
-  }
-  .modal-content:has(.cd2) .modal-foot > .btn:nth-child(3) {
-    flex-basis: 100%;
   }
 
   /* Event table rows fit phone width. Client/notes drop to row 2 under
