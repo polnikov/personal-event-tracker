@@ -297,44 +297,48 @@ export function CalendarPage() {
             className="events-filters-body"
             data-open={filtersOpen ? "true" : "false"}
           >
-            <div className="events-filters-row">
-              <div className="filter-row-cal-3">
-                <SearchableSelect
-                  className="cal-client-filter"
-                  value={clientFilter}
-                  onChange={setClientFilter}
-                  placeholder="Все клиенты"
-                  options={(clientsList.data ?? []).map((c) => ({
-                    value: String(c.id),
-                    label: c.full_name,
-                  }))}
-                />
-                <Select
-                  value={catFilter}
-                  onChange={setCatFilter}
-                  placeholder="Все категории"
-                  options={visibleCategories(cats.data).map((c) => ({
-                    value: String(c.id),
-                    label: c.name,
-                  }))}
-                />
-                <MultiSelect
-                  value={subcatFilter}
-                  onChange={setSubcatFilter}
-                  placeholder="Все подкатегории"
-                  options={subcatOptions}
-                />
+            {/* Inner wrapper carries the padding so the mobile accordion can
+                animate the outer element's height from zero. */}
+            <div className="events-filters-body-inner">
+              <div className="events-filters-row">
+                <div className="filter-row-cal-3">
+                  <SearchableSelect
+                    className="cal-client-filter"
+                    value={clientFilter}
+                    onChange={setClientFilter}
+                    placeholder="Все клиенты"
+                    options={(clientsList.data ?? []).map((c) => ({
+                      value: String(c.id),
+                      label: c.full_name,
+                    }))}
+                  />
+                  <Select
+                    value={catFilter}
+                    onChange={setCatFilter}
+                    placeholder="Все категории"
+                    options={visibleCategories(cats.data).map((c) => ({
+                      value: String(c.id),
+                      label: c.name,
+                    }))}
+                  />
+                  <MultiSelect
+                    value={subcatFilter}
+                    onChange={setSubcatFilter}
+                    placeholder="Все подкатегории"
+                    options={subcatOptions}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="events-filter-clear"
+                  onClick={clearAllFilters}
+                  disabled={activeFilterCount === 0}
+                  aria-label="Очистить все фильтры"
+                  title="Очистить всё"
+                >
+                  <FilterX size={16} />
+                </button>
               </div>
-              <button
-                type="button"
-                className="events-filter-clear"
-                onClick={clearAllFilters}
-                disabled={activeFilterCount === 0}
-                aria-label="Очистить все фильтры"
-                title="Очистить всё"
-              >
-                <FilterX size={16} />
-              </button>
             </div>
           </div>
         </Card>

@@ -602,28 +602,32 @@ export function ReportPage() {
           />
         </button>
         <div className="events-filters-body" data-open={filtersOpen ? "true" : "false"}>
-          <div className="filter-row">
-            <Select
-              value={String(year)}
-              onChange={(v) => setYear(Number(v))}
-              options={yearOptions}
-            />
-            <Select
-              value={String(month)}
-              onChange={(v) => setMonth(Number(v))}
-              options={monthOptions}
-            />
-            <Select
-              value={categoryId || "all"}
-              onChange={(v) => setCategoryId(v === "all" ? "" : v)}
-              options={[
-                { value: "all", label: "Все категории" },
-                ...visibleCategories(cats.data).map((c) => ({
-                  value: String(c.id),
-                  label: c.name,
-                })),
-              ]}
-            />
+          {/* Inner wrapper carries the padding so the mobile accordion can
+              animate the outer element's height from zero. */}
+          <div className="events-filters-body-inner">
+            <div className="filter-row">
+              <Select
+                value={String(year)}
+                onChange={(v) => setYear(Number(v))}
+                options={yearOptions}
+              />
+              <Select
+                value={String(month)}
+                onChange={(v) => setMonth(Number(v))}
+                options={monthOptions}
+              />
+              <Select
+                value={categoryId || "all"}
+                onChange={(v) => setCategoryId(v === "all" ? "" : v)}
+                options={[
+                  { value: "all", label: "Все категории" },
+                  ...visibleCategories(cats.data).map((c) => ({
+                    value: String(c.id),
+                    label: c.name,
+                  })),
+                ]}
+              />
+            </div>
           </div>
         </div>
       </Card>

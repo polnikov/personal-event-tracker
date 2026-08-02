@@ -1779,12 +1779,39 @@ input[type="number"] { -moz-appearance: textfield; }
     transition: transform 0.18s ease;
     color: var(--muted);
   }
+  /* Accordion. display:none can't be transitioned, so the collapsed state is
+     a grid whose single row goes 0fr → 1fr; that animates the real content
+     height without measuring it in JS. The inner wrapper owns the padding and
+     the divider so both are clipped away at zero height, and visibility keeps
+     the collapsed controls out of the tab order (delayed on close so it only
+     flips once the row has finished shrinking).
+     All dropdowns here render through a Radix portal, so overflow:hidden
+     clips only the panel itself, never an open menu. */
   .events-filters-body {
-    display: none;
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    visibility: hidden;
+    transition:
+      grid-template-rows 0.22s ease,
+      visibility 0s linear 0.22s;
+  }
+  .events-filters-body[data-open="true"] {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition:
+      grid-template-rows 0.22s ease,
+      visibility 0s;
+  }
+  .events-filters-body-inner {
+    min-height: 0;
     padding: 12px 16px 16px;
     border-top: 1px solid var(--line);
   }
-  .events-filters-body[data-open="true"] { display: block; }
+  @media (prefers-reduced-motion: reduce) {
+    .events-filters-body,
+    .events-filters-body[data-open="true"] { transition: none; }
+  }
 
   /* On mobile the clear-all moves into the toggle header (next to the count
      badge); the in-row desktop button is hidden. */
