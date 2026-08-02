@@ -430,91 +430,94 @@ export function EventsPage() {
           />
         </button>
         <div className="events-filters-body" data-open={filtersOpen ? "true" : "false"}>
-          {/* Inner wrapper carries the padding so the mobile accordion can
-              animate the outer element's height from zero. */}
+          {/* Two wrappers for the mobile accordion: the first clips the
+              collapsing row, the second carries the padding (which would
+              otherwise keep the collapsed panel from reaching zero). */}
           <div className="events-filters-body-inner">
-            <div className="events-filters-row">
-              <div className="filter-row-events-7">
-                <Select
-                  value={catFilter}
-                  onChange={setCatFilter}
-                  placeholder="Все категории"
-                  options={catOptions}
-                />
-                <MultiSelect
-                  value={subcatFilter}
-                  onChange={setSubcatFilter}
-                  placeholder="Все подкатегории"
-                  options={subcatOptions}
-                />
-                <Select
-                  value={yearFilter}
-                  onChange={setYearFilter}
-                  placeholder="Все годы"
-                  options={yearOptions}
-                />
-                <Select
-                  value={monthFilter}
-                  onChange={setMonthFilter}
-                  placeholder="Все месяцы"
-                  options={monthOptions}
-                />
-                <SearchableSelect
-                  value={clientFilter}
-                  onChange={setClientFilter}
-                  placeholder="Все клиенты"
-                  options={clientOptions}
-                />
-                <DatePicker
-                  value={dateFrom}
-                  onChange={setDateFrom}
-                  placeholder="Начало"
-                  ariaLabel="Начало"
-                />
-                <DatePicker
-                  value={dateTo}
-                  onChange={setDateTo}
-                  placeholder="Конец"
-                  ariaLabel="Конец"
-                />
+            <div className="events-filters-body-pad">
+              <div className="events-filters-row">
+                <div className="filter-row-events-7">
+                  <Select
+                    value={catFilter}
+                    onChange={setCatFilter}
+                    placeholder="Все категории"
+                    options={catOptions}
+                  />
+                  <MultiSelect
+                    value={subcatFilter}
+                    onChange={setSubcatFilter}
+                    placeholder="Все подкатегории"
+                    options={subcatOptions}
+                  />
+                  <Select
+                    value={yearFilter}
+                    onChange={setYearFilter}
+                    placeholder="Все годы"
+                    options={yearOptions}
+                  />
+                  <Select
+                    value={monthFilter}
+                    onChange={setMonthFilter}
+                    placeholder="Все месяцы"
+                    options={monthOptions}
+                  />
+                  <SearchableSelect
+                    value={clientFilter}
+                    onChange={setClientFilter}
+                    placeholder="Все клиенты"
+                    options={clientOptions}
+                  />
+                  <DatePicker
+                    value={dateFrom}
+                    onChange={setDateFrom}
+                    placeholder="Начало"
+                    ariaLabel="Начало"
+                  />
+                  <DatePicker
+                    value={dateTo}
+                    onChange={setDateTo}
+                    placeholder="Конец"
+                    ariaLabel="Конец"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="events-filter-clear"
+                  onClick={clearAllFilters}
+                  disabled={activeFilterCount === 0}
+                  aria-label="Очистить все фильтры"
+                  title="Очистить всё"
+                >
+                  <FilterX size={16} />
+                </button>
               </div>
-              <button
-                type="button"
-                className="events-filter-clear"
-                onClick={clearAllFilters}
-                disabled={activeFilterCount === 0}
-                aria-label="Очистить все фильтры"
-                title="Очистить всё"
-              >
-                <FilterX size={16} />
-              </button>
-            </div>
-            <div className="events-filter-foot">
-              <div className="events-filter-toggles">
-                <Toggle
-                  checked={royaltyOnly}
-                  onChange={setRoyaltyOnly}
-                  label="Роялти"
-                />
-                <Toggle
-                  checked={taxOnly}
-                  onChange={setTaxOnly}
-                  label="Налог"
-                />
-                <Toggle
-                  checked={subscriptionOnly}
-                  onChange={setSubscriptionOnly}
-                  label="Абонемент"
-                />
-              </div>
-              <div className="events-filter-net">
-                <span className="muted small">Чистыми</span>
-                <span className="mono">{fmt.money(netTotal)} ₽</span>
-                {/* Counts the same set the sum is taken over — both tabs, not
-                    just the visible one. */}
-                <span className="day-group-count-badge" title="Событий по фильтрам">
-                  {filtered.length}
-                </span>
+              <div className="events-filter-foot">
+                <div className="events-filter-toggles">
+                  <Toggle
+                    checked={royaltyOnly}
+                    onChange={setRoyaltyOnly}
+                    label="Роялти"
+                  />
+                  <Toggle
+                    checked={taxOnly}
+                    onChange={setTaxOnly}
+                    label="Налог"
+                  />
+                  <Toggle
+                    checked={subscriptionOnly}
+                    onChange={setSubscriptionOnly}
+                    label="Абонемент"
+                  />
+                </div>
+                <div className="events-filter-net">
+                  <span className="muted small">Чистыми</span>
+                  <span className="mono">{fmt.money(netTotal)} ₽</span>
+                  {/* Counts the same set the sum is taken over — both tabs, not
+                      just the visible one. */}
+                  <span className="day-group-count-badge" title="Событий по фильтрам">
+                    {filtered.length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
