@@ -22,6 +22,7 @@ import {
 } from "@/lib/api";
 import { visibleCategories, visibleSubcatsFlat } from "@/lib/catVisibility";
 import {
+  END_HOUR,
   HOUR_COUNT,
   HOUR_HEIGHT,
   START_HOUR,
@@ -37,6 +38,30 @@ type View = "month" | "week" | "3days";
 
 /** Local midnight of a date — start of the "3 дня" window. */
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/**
+ * Wall clock that re-renders once per minute, re-armed to the next minute
+ * boundary rather than on a fixed 60s interval so the now indicator never
+ * trails the clock by up to a minute. Minute granularity is all the time grid
+ * can show, so a per-second timer would be wasted renders.
+ */
+function useNow(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let id = 0;
+    const arm = () => {
+      const d = new Date();
+      const msToNextMinute = 60_000 - (d.getSeconds() * 1000 + d.getMilliseconds());
+      id = window.setTimeout(() => {
+        setNow(new Date());
+        arm();
+      }, msToNextMinute);
+    };
+    arm();
+    return () => window.clearTimeout(id);
+  }, []);
+  return now;
+}
 
 export function CalendarPage() {
   const today = useMemo(() => new Date(), []);
@@ -563,6 +588,19 @@ function WeekView({
   const hourHeights = new Array<number>(HOUR_COUNT).fill(HOUR_HEIGHT);
   const totalHeight = HOUR_HEIGHT * HOUR_COUNT;
 
+  // Now indicator. Uses the live clock rather than the `today` prop, which is
+  // frozen at mount and would misplace the line in a tab left open past
+  // midnight. Skipped entirely when the current time falls outside the rendered
+  // hour window — minsToY clamps, so it would otherwise pin to an edge.
+  const now = useNow();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const nowKey = now.toDateString();
+  const showNow =
+    nowMins >= START_HOUR * 60 &&
+    nowMins <= (END_HOUR + 1) * 60 &&
+    days.some((d) => d.toDateString() === nowKey);
+  const nowTop = minsToY(nowMins);
+
   return (
     <Card padding="p-0">
       <div className="week-time" style={{ "--cal-days": days.length } as React.CSSProperties}>
@@ -592,6 +630,9 @@ function WeekView({
                   )}
                 </div>
               ))}
+              {showNow && (
+                <div className="week-now-arrow" style={{ top: nowTop }} aria-hidden="true" />
+              )}
             </div>
             {days.map((d) => {
               const isToday = d.toDateString() === todayKey;
@@ -622,6 +663,12 @@ function WeekView({
                       style={{ height: h }}
                     />
                   ))}
+                  {/* Line runs through every visible column, as FullCalendar
+                      does — its now-indicator container spans the whole grid,
+                      not just the current day. */}
+                  {showNow && (
+                    <div className="week-now-line" style={{ top: nowTop }} aria-hidden="true" />
+                  )}
                   {evs.map((e) => {
                     const s = new Date(e.start);
                     const en = new Date(e.end);

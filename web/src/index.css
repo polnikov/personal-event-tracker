@@ -3044,6 +3044,30 @@ input[type="number"] { -moz-appearance: textfield; }
    pointer-events (auto по умолчанию), остаются кликабельными. */
 .week-time-col-hour { border-top: 1px solid var(--line); pointer-events: none; }
 .week-time-col-hour:first-child { border-top: 0; }
+/* Now indicator, mirroring FullCalendar's .fc-timegrid-now-indicator-line and
+   -arrow: a hairline through every visible day column at the current time, with
+   a small triangle on the hour gutter. z-index 2 puts it over the event cards
+   (z-index 1); pointer-events stay off so click-to-create still works through it. */
+.week-now-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--danger);
+  pointer-events: none;
+  z-index: 2;
+}
+.week-now-arrow {
+  position: absolute;
+  right: 0;
+  width: 0;
+  height: 0;
+  margin-top: -5px;
+  border-style: solid;
+  border-width: 5px 0 5px 6px;
+  border-color: transparent transparent transparent var(--danger);
+  pointer-events: none;
+  z-index: 2;
+}
 .week-time-event {
   position: absolute;
   left: 4px;
