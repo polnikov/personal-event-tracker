@@ -312,8 +312,13 @@ export function EventsPage() {
     [groups, limit],
   );
 
-  // Net income across everything matching the current filters (both tabs),
-  // shown next to the royalty toggle in the filters block.
+  // Gross and net income across everything matching the current filters (both
+  // tabs), shown next to the royalty toggle in the filters block. Gross is the
+  // raw sum of the events' cost, before tax and royalty are taken off.
+  const grossTotal = useMemo(
+    () => filtered.reduce((s, e) => s + (parseFloat(e.total_cost) || 0), 0),
+    [filtered],
+  );
   const netTotal = useMemo(
     () => filtered.reduce((s, e) => s + netOf(e), 0),
     [filtered],
@@ -510,8 +515,14 @@ export function EventsPage() {
                   />
                 </div>
                 <div className="events-filter-net">
-                  <span className="muted small">Чистыми</span>
-                  <span className="mono">{fmt.money(netTotal)} ₽</span>
+                  <span className="events-filter-net-pair">
+                    <span className="muted small">Всего</span>
+                    <span className="mono">{fmt.money(grossTotal)} ₽</span>
+                  </span>
+                  <span className="events-filter-net-pair">
+                    <span className="muted small">Чистыми</span>
+                    <span className="mono">{fmt.money(netTotal)} ₽</span>
+                  </span>
                   {/* Counts the same set the sum is taken over — both tabs, not
                       just the visible one. */}
                   <span className="day-group-count-badge" title="Событий по фильтрам">
