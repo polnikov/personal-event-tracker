@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { format, parse, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
+import type { BarSeriesOption } from "echarts";
 import {
   Button,
   Card,
@@ -133,6 +134,22 @@ export function DashboardPage() {
       dailySeries.reduce((s, srs) => s + (srs.values[i] || 0), 0),
     );
     const lastSeriesIdx = dailySeries.length - 1;
+    // Today's column gets a soft band behind the bars (plus the dark day pill
+    // on the axis below), so the current date is findable at a glance. The
+    // band rides on every series instead of one: a legend toggle then can't
+    // take it away, and an opaque fill keeps the stacked copies identical.
+    const todayIdx = dates.indexOf(todayKey);
+    const todayBand: BarSeriesOption["markArea"] =
+      todayIdx < 0
+        ? undefined
+        : {
+            silent: true,
+            label: { show: false },
+            itemStyle: { color: "#EEF4EA" },
+            // On a bar series markArea snaps to the tick coords, so the same
+            // index on both ends covers exactly one category band.
+            data: [[{ xAxis: todayIdx }, { xAxis: todayIdx }]],
+          };
 
     return {
       grid: { top: 55, right: 0, bottom: 44, left: 0, containLabel: true },
@@ -191,9 +208,23 @@ export function DashboardPage() {
           fontSize: 10.5,
           interval: 0,
           formatter: (value: string, index: number) => {
+            if (index === todayIdx) return `{today|${value}}`;
             const last = xLabels.length - 1;
+            // Leave the slots next to the pill empty so nothing collides.
+            if (todayIdx >= 0 && Math.abs(index - todayIdx) === 1) return "";
             if (index === 0 || index === last) return value;
             return index % 3 === 0 ? value : "";
+          },
+          rich: {
+            today: {
+              color: "#FAFAF7",
+              backgroundColor: "#2A2A2E",
+              borderRadius: 999,
+              padding: [3, 5, 2, 5],
+              fontSize: 10.5,
+              fontWeight: 600,
+              fontFamily: "Inter, system-ui, sans-serif",
+            },
           },
         },
       },
@@ -218,6 +249,7 @@ export function DashboardPage() {
               )
             : s.values,
         itemStyle: { color: s.color, borderRadius: [8, 8, 8, 8] },
+        markArea: todayBand,
         emphasis: { focus: "series" as const },
         barMaxWidth: 24,
         label:
@@ -247,7 +279,7 @@ export function DashboardPage() {
             : { show: false },
       })),
     };
-  }, [data]);
+  }, [data, todayKey, isMobile]);
 
   const pieOption: EChartsOption | null = useMemo(() => {
     if (!data || data.by_category.length === 0) return null;

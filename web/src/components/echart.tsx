@@ -3,6 +3,7 @@ import { BarChart, HeatmapChart, LineChart, PieChart } from "echarts/charts";
 import {
   GridComponent,
   LegendComponent,
+  MarkAreaComponent,
   TitleComponent,
   TooltipComponent,
   VisualMapComponent,
@@ -19,6 +20,7 @@ echarts.use([
   PieChart,
   GridComponent,
   LegendComponent,
+  MarkAreaComponent,
   TitleComponent,
   TooltipComponent,
   VisualMapComponent,
