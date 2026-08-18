@@ -3814,13 +3814,23 @@ a.cd2-name:hover {
   border-top: 0;
   padding: 0 22px 22px;
   gap: 6px;
+  /* Safety net: if the labels ever outgrow the row, the buttons drop to a
+     second line instead of spilling past the modal edge. */
+  flex-wrap: wrap;
   justify-content: stretch;
 }
+/* Natural label width, not an equal 1/4 share: an equal split is narrower
+   than "Редактировать" needs, so the button overflowed its own box. */
 .modal-content:has(.cd2) .modal-foot > .btn {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   justify-content: center;
   font-family: var(--font-sans);
   padding: 10px 6px;
+}
+/* The 4 action labels need ~540px on one row; the phone layout (full-width
+   modal, 2x2 button grid) is handled in the max-width: 640px block below. */
+@media (min-width: 641px) {
+  .modal-content:has(.cd2) { max-width: 560px; }
 }
 .modal-head {
   display: flex;
