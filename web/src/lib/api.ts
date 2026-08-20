@@ -294,6 +294,7 @@ export const events = {
     price_per_hour: number | null;
     tax: number;
     royalty: number;
+    is_cash: boolean;
   }) => request<EventItem>("/events", { method: "POST", body: JSON.stringify(payload) }),
   update: (
     id: number,
@@ -309,6 +310,7 @@ export const events = {
       price_per_hour: number | null;
       tax: number;
       royalty: number;
+      is_cash: boolean;
     },
   ) => request<EventItem>(`/events/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   remove: (id: number) => request<{ ok: true }>(`/events/${id}`, { method: "DELETE" }),

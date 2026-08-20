@@ -226,6 +226,7 @@ class EventRead(BaseModel):
     total_cost: Decimal
     tax: Decimal = Decimal(0)
     royalty: Decimal = Decimal(0)
+    is_cash: bool = False
     notes: str | None
     subcategory: EventSubcategory
     client: EventClient | None = None
@@ -252,6 +253,7 @@ class EventCreate(BaseModel):
     price_per_hour: Decimal | None = Field(default=None, ge=0)
     tax: Decimal = Field(default=Decimal(0), ge=0, le=100)
     royalty: Decimal = Field(default=Decimal(0), ge=0, le=100)
+    is_cash: bool = False
 
 
 class EventUpdate(BaseModel):
@@ -266,6 +268,7 @@ class EventUpdate(BaseModel):
     price_per_hour: Decimal | None = Field(default=None, ge=0)
     tax: Decimal = Field(default=Decimal(0), ge=0, le=100)
     royalty: Decimal = Field(default=Decimal(0), ge=0, le=100)
+    is_cash: bool = False
 
 
 class EventListResponse(BaseModel):

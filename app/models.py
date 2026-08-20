@@ -168,6 +168,9 @@ class Event(Base):
     tax: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
     royalty: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, server_default="0")
 
+    # Paid through the club's till (касса) instead of straight to the coach.
+    is_cash: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Snapshot of where the event lives in Google after a successful sync.
     # Lets us detect "category changed → calendar changed" so we can issue

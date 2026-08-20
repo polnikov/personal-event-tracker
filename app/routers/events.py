@@ -245,6 +245,7 @@ def create_event(payload: EventCreate, db: Session = Depends(get_db)):
         total_cost=total,
         tax=payload.tax,
         royalty=payload.royalty,
+        is_cash=payload.is_cash,
         notes=(payload.notes or "").strip() or None,
     )
     db.add(e)
@@ -294,6 +295,7 @@ def update_event(event_id: int, payload: EventUpdate, db: Session = Depends(get_
     e.notes = (payload.notes or "").strip() or None
     e.tax = payload.tax
     e.royalty = payload.royalty
+    e.is_cash = payload.is_cash
 
     if package is not None:
         e.hourly_rate_snapshot = package.price_per_lesson

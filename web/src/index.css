@@ -1420,6 +1420,11 @@ input[type="number"] { -moz-appearance: textfield; }
 .form { display: flex; flex-direction: column; gap: 16px; }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 700px) { .form-grid-2 { grid-template-columns: 1fr; } }
+/* Налог | Роялти | Касса. On phones the row drops back to two columns
+   (mobile block below) and Касса moves next to the price. */
+.form-grid-2.tax-royalty-row { grid-template-columns: 1fr 1fr 1fr; }
+/* Price input with the Касса toggle beside it (phones only). */
+.price-cash-row { display: flex; align-items: center; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-label { font-size: 12px; font-weight: 500; color: var(--ink-2); letter-spacing: 0.005em; }
 .field-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -1645,6 +1650,7 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: center;
   gap: 16px;
 }
+.events-filter-toggle-break { display: contents; }
 .events-filter-net {
   display: flex;
   align-items: baseline;
@@ -1670,6 +1676,8 @@ input[type="number"] { -moz-appearance: textfield; }
     gap: 10px;
   }
   .events-filter-toggles { flex-wrap: wrap; gap: 12px 16px; }
+  /* Касса starts a second row under Роялти / Налог / Абонемент. */
+  .events-filter-toggle-break { display: block; flex: 1 0 100%; }
 }
 .events-filters-count {
   display: inline-grid;
@@ -2207,6 +2215,7 @@ input[type="number"] { -moz-appearance: textfield; }
   cursor: pointer;
   white-space: nowrap;
 }
+.events-row-notes.is-static { cursor: inherit; }
 .events-row-notes-icon {
   display: grid;
   place-items: center;
@@ -3763,8 +3772,8 @@ input[type="number"] { -moz-appearance: textfield; }
 a.cd2-name:hover {
   color: var(--accent);
 }
-/* Right column under the name: cost (+flags) on top, club right-aligned
-   directly beneath it. */
+/* Right column under the name: cost on top, the flag icons on their own
+   line beneath it, club right-aligned last. */
 .cd2-metacol {
   flex: 0 0 auto;
   min-width: 0;
@@ -3773,11 +3782,12 @@ a.cd2-name:hover {
   align-items: flex-end;
   gap: 2px;
 }
-.cd2-meta {
+.cd2-flags {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 7px;
+  margin-top: 2px;
 }
 .cd2-club {
   font-size: 12.5px;

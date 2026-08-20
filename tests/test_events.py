@@ -107,6 +107,66 @@ def test_event_update_and_delete(auth_client):
     assert all(e["id"] != eid for e in _all_events(auth_client))
 
 
+def test_is_cash_defaults_false_and_round_trips(auth_client):
+    sub = _setup_subcategory(auth_client)
+    created = auth_client.post(
+        "/api/events",
+        json={
+            "subcategory_id": sub["id"],
+            "start_at": "2026-09-01T09:00:00",
+            "duration_minutes": 60,
+            "price_per_hour": "100.00",
+        },
+    ).json()
+    assert created["is_cash"] is False
+
+    eid = created["id"]
+    upd = auth_client.put(
+        f"/api/events/{eid}",
+        json={
+            "subcategory_id": sub["id"],
+            "start_at": "2026-09-01T09:00:00",
+            "duration_minutes": 60,
+            "recalculate_price": False,
+            "price_per_hour": "100.00",
+            "is_cash": True,
+        },
+    )
+    assert upd.status_code == 200, upd.text
+    assert upd.json()["is_cash"] is True
+    assert auth_client.get(f"/api/events/{eid}").json()["is_cash"] is True
+
+    # Omitting the flag on a later update clears it — same full-replace rule
+    # the other event fields follow.
+    cleared = auth_client.put(
+        f"/api/events/{eid}",
+        json={
+            "subcategory_id": sub["id"],
+            "start_at": "2026-09-01T09:00:00",
+            "duration_minutes": 60,
+            "recalculate_price": False,
+            "price_per_hour": "100.00",
+        },
+    )
+    assert cleared.json()["is_cash"] is False
+
+
+def test_create_event_with_is_cash(auth_client):
+    sub = _setup_subcategory(auth_client)
+    r = auth_client.post(
+        "/api/events",
+        json={
+            "subcategory_id": sub["id"],
+            "start_at": "2026-09-02T09:00:00",
+            "duration_minutes": 60,
+            "price_per_hour": "100.00",
+            "is_cash": True,
+        },
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["is_cash"] is True
+
+
 def test_event_requires_auth(client):
     r = client.post("/api/events", json={"subcategory_id": 1, "start_at": "2026-01-01T00:00:00", "duration_minutes": 60})
     assert r.status_code == 401

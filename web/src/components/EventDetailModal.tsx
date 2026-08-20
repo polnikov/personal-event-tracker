@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Copy, History, Pencil, Trash2 } from "lucide-react";
-import { HandCoins, SealPercent } from "@phosphor-icons/react";
+import { Coins, HandCoins, SealPercent } from "@phosphor-icons/react";
 import { Button, Modal } from "@/components/design";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { EventFormModal } from "@/pages/EventForm";
@@ -68,6 +68,9 @@ export function EventDetailModal({
         price_per_hour: parseFloat(ev.hourly_rate_snapshot) || 0,
         tax: parseFloat(ev.tax) || 0,
         royalty: parseFloat(ev.royalty) || 0,
+        // Update replaces every field, so the flag has to ride along or a
+        // reschedule would silently clear it.
+        is_cash: ev.is_cash,
       });
     },
     onSuccess: () => {
@@ -122,6 +125,7 @@ export function EventDetailModal({
 
   const taxPct = ev ? parseFloat(ev.tax) || 0 : 0;
   const royaltyPct = ev ? parseFloat(ev.royalty) || 0 : 0;
+  const hasFlags = taxPct > 0 || royaltyPct > 0 || Boolean(ev?.is_cash);
 
   // Edit / copy hand off to the shared event form, layered over this modal.
   if (form) {
@@ -241,31 +245,44 @@ export function EventDetailModal({
               ) : (
                 <span className="cd2-name" />
               )}
+              {/* Right column, one item per line: cost, then the flags,
+                  then the club. */}
               <span className="cd2-metacol">
-                <span className="cd2-meta">
-                  <span className="cd2-price">{costFmt} ₽</span>
-                  {taxPct > 0 && (
-                    <HandCoins
-                      className="cd2-flag"
-                      size={16}
-                      weight="duotone"
-                      aria-label={`Налог ${taxPct}%`}
-                    >
-                      <title>{`Налог ${taxPct}%`}</title>
-                    </HandCoins>
-                  )}
-                  {royaltyPct > 0 && (
-                    <SealPercent
-                      className="cd2-flag"
-                      size={16}
-                      weight="duotone"
-                      aria-label={`Роялти ${royaltyPct}%`}
-                    >
-                      <title>{`Роялти ${royaltyPct}%`}</title>
-                    </SealPercent>
-                  )}
-                </span>
-                {/* Club sits right-aligned directly under the cost. */}
+                <span className="cd2-price">{costFmt} ₽</span>
+                {hasFlags && (
+                  <span className="cd2-flags">
+                    {taxPct > 0 && (
+                      <HandCoins
+                        className="cd2-flag"
+                        size={16}
+                        weight="duotone"
+                        aria-label={`Налог ${taxPct}%`}
+                      >
+                        <title>{`Налог ${taxPct}%`}</title>
+                      </HandCoins>
+                    )}
+                    {royaltyPct > 0 && (
+                      <SealPercent
+                        className="cd2-flag"
+                        size={16}
+                        weight="duotone"
+                        aria-label={`Роялти ${royaltyPct}%`}
+                      >
+                        <title>{`Роялти ${royaltyPct}%`}</title>
+                      </SealPercent>
+                    )}
+                    {ev.is_cash && (
+                      <Coins
+                        className="cd2-flag"
+                        size={16}
+                        weight="duotone"
+                        aria-label="Касса"
+                      >
+                        <title>Касса</title>
+                      </Coins>
+                    )}
+                  </span>
+                )}
                 {ev.club && <span className="cd2-club">{ev.club.name}</span>}
               </span>
             </div>

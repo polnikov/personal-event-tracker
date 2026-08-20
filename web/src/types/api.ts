@@ -110,6 +110,8 @@ export interface EventItem {
   total_cost: string;
   tax: string;
   royalty: string;
+  /** Paid through the club's till instead of straight to the coach. */
+  is_cash: boolean;
   notes: string | null;
   subcategory: EventSubcategoryRef;
   client: EventClientRef | null;

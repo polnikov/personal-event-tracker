@@ -34,6 +34,7 @@ import { defaultClubValue, findCategoryForSubcat } from "@/lib/clubAutofill";
 import { cn } from "@/lib/utils";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { ClientFormModal } from "@/components/ClientFormModal";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const schema = z.object({
   subcategory_id: z.string().min(1, "Выберите подкатегорию"),
@@ -48,6 +49,8 @@ const schema = z.object({
   price_per_hour: z.coerce.number().min(0, "Цена ≥ 0"),
   tax: z.coerce.number().min(0).max(100),
   royalty: z.coerce.number().min(0).max(100),
+  /** Paid through the club's till instead of straight to the coach. */
+  is_cash: z.boolean(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -109,6 +112,7 @@ export function EventForm({
   const [royaltyEnabled, setRoyaltyEnabled] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [creatingClient, setCreatingClient] = useState(false);
+  const isMobile = useIsMobile();
   // Keep the collapsible inputs mounted through their accordion-collapse
   // animation after the toggle/section is turned off.
   const taxMounted = useDelayedUnmount(taxEnabled);
@@ -164,6 +168,7 @@ export function EventForm({
         price_per_hour: parseFloat(e.hourly_rate_snapshot) || 0,
         tax: parseFloat(e.tax) || 0,
         royalty: parseFloat(e.royalty) || 0,
+        is_cash: e.is_cash,
       };
     }
     if (sourceForCopy.data) {
@@ -187,6 +192,7 @@ export function EventForm({
         price_per_hour: parseFloat(e.hourly_rate_snapshot) || 0,
         tax: parseFloat(e.tax) || 0,
         royalty: parseFloat(e.royalty) || 0,
+        is_cash: e.is_cash,
       };
     }
     return {
@@ -201,6 +207,7 @@ export function EventForm({
       price_per_hour: 0,
       tax: 0,
       royalty: 0,
+      is_cash: false,
     };
   }, [existing.data, sourceForCopy.data, prefillClient, prefillStart, nowLocal]);
 
@@ -254,6 +261,7 @@ export function EventForm({
         price_per_hour: values.price_per_hour,
         tax: taxEnabled ? values.tax : 0,
         royalty: royaltyEnabled ? values.royalty : 0,
+        is_cash: values.is_cash,
       }),
   });
 
@@ -271,6 +279,7 @@ export function EventForm({
         price_per_hour: values.price_per_hour,
         tax: taxEnabled ? values.tax : 0,
         royalty: royaltyEnabled ? values.royalty : 0,
+        is_cash: values.is_cash,
       }),
   });
 
@@ -317,6 +326,16 @@ export function EventForm({
   const priceValue = form.watch("price_per_hour");
   const taxValue = form.watch("tax");
   const royaltyValue = form.watch("royalty");
+  const isCashValue = form.watch("is_cash");
+  // One control, two slots: next to the price on phones (where the tax and
+  // royalty pair already fills its row), third column of that row otherwise.
+  const cashToggle = (
+    <Toggle
+      checked={isCashValue}
+      onChange={(next) => form.setValue("is_cash", next)}
+      label="Касса"
+    />
+  );
 
   // Packages the selected client can spend on the selected subcategory.
   // The event's own package is always kept in the list while editing —
@@ -504,14 +523,17 @@ export function EventForm({
         </div>
 
         <Field label="Цена за час, ₽" error={form.formState.errors.price_per_hour?.message}>
-          <Input
-            type="number"
-            min={0}
-            step={1}
-            style={{ maxWidth: "12rem" }}
-            disabled={!!selectedSub}
-            {...form.register("price_per_hour")}
-          />
+          <div className="price-cash-row">
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              style={{ maxWidth: "12rem" }}
+              disabled={!!selectedSub}
+              {...form.register("price_per_hour")}
+            />
+            {isMobile && cashToggle}
+          </div>
           {selectedSub && <span className="muted small">Цена из абонемента</span>}
         </Field>
 
@@ -624,6 +646,8 @@ export function EventForm({
               </div>
             )}
           </div>
+
+          {!isMobile && <div className="field">{cashToggle}</div>}
         </div>
 
         <div className="form-grid-2 event-sum-club-row">

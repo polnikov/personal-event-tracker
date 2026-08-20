@@ -76,6 +76,25 @@ describe("SubscriptionPill", () => {
   });
 });
 
+/** Swap in a matchMedia that reports the phone (or desktop) layout.
+ *  Returns the restore function. */
+function stubViewport(isMobile: boolean) {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    matches: isMobile,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
 describe("NotesPill", () => {
   it("shows the text inline by default", () => {
     render(<NotesPill notes="оплатил переводом" />);
@@ -87,5 +106,22 @@ describe("NotesPill", () => {
     expect(screen.queryByText("оплатил переводом")).toBeNull();
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByText("оплатил переводом")).toBeTruthy();
+  });
+
+  it("has no popover on desktop, where the note is printed inline", () => {
+    const restore = stubViewport(false);
+    render(<NotesPill notes="оплатил переводом" />);
+    expect(screen.queryByRole("button")).toBeNull();
+    restore();
+  });
+
+  it("keeps the popover on phones", () => {
+    const restore = stubViewport(true);
+    render(<NotesPill notes="оплатил переводом" />);
+    const pill = screen.getByRole("button");
+    fireEvent.click(pill);
+    // Inline copy + the one inside the popover.
+    expect(screen.getAllByText("оплатил переводом").length).toBe(2);
+    restore();
   });
 });
