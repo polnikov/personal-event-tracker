@@ -21,6 +21,7 @@ from .routers.dashboard import router as dashboard_router
 from .routers.calendar import router as calendar_router
 from .routers.google import router as google_router, callback_router as google_callback_router
 from .routers.reports import router as reports_router
+from .routers.settings import router as settings_router
 
 
 @asynccontextmanager
@@ -71,6 +72,7 @@ app.include_router(clients_router)
 app.include_router(clubs_router)
 app.include_router(events_router)
 app.include_router(reports_router)
+app.include_router(settings_router)
 app.include_router(google_router)
 app.include_router(google_callback_router)
 

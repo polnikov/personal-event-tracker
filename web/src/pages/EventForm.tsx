@@ -25,6 +25,7 @@ import {
   clients as clientsApi,
   clubs as clubsApi,
   events as eventsApi,
+  settings as settingsApi,
   OfflineQueuedError,
 } from "@/lib/api";
 import { visibleSubcatGroups } from "@/lib/catVisibility";
@@ -53,6 +54,13 @@ const schema = z.object({
   is_cash: z.boolean(),
 });
 type FormValues = z.infer<typeof schema>;
+
+/** Saved percentage, or the built-in fallback while the settings load.
+ *  Written out (not `|| fallback`) so a stored 0 survives. */
+function pctOr(raw: string | undefined, fallback: number): number {
+  const n = parseFloat(raw ?? "");
+  return Number.isFinite(n) ? n : fallback;
+}
 
 const DURATION_PRESETS = [
   { value: 30, label: "30 мин" },
@@ -128,6 +136,9 @@ export function EventForm({
   const lastClubCat = useRef<number | null>(null);
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
+  // Percentages seeded into the tax / royalty inputs when their toggle is
+  // switched on. Editable on Настройки → Общие.
+  const appSettings = useQuery({ queryKey: ["settings"], queryFn: () => settingsApi.get() });
   const clientsList = useQuery({ queryKey: ["clients", ""], queryFn: () => clientsApi.list("") });
   const clubsList = useQuery({ queryKey: ["clubs", ""], queryFn: () => clubsApi.list("") });
   const existing = useQuery({
@@ -327,6 +338,8 @@ export function EventForm({
   const taxValue = form.watch("tax");
   const royaltyValue = form.watch("royalty");
   const isCashValue = form.watch("is_cash");
+  const defaultTax = pctOr(appSettings.data?.default_tax, 6);
+  const defaultRoyalty = pctOr(appSettings.data?.default_royalty, 10);
   // One control, two slots: next to the price on phones (where the tax and
   // royalty pair already fills its row), third column of that row otherwise.
   const cashToggle = (
@@ -594,8 +607,7 @@ export function EventForm({
               checked={taxEnabled}
               onChange={(next) => {
                 setTaxEnabled(next);
-                // Seed a sensible default 6% on activation.
-                if (next) form.setValue("tax", 6 as unknown as number);
+                if (next) form.setValue("tax", defaultTax as unknown as number);
               }}
               label="Налог"
             />
@@ -623,8 +635,7 @@ export function EventForm({
               checked={royaltyEnabled}
               onChange={(next) => {
                 setRoyaltyEnabled(next);
-                // Seed a sensible default 10% on activation.
-                if (next) form.setValue("royalty", 10 as unknown as number);
+                if (next) form.setValue("royalty", defaultRoyalty as unknown as number);
               }}
               label="Роялти"
             />

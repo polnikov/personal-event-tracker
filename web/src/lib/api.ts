@@ -1,4 +1,5 @@
 import type {
+  AppSettings,
   AuthMe,
   CalendarEvent,
   Category,
@@ -314,6 +315,14 @@ export const events = {
     },
   ) => request<EventItem>(`/events/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   remove: (id: number) => request<{ ok: true }>(`/events/${id}`, { method: "DELETE" }),
+};
+
+// ---------- App settings ----------
+
+export const settings = {
+  get: () => request<AppSettings>("/settings"),
+  update: (payload: { default_tax: number; default_royalty: number }) =>
+    request<AppSettings>("/settings", { method: "PUT", body: JSON.stringify(payload) }),
 };
 
 // ---------- Dashboard ----------

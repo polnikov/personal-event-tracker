@@ -98,6 +98,13 @@ export interface EventClubRef {
   address: string | null;
 }
 
+/** App-wide defaults, editable on Настройки → Общие. Percentages arrive as
+ *  strings, same as the per-event tax / royalty. */
+export interface AppSettings {
+  default_tax: string;
+  default_royalty: string;
+}
+
 export interface EventItem {
   id: number;
   subcategory_id: number;

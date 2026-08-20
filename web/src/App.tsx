@@ -12,6 +12,7 @@ import { ClubsPage } from "@/pages/Clubs";
 import { CalendarPage } from "@/pages/Calendar";
 import { ReportPage } from "@/pages/Report";
 import { SettingsPage } from "@/pages/Settings";
+import { SettingsGeneralPage } from "@/pages/SettingsGeneral";
 import { SettingsGooglePage } from "@/pages/SettingsGoogle";
 import { SyncQueuePage } from "@/pages/SyncQueue";
 import { DebugPage } from "@/pages/Debug";
@@ -38,7 +39,8 @@ export default function App() {
         <Route path="clubs" element={<ClubsPage />} />
         <Route path="report" element={<ReportPage />} />
         <Route path="settings" element={<SettingsPage />}>
-          <Route index element={<Navigate to="google" replace />} />
+          <Route index element={<Navigate to="general" replace />} />
+          <Route path="general" element={<SettingsGeneralPage />} />
           <Route path="google" element={<SettingsGooglePage />} />
           <Route path="queue" element={<SyncQueuePage />} />
           <Route path="debug" element={<DebugPage />} />

@@ -193,6 +193,26 @@ class Event(Base):
         return self.start_at + timedelta(minutes=self.duration_minutes)
 
 
+class AppSettings(Base):
+    """Single-row table with the app-wide defaults. Single-user app, so the
+    row is looked up (and lazily created) without a user key."""
+
+    __tablename__ = "app_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # Percentages pre-filled when the tax / royalty toggles are switched on
+    # in the event form (0..100).
+    default_tax: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False, server_default="6"
+    )
+    default_royalty: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False, server_default="10"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=now_local, onupdate=now_local
+    )
+
+
 class GoogleAccount(Base):
     """Single-row table holding the connected Google account's credentials.
     The app is single-user, so we don't index by user_id."""

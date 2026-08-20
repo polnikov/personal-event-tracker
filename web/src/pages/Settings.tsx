@@ -5,17 +5,18 @@ import { Tabs } from "@/components/design";
 import { google as googleApi } from "@/lib/api";
 import { list as outboxList, subscribe as outboxSubscribe } from "@/lib/outbox";
 
-type SettingsTab = "google" | "queue" | "debug";
+type SettingsTab = "general" | "google" | "queue" | "debug";
 
-// Shell for the merged Настройки section: single nav entry, three sub-tabs
-// (Google connection, Очередь синхронизации, Отладка). Routing is path-based
+// Shell for the merged Настройки section: single nav entry, four sub-tabs
+// (Общие, Google connection, Очередь синхронизации, Отладка). Routing is path-based
 // so deep links and each child's own query params (?filter, ?status, OAuth
 // callback params) keep working.
 export function SettingsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const seg = location.pathname.split("/")[2];
-  const active: SettingsTab = seg === "queue" || seg === "debug" ? seg : "google";
+  const active: SettingsTab =
+    seg === "google" || seg === "queue" || seg === "debug" ? seg : "general";
 
   // Badge sources mirror the old separate nav items so each sub-tab still
   // signals attention: googleApi.status().failed for the Google outbox log,
@@ -62,6 +63,7 @@ export function SettingsPage() {
         value={active}
         onChange={(v) => navigate(`/settings/${v}`)}
         options={[
+          { value: "general", label: "Общие" },
           { value: "google", label: "Google" },
           {
             value: "queue",

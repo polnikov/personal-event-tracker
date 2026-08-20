@@ -467,3 +467,17 @@ class GoogleOutboxRow(BaseModel):
     created_at: datetime
     completed_at: datetime | None
     next_attempt_at: datetime
+
+
+# ---------- App settings ----------
+
+class SettingsRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    default_tax: Decimal
+    default_royalty: Decimal
+
+
+class SettingsUpdate(BaseModel):
+    default_tax: Decimal = Field(ge=0, le=100)
+    default_royalty: Decimal = Field(ge=0, le=100)
