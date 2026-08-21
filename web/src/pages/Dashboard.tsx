@@ -475,7 +475,7 @@ export function DashboardPage() {
       grid: {
         top: 16,
         right: 6,
-        bottom: isMobile ? 58 : 62,
+        bottom: isMobile ? 68 : 62,
         left: 0,
         containLabel: true,
       },
@@ -539,7 +539,7 @@ export function DashboardPage() {
             ]),
         {
           type: "slider" as const,
-          height: isMobile ? 24 : 28,
+          height: isMobile ? 28 : 24,
           bottom: 6,
           borderColor: "#ECEAE3",
           backgroundColor: "#FAFAF7",
@@ -554,6 +554,10 @@ export function DashboardPage() {
           },
           handleStyle: { color: "#FFFFFF", borderColor: "#C9C4B8" },
           moveHandleStyle: { color: "#DFDCD3" },
+          // Touch needs grips a finger can actually land on; the thin desktop
+          // handles are unhittable on a phone.
+          handleSize: isMobile ? "150%" : "120%",
+          moveHandleSize: isMobile ? 20 : 3,
           // Drag-to-select inside the mini map fights touch scrolling.
           brushSelect: false,
           labelFormatter: (_: number, valueStr: string) => shortDate(valueStr),
@@ -564,6 +568,10 @@ export function DashboardPage() {
         {
           name: "Доход",
           type: "line" as const,
+          // Income is a per-day bucket, not a continuous reading: the step
+          // holds each day's value across its own band instead of sloping
+          // between days as if the money trickled in.
+          step: "middle" as const,
           symbol: "none" as const,
           sampling: "lttb" as const,
           itemStyle: { color: INCOME_GREEN },
@@ -584,17 +592,14 @@ export function DashboardPage() {
     };
   }, [incomeHistory.data, isMobile]);
 
-  const historyMeta = useMemo(() => {
+  const historyRange = useMemo(() => {
     const hist = incomeHistory.data;
     if (!hist || hist.dates.length === 0) return null;
     const monthLabelOf = (d: string) =>
       format(parse(d, "yyyy-MM-dd", new Date()), "LLL yyyy", { locale: ru });
     const from = monthLabelOf(hist.dates[0]);
     const to = monthLabelOf(hist.dates[hist.dates.length - 1]);
-    return {
-      range: from === to ? from : `${from} - ${to}`,
-      total: hist.values.reduce((sum, v) => sum + v, 0),
-    };
+    return from === to ? from : `${from} - ${to}`;
   }, [incomeHistory.data]);
 
   const upcomingEvents = useMemo(() => {
@@ -777,14 +782,9 @@ export function DashboardPage() {
               <div>
                 <div className="card-title">Динамика дохода</div>
                 <div className="muted small" style={{ textTransform: "capitalize" }}>
-                  {historyMeta?.range ?? "вся история"}
+                  {historyRange ?? "вся история"}
                 </div>
               </div>
-              {historyMeta && (
-                <div className="card-head-sum-wrap">
-                  <div className="card-head-sum">{fmt.money(historyMeta.total)} ₽</div>
-                </div>
-              )}
             </div>
             {historyOption ? (
               <Echart option={historyOption} height={isMobile ? 260 : 320} />
