@@ -180,6 +180,10 @@ export interface DashboardResponse {
   total_cost: string;
   // Same-shape previous-period income total. null for period="all".
   prev_total_cost?: string | null;
+  // Month-to-date income (1st through today) and how many days of the
+  // previous month prev_total_cost covers. period="month" only.
+  mtd_total_cost?: string | null;
+  mtd_prev_days?: number | null;
   by_category: DashboardStat[];
   by_subcategory: DashboardStat[];
   by_client: DashboardStat[];

@@ -556,12 +556,22 @@ export function DashboardPage() {
                 </div>
                 <div className="card-head-sum-wrap">
                   <div className="card-head-sum">{fmt.money(data.total_cost)} ₽</div>
+                  {/* Delta compares equal slices: the 1st-through-today sum
+                      of this month against the same days of the previous one,
+                      not the whole month that is still running. */}
                   <PctChangePill
-                    current={parseFloat(data.total_cost) || 0}
+                    current={
+                      parseFloat(data.mtd_total_cost ?? data.total_cost) || 0
+                    }
                     previous={
                       data.prev_total_cost != null
                         ? parseFloat(data.prev_total_cost) || 0
                         : null
+                    }
+                    prevLabel={
+                      data.mtd_prev_days != null
+                        ? `Прошлый месяц, 1-${data.mtd_prev_days}`
+                        : undefined
                     }
                   />
                 </div>

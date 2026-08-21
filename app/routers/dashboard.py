@@ -40,6 +40,24 @@ def _year_bounds(d: datetime) -> tuple[datetime, datetime]:
     return start, end
 
 
+def _mtd_windows(now: datetime) -> tuple[datetime, datetime, datetime, int]:
+    """Month-to-date comparison windows for the daily-income %-delta pill.
+
+    The current month is measured from the 1st through today inclusive; the
+    previous month over the same day span, trimmed to its own length. So on
+    20 May it is 1-20 May vs 1-20 April, and on 31 May it is 1-31 May vs
+    1-30 April (April has no 31st, that day simply drops out).
+
+    Returns ``(mtd_end, prev_start, prev_end, prev_days)``: both ends are
+    exclusive, ``prev_days`` is how many days of the previous month took part.
+    """
+    month_start, _ = _month_bounds(now)
+    mtd_end = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    prev_start, prev_next = _month_bounds(month_start - timedelta(days=1))
+    prev_days = min(now.day, (prev_next - prev_start).days)
+    return mtd_end, prev_start, prev_start + timedelta(days=prev_days), prev_days
+
+
 @router.get("", response_model=DashboardResponse)
 def dashboard(
     period: str = Query("all"),
@@ -109,13 +127,25 @@ def dashboard(
     total_minutes = sum(e.duration_minutes for e in events)
     total_cost = sum((e.total_cost for e in events), Decimal(0))
 
+    def _sum_cost(win_start: datetime, win_end: datetime) -> Decimal:
+        cost_stmt = _apply_event_filters(
+            select(Event.total_cost).where(
+                and_(Event.start_at >= win_start, Event.start_at < win_end)
+            )
+        )
+        return sum((row[0] for row in db.execute(cost_stmt).all()), Decimal(0))
+
     # Previous-period total for the right-corner %-change indicator. Skip
-    # for "all" (no meaningful predecessor). For month/year use calendar
-    # bounds; custom shifts back by the current span.
+    # for "all" (no meaningful predecessor). A month is compared month-to-date
+    # (1st through today) against the same slice of the previous month, so a
+    # half-finished month is not measured against a whole one; year uses
+    # calendar bounds, custom shifts back by the current span.
     prev_total_cost: Decimal | None = None
+    mtd_total_cost: Decimal | None = None
+    mtd_prev_days: int | None = None
     if period == "month":
-        prev_ref = start - timedelta(days=1)
-        prev_start, prev_end = _month_bounds(prev_ref)
+        mtd_end, prev_start, prev_end, mtd_prev_days = _mtd_windows(now)
+        mtd_total_cost = _sum_cost(start, mtd_end)
     elif period == "year":
         prev_start = datetime(start.year - 1, 1, 1)
         prev_end = start
@@ -127,15 +157,7 @@ def dashboard(
         prev_start = prev_end = None
 
     if prev_start is not None and prev_end is not None:
-        prev_stmt = _apply_event_filters(
-            select(Event.total_cost).where(
-                and_(Event.start_at >= prev_start, Event.start_at < prev_end)
-            )
-        )
-        prev_total_cost = sum(
-            (row[0] for row in db.execute(prev_stmt).all()),
-            Decimal(0),
-        )
+        prev_total_cost = _sum_cost(prev_start, prev_end)
 
     by_cat: dict[str, dict] = {}
     by_sub: dict[str, dict] = {}
@@ -242,6 +264,8 @@ def dashboard(
         total_minutes=total_minutes,
         total_cost=total_cost,
         prev_total_cost=prev_total_cost,
+        mtd_total_cost=mtd_total_cost,
+        mtd_prev_days=mtd_prev_days,
         by_category=[
             DashboardCategoryStat(name=n, color=v["color"], count=v["count"], minutes=v["minutes"], cost=v["cost"])
             for n, v in by_cat_sorted

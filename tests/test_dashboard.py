@@ -1,4 +1,10 @@
+from datetime import datetime
 from decimal import Decimal
+
+import pytest
+
+from app.routers import dashboard as dash_mod
+from app.routers.dashboard import _mtd_windows
 
 from .helpers import make_category, make_subcategory
 
@@ -49,3 +55,71 @@ def test_dashboard_category_filter(auth_client):
 
 def test_dashboard_requires_auth(client):
     assert client.get("/api/dashboard", params={"period": "all"}).status_code == 401
+
+
+def _event(auth_client, sub, start_at: str, price: str):
+    r = auth_client.post("/api/events", json={
+        "subcategory_id": sub["id"], "start_at": start_at,
+        "duration_minutes": 60, "price_per_hour": price})
+    assert r.status_code == 201, r.text
+
+
+@pytest.mark.parametrize(
+    "now, exp_mtd_end, exp_prev_start, exp_prev_end, exp_days",
+    [
+        # Plain case: 1-20 May vs 1-20 April.
+        (
+            datetime(2026, 5, 20, 15, 30),
+            datetime(2026, 5, 21), datetime(2026, 4, 1), datetime(2026, 4, 21), 20,
+        ),
+        # 31-day month against a 30-day one: April simply ends on the 30th.
+        (
+            datetime(2026, 5, 31, 23, 59),
+            datetime(2026, 6, 1), datetime(2026, 4, 1), datetime(2026, 5, 1), 30,
+        ),
+        # The other way round: May's 31st is left out of the comparison.
+        (
+            datetime(2026, 6, 30, 0, 0),
+            datetime(2026, 7, 1), datetime(2026, 5, 1), datetime(2026, 5, 31), 30,
+        ),
+        # Year boundary: January compares against December.
+        (
+            datetime(2026, 1, 5, 9, 0),
+            datetime(2026, 1, 6), datetime(2025, 12, 1), datetime(2025, 12, 6), 5,
+        ),
+    ],
+)
+def test_mtd_windows(now, exp_mtd_end, exp_prev_start, exp_prev_end, exp_days):
+    mtd_end, prev_start, prev_end, prev_days = _mtd_windows(now)
+    assert mtd_end == exp_mtd_end
+    assert prev_start == exp_prev_start
+    assert prev_end == exp_prev_end
+    assert prev_days == exp_days
+
+
+def test_dashboard_month_delta_is_month_to_date(auth_client, monkeypatch):
+    """The %-delta pill compares 1-today of this month against the same days
+    of the previous one, while total_cost stays the whole month."""
+    monkeypatch.setattr(dash_mod, "now_local", lambda: datetime(2026, 5, 20, 12, 0))
+    cat = make_category(auth_client, name="Тренировки")
+    sub = make_subcategory(auth_client, cat["id"], initial_price="100.00")
+
+    _event(auth_client, sub, "2026-04-10T10:00:00", "100.00")   # prev, counts
+    _event(auth_client, sub, "2026-04-25T10:00:00", "200.00")   # prev, past day 20
+    _event(auth_client, sub, "2026-05-05T10:00:00", "300.00")   # current, counts
+    _event(auth_client, sub, "2026-05-20T23:00:00", "400.00")   # today, counts
+    _event(auth_client, sub, "2026-05-28T10:00:00", "500.00")   # current, future
+
+    body = auth_client.get("/api/dashboard", params={"period": "month"}).json()
+    assert Decimal(str(body["total_cost"])) == Decimal("1200.00")
+    assert Decimal(str(body["mtd_total_cost"])) == Decimal("700.00")
+    assert Decimal(str(body["prev_total_cost"])) == Decimal("100.00")
+    assert body["mtd_prev_days"] == 20
+
+
+def test_dashboard_mtd_fields_absent_outside_month(auth_client):
+    _seed(auth_client)
+    body = auth_client.get("/api/dashboard", params={"period": "all"}).json()
+    assert body["mtd_total_cost"] is None
+    assert body["mtd_prev_days"] is None
+    assert body["prev_total_cost"] is None

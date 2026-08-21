@@ -339,6 +339,12 @@ class DashboardResponse(BaseModel):
     # month/year, or same-length window shifted back for custom). None when
     # period == "all" — there's no meaningful "previous" for an all-time view.
     prev_total_cost: Decimal | None = None
+    # Month-to-date income (1st through today inclusive) and the number of
+    # days of the previous month ``prev_total_cost`` covers. Set for
+    # period == "month" only: the %-delta pill compares these two slices so a
+    # half-finished month is never measured against a whole one.
+    mtd_total_cost: Decimal | None = None
+    mtd_prev_days: int | None = None
     by_category: list[DashboardCategoryStat]
     by_subcategory: list[DashboardSubcategoryStat]
     by_client: list[DashboardClientStat]
