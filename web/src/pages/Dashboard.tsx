@@ -15,6 +15,7 @@ import type { EventItem } from "@/types/api";
 import {
   Echart,
   ECHART_BASE_TEXT,
+  ECHART_MONO_TEXT,
   GRID_LEFT_FLUSH,
   shade,
   type EChartsOption,
@@ -105,6 +106,11 @@ export function DashboardPage() {
   const dash = useQuery({
     queryKey: ["dashboard"],
     queryFn: () => dashboardApi.fetch({ period: "month" }),
+  });
+
+  const incomeHistory = useQuery({
+    queryKey: ["dashboard", "income-history"],
+    queryFn: () => dashboardApi.incomeHistory(),
   });
 
   const upcoming = useQuery({
@@ -449,6 +455,148 @@ export function DashboardPage() {
     };
   }, [data]);
 
+  // "Динамика дохода": one point per calendar day across the whole history.
+  // Large-area setup (no symbols, LTTB sampling) so thousands of days stay
+  // smooth, with a zoom slider to narrow the window down to a single week.
+  const historyOption: EChartsOption | null = useMemo(() => {
+    const hist = incomeHistory.data;
+    if (!hist || hist.dates.length === 0) return null;
+    // "2026-03-04" -> "4 мар 26". Falls back to the raw value so an axis or
+    // slider label that isn't a plain ISO day can never render as NaN.
+    const shortDate = (d: string) => {
+      const [y, m, day] = String(d).split("-");
+      const mon = MONTH_ABBR[parseInt(m, 10) - 1];
+      if (!mon || !day) return String(d);
+      return `${parseInt(day, 10)} ${mon.toLowerCase()} ${y.slice(2)}`;
+    };
+    const fmtCompact = (v: number) =>
+      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
+    return {
+      grid: {
+        top: 16,
+        right: 6,
+        bottom: isMobile ? 58 : 62,
+        left: 0,
+        containLabel: true,
+      },
+      tooltip: {
+        trigger: "axis",
+        // Narrow screens: keep the box inside the canvas.
+        confine: true,
+        axisPointer: { type: "line", lineStyle: { color: "#DFDCD3" } },
+        backgroundColor: "rgba(255, 255, 255, 0.6)",
+        extraCssText: "backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);",
+        borderRadius: 16,
+        borderColor: "#ECEAE3",
+        borderWidth: 1,
+        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        formatter: (params: unknown) => {
+          const items = params as Array<{ dataIndex: number; value: number }>;
+          if (!items.length) return "";
+          const label = format(
+            parse(hist.dates[items[0].dataIndex], "yyyy-MM-dd", new Date()),
+            "d MMMM yyyy",
+            { locale: ru },
+          );
+          return `<div style="font-weight:600;font-size:13px">${label}</div><div style="margin-top:4px;font-size:13px;font-feature-settings:'ss01'">${RUB(items[0].value || 0)}</div>`;
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: hist.dates,
+        boundaryGap: false,
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: {
+          ...ECHART_BASE_TEXT,
+          fontSize: 10.5,
+          hideOverlap: true,
+          formatter: (v: string) => shortDate(v),
+        },
+      },
+      yAxis: {
+        type: "value",
+        boundaryGap: [0, "8%"],
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLabel: { ...ECHART_MONO_TEXT, fontSize: 10.5, formatter: fmtCompact },
+      },
+      dataZoom: [
+        // Desktop keeps an in-plot zoom, but bound to Ctrl+wheel and pointer
+        // drag, so a plain scroll over the card still scrolls the page. Touch
+        // gets the slider only: a one-finger drag inside the plot has to stay
+        // page scroll.
+        ...(isMobile
+          ? []
+          : [
+              {
+                type: "inside" as const,
+                zoomOnMouseWheel: "ctrl" as const,
+                moveOnMouseMove: true,
+                moveOnMouseWheel: false,
+              },
+            ]),
+        {
+          type: "slider" as const,
+          height: isMobile ? 24 : 28,
+          bottom: 6,
+          borderColor: "#ECEAE3",
+          backgroundColor: "#FAFAF7",
+          fillerColor: "rgba(123, 182, 97, 0.14)",
+          dataBackground: {
+            lineStyle: { color: "#CFE0C4" },
+            areaStyle: { color: "#EAF1E5" },
+          },
+          selectedDataBackground: {
+            lineStyle: { color: INCOME_GREEN },
+            areaStyle: { color: "#D6E6CC" },
+          },
+          handleStyle: { color: "#FFFFFF", borderColor: "#C9C4B8" },
+          moveHandleStyle: { color: "#DFDCD3" },
+          // Drag-to-select inside the mini map fights touch scrolling.
+          brushSelect: false,
+          labelFormatter: (_: number, valueStr: string) => shortDate(valueStr),
+          textStyle: { ...ECHART_BASE_TEXT, fontSize: 10 },
+        },
+      ],
+      series: [
+        {
+          name: "Доход",
+          type: "line" as const,
+          symbol: "none" as const,
+          sampling: "lttb" as const,
+          itemStyle: { color: INCOME_GREEN },
+          lineStyle: { width: 1.5, color: INCOME_GREEN },
+          areaStyle: {
+            color: {
+              type: "linear" as const,
+              x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: "rgba(123, 182, 97, 0.45)" },
+                { offset: 1, color: "rgba(123, 182, 97, 0.02)" },
+              ],
+            },
+          },
+          data: hist.values,
+        },
+      ],
+    };
+  }, [incomeHistory.data, isMobile]);
+
+  const historyMeta = useMemo(() => {
+    const hist = incomeHistory.data;
+    if (!hist || hist.dates.length === 0) return null;
+    const monthLabelOf = (d: string) =>
+      format(parse(d, "yyyy-MM-dd", new Date()), "LLL yyyy", { locale: ru });
+    const from = monthLabelOf(hist.dates[0]);
+    const to = monthLabelOf(hist.dates[hist.dates.length - 1]);
+    return {
+      range: from === to ? from : `${from} - ${to}`,
+      total: hist.values.reduce((sum, v) => sum + v, 0),
+    };
+  }, [incomeHistory.data]);
+
   const upcomingEvents = useMemo(() => {
     if (!upcoming.data) return [];
     const start = new Date();
@@ -618,6 +766,28 @@ export function DashboardPage() {
             </div>
             {monthlyOption && data.chart.monthly_values.some((v) => v > 0) ? (
               <Echart option={monthlyOption} height={220} />
+            ) : (
+              <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
+            )}
+          </Card>
+
+          {/* Row 4: whole-history income dynamics, zoomable down to a day */}
+          <Card className="chart-card">
+            <div className="card-head">
+              <div>
+                <div className="card-title">Динамика дохода</div>
+                <div className="muted small" style={{ textTransform: "capitalize" }}>
+                  {historyMeta?.range ?? "вся история"}
+                </div>
+              </div>
+              {historyMeta && (
+                <div className="card-head-sum-wrap">
+                  <div className="card-head-sum">{fmt.money(historyMeta.total)} ₽</div>
+                </div>
+              )}
+            </div>
+            {historyOption ? (
+              <Echart option={historyOption} height={isMobile ? 260 : 320} />
             ) : (
               <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
             )}

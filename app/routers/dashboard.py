@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, and_, func
@@ -14,6 +14,7 @@ from ..schemas import (
     DashboardChart,
     DashboardClientStat,
     DashboardDailySeries,
+    DashboardIncomeHistory,
     DashboardResponse,
     DashboardSubcategoryStat,
 )
@@ -291,3 +292,29 @@ def dashboard(
             monthly_prev_total=monthly_prev_total,
         ),
     )
+
+
+@router.get("/income-history", response_model=DashboardIncomeHistory)
+def income_history(db: Session = Depends(get_db)):
+    """Per-day income over the whole history for the zoomable area chart.
+
+    Unfiltered on purpose, like the monthly chart: the card is about the
+    long-run trend, not the current dashboard selection. Every day between
+    the first and the last event is emitted, empty ones as 0, so the x axis
+    is an even calendar scale rather than a list of busy days.
+    """
+    rows = db.execute(select(Event.start_at, Event.total_cost)).all()
+    buckets: dict[date, Decimal] = defaultdict(lambda: Decimal(0))
+    for start_at, total in rows:
+        buckets[start_at.date()] += total
+    if not buckets:
+        return DashboardIncomeHistory(dates=[], values=[])
+
+    cur, last = min(buckets), max(buckets)
+    dates: list[str] = []
+    values: list[float] = []
+    while cur <= last:
+        dates.append(cur.isoformat())
+        values.append(float(buckets.get(cur, Decimal(0))))
+        cur += timedelta(days=1)
+    return DashboardIncomeHistory(dates=dates, values=values)

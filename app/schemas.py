@@ -329,6 +329,15 @@ class DashboardChart(BaseModel):
     monthly_prev_total: float = 0.0
 
 
+class DashboardIncomeHistory(BaseModel):
+    """Gross income per calendar day across the whole event history, zero
+    filled between the first and the last day so the area chart draws one
+    continuous line."""
+
+    dates: list[str]
+    values: list[float]
+
+
 class DashboardResponse(BaseModel):
     period: str
     period_label: str

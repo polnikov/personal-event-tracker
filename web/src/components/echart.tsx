@@ -1,6 +1,7 @@
 import * as echarts from "echarts/core";
 import { BarChart, HeatmapChart, LineChart, PieChart } from "echarts/charts";
 import {
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
   MarkAreaComponent,
@@ -18,6 +19,7 @@ echarts.use([
   HeatmapChart,
   LineChart,
   PieChart,
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
   MarkAreaComponent,

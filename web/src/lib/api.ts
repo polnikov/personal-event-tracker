@@ -6,6 +6,7 @@ import type {
   Client,
   ClientDetail,
   Club,
+  DashboardIncomeHistory,
   DashboardResponse,
   EventItem,
   EventListResponse,
@@ -336,6 +337,8 @@ export const dashboard = {
     subcategory_id?: number;
     client_id?: number;
   }) => request<DashboardResponse>(`/dashboard${buildQuery(params)}`),
+  incomeHistory: () =>
+    request<DashboardIncomeHistory>("/dashboard/income-history"),
 };
 
 // ---------- Reports ----------

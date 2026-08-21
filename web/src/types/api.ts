@@ -172,6 +172,13 @@ export interface DashboardChart {
   monthly_prev_total?: number;
 }
 
+/** Gross income per calendar day across the whole history, zero filled
+ *  between the first and the last day. Drives the zoomable area chart. */
+export interface DashboardIncomeHistory {
+  dates: string[];
+  values: number[];
+}
+
 export interface DashboardResponse {
   period: string;
   period_label: string;

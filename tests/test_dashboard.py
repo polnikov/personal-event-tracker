@@ -123,3 +123,26 @@ def test_dashboard_mtd_fields_absent_outside_month(auth_client):
     assert body["mtd_total_cost"] is None
     assert body["mtd_prev_days"] is None
     assert body["prev_total_cost"] is None
+
+
+def test_income_history_fills_empty_days(auth_client):
+    cat = make_category(auth_client, name="Тренировки")
+    sub = make_subcategory(auth_client, cat["id"], initial_price="100.00")
+    _event(auth_client, sub, "2026-03-01T10:00:00", "100.00")
+    _event(auth_client, sub, "2026-03-01T14:00:00", "150.00")  # same day, adds up
+    _event(auth_client, sub, "2026-03-04T10:00:00", "200.00")
+
+    body = auth_client.get("/api/dashboard/income-history").json()
+    assert body["dates"] == [
+        "2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04",
+    ]
+    assert body["values"] == [250.0, 0.0, 0.0, 200.0]
+
+
+def test_income_history_empty(auth_client):
+    body = auth_client.get("/api/dashboard/income-history").json()
+    assert body == {"dates": [], "values": []}
+
+
+def test_income_history_requires_auth(client):
+    assert client.get("/api/dashboard/income-history").status_code == 401

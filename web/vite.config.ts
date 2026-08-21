@@ -57,6 +57,10 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: "/index.html",
+        // The single app chunk crossed workbox's 2 MiB default. It has to
+        // stay precached: this is an offline-first PWA, so a cold start with
+        // no network must find the whole bundle in the cache.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // Wipe stale precaches from older deploys + activate the new SW
         // immediately so users don't sit on yesterday's bundle.
         cleanupOutdatedCaches: true,
