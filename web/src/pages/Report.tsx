@@ -6,6 +6,7 @@ import { ChevronDown, FilterX } from "lucide-react";
 import {
   Card,
   Select,
+  Tabs,
 } from "@/components/design";
 import { Echart, PRESSED_LABEL_BOX, pressedFill, type EChartsOption } from "@/components/echart";
 import { PctChangePill } from "@/components/PctChangePill";
@@ -88,6 +89,21 @@ export function ReportPage() {
         };
       }),
     [],
+  );
+
+  const monthTabOptions = useMemo(
+    () =>
+      MONTH_ABBR.map((label, i) => ({ value: String(i + 1), label })),
+    [],
+  );
+
+  const categoryOptions = useMemo(
+    () =>
+      visibleCategories(cats.data).map((c) => ({
+        value: String(c.id),
+        label: c.name,
+      })),
+    [cats.data],
   );
 
   const periodLabel = useMemo(() => {
@@ -607,29 +623,54 @@ export function ReportPage() {
               otherwise keep the collapsed panel from reaching zero). */}
           <div className="events-filters-body-inner">
             <div className="events-filters-body-pad">
-              <div className="filter-row">
-                <Select
-                  value={String(year)}
-                  onChange={(v) => setYear(Number(v))}
-                  options={yearOptions}
-                />
-                <Select
-                  value={String(month)}
-                  onChange={(v) => setMonth(Number(v))}
-                  options={monthOptions}
-                />
-                <Select
-                  value={categoryId || "all"}
-                  onChange={(v) => setCategoryId(v === "all" ? "" : v)}
-                  options={[
-                    { value: "all", label: "Все категории" },
-                    ...visibleCategories(cats.data).map((c) => ({
-                      value: String(c.id),
-                      label: c.name,
-                    })),
-                  ]}
-                />
-              </div>
+              {isMobile ? (
+                /* Phones swap the three dropdowns for switcher tracks: one tap
+                   to change a filter instead of open-scroll-pick, and the
+                   current year/month/category stays readable at a glance.
+                   Month and category outrun the screen width, so those tracks
+                   scroll sideways. */
+                <div className="report-filter-switchers">
+                  <Tabs
+                    className="scroll"
+                    value={String(year)}
+                    onChange={(v) => setYear(Number(v))}
+                    options={yearOptions}
+                  />
+                  <Tabs
+                    className="scroll"
+                    value={String(month)}
+                    onChange={(v) => setMonth(Number(v))}
+                    options={monthTabOptions}
+                  />
+                  <Tabs
+                    className="scroll"
+                    value={categoryId || "all"}
+                    onChange={(v) => setCategoryId(v === "all" ? "" : v)}
+                    options={[{ value: "all", label: "Все" }, ...categoryOptions]}
+                  />
+                </div>
+              ) : (
+                <div className="filter-row">
+                  <Select
+                    value={String(year)}
+                    onChange={(v) => setYear(Number(v))}
+                    options={yearOptions}
+                  />
+                  <Select
+                    value={String(month)}
+                    onChange={(v) => setMonth(Number(v))}
+                    options={monthOptions}
+                  />
+                  <Select
+                    value={categoryId || "all"}
+                    onChange={(v) => setCategoryId(v === "all" ? "" : v)}
+                    options={[
+                      { value: "all", label: "Все категории" },
+                      ...categoryOptions,
+                    ]}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -2890,6 +2890,31 @@ input[type="number"] { -moz-appearance: textfield; }
 @media (prefers-reduced-motion: reduce) {
   .view-switch-pill { transition: none; }
 }
+/* Switcher track that holds more tabs than it can show: it scrolls sideways
+   instead of wrapping, with the scrollbar hidden and the active tab centred
+   by useSlidingPill. Tabs grow to share a track that isn't full, and never
+   shrink below their label on one that overflows. */
+.view-switcher.scroll {
+  display: flex;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.view-switcher.scroll::-webkit-scrollbar { display: none; }
+.view-switcher.scroll .view-switch-btn {
+  flex: 1 0 auto;
+  white-space: nowrap;
+}
+
+/* Mobile report filters: year, month and category, one track per row. */
+.report-filter-switchers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* When a Tabs lives directly inside .page (a column flex container), the
    default flex `align-items: stretch` makes the switcher span the full
    page width. Opt out so it hugs its labels instead on desktop. */
