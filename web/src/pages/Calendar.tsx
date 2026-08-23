@@ -416,6 +416,7 @@ export function CalendarPage() {
       )}
       {(view === "week" || view === "3days") && (
         <WeekView
+          view={view}
           days={gridDays}
           today={today}
           eventsByDay={eventsByDay}
@@ -555,7 +556,12 @@ function MonthView({
                       {e.extendedProps.client ? ` | ${e.extendedProps.client}` : ""}
                     </div>
                     <div className="cal-event-time mono">{fmt.time(e.start)} – {fmt.time(e.end)}</div>
-                    <div className="cal-event-sub">{e.extendedProps.subcategory}</div>
+                    <div className="cal-event-foot">
+                      <div className="cal-event-sub">{e.extendedProps.subcategory}</div>
+                      <span className="cal-event-cost mono">
+                        {fmt.money(e.extendedProps.cost)} ₽
+                      </span>
+                    </div>
                   </div>
                 ))}
                 {evs.length > 3 && <div className="cal-event-more">+{evs.length - 3}</div>}
@@ -569,12 +575,14 @@ function MonthView({
 }
 
 function WeekView({
+  view,
   days,
   today,
   eventsByDay,
   onEvent,
   onCreate,
 }: {
+  view: "week" | "3days";
   days: Date[];
   today: Date;
   eventsByDay: Map<string, CalendarEvent[]>;
@@ -676,10 +684,11 @@ function WeekView({
                     const endMins = en.getHours() * 60 + en.getMinutes();
                     const top = minsToY(startMins);
                     const height = Math.max(24, minsToY(endMins) - top - 2);
+                    const cost = `${fmt.money(e.extendedProps.cost)} ₽`;
                     return (
                       <div
                         key={e.id}
-                        className="week-time-event"
+                        className={cn("week-time-event", view === "3days" && "three")}
                         style={{
                           top,
                           height,
@@ -690,6 +699,9 @@ function WeekView({
                           onEvent(Number(e.id));
                         }}
                       >
+                        {view === "3days" && (
+                          <span className="week-time-ev-cost corner mono">{cost}</span>
+                        )}
                         <div className="week-time-ev-name">
                           {e.extendedProps.category}
                           {e.extendedProps.client ? ` | ${e.extendedProps.client}` : ""}
@@ -697,7 +709,16 @@ function WeekView({
                         <div className="week-time-ev-time mono">
                           {fmt.time(e.start)} – {fmt.time(e.end)}
                         </div>
-                        <div className="week-time-ev-sub">{e.extendedProps.subcategory}</div>
+                        {view === "week" ? (
+                          <div className="week-time-ev-foot">
+                            <div className="week-time-ev-sub">
+                              {e.extendedProps.subcategory}
+                            </div>
+                            <span className="week-time-ev-cost mono">{cost}</span>
+                          </div>
+                        ) : (
+                          <div className="week-time-ev-sub">{e.extendedProps.subcategory}</div>
+                        )}
                       </div>
                     );
                   })}
