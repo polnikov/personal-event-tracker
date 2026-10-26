@@ -366,6 +366,19 @@ export function EventForm({
     </>
   );
 
+  // Busiest clients first, so the regulars sit at the top of the picker.
+  // Same order as the Clients page: event count desc, ties by name.
+  const clientOptions = useMemo(
+    () =>
+      [...(clientsList.data ?? [])]
+        .sort((a, b) => {
+          if (b.events_count !== a.events_count) return b.events_count - a.events_count;
+          return a.full_name.localeCompare(b.full_name, "ru");
+        })
+        .map((c) => ({ value: String(c.id), label: c.full_name })),
+    [clientsList.data],
+  );
+
   // Packages the selected client can spend on the selected subcategory.
   // The event's own package is always kept in the list while editing —
   // otherwise opening an old event whose package is now exhausted would
@@ -512,7 +525,7 @@ export function EventForm({
               value={clientValue}
               onChange={(v) => form.setValue("client_id", v)}
               placeholder="— без клиента —"
-              options={(clientsList.data ?? []).map((c) => ({ value: String(c.id), label: c.full_name }))}
+              options={clientOptions}
             />
           </div>
         </div>
