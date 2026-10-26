@@ -169,6 +169,33 @@
   /* Don't float over an open modal (overlay is portaled to <body>). */
   body:has(.modal-overlay) .mobile-tabbar { display: none; }
 
+  /* Настройки sub-tabs ride just above the tabbar, in thumb reach. The
+     offset is the tabbar's own height (72px + safe area) plus a 10px gap;
+     side insets match .main's 10px gutter. The beige track gets a frosted
+     backing like the tabbar so content scrolling under it stays legible.
+     The .page > prefix outranks the phone rule that sets these tabs to
+     width: 100%, which would push the right edge off screen. */
+  .page > .view-switcher.settings-tabs {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    z-index: 59;
+    background:
+      linear-gradient(#DFDCD32E, #DFDCD32E),
+      color-mix(in oklab, var(--bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14),
+                0 6px 18px -6px rgba(42, 42, 46, 0.18),
+                0 2px 6px -2px rgba(42, 42, 46, 0.10);
+  }
+  .settings-tabs .view-switch-btn { flex: 1; }
+  body:has(.modal-overlay) .settings-tabs { display: none; }
+  /* Room for the pinned bar (38px) and its gap above the tabbar padding. */
+  .settings-page { padding-bottom: 48px; }
+
   /* ECharts gives its DOM tooltip z-index:9999999, which otherwise covers the
      fixed tabbar. Isolating each chart confines that z-index to the chart's
      own stacking context (below the tabbar's z-index). */

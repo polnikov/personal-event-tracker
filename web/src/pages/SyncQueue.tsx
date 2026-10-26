@@ -7,6 +7,7 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { Button, Card, IconButton } from "@/components/design";
 import type { OutboxEntry } from "@/lib/db";
 import { ack, list, retry, subscribe } from "@/lib/outbox";
+import { eventLabel, lookupsFromCache } from "@/lib/outboxLabel";
 import { flush } from "@/lib/syncDaemon";
 
 function methodPill(method: string) {
@@ -48,6 +49,9 @@ export function SyncQueuePage() {
 
   const pending = rows.filter((r) => r.status === "pending");
   const failed = rows.filter((r) => r.status === "failed");
+  // Event operations read as client + date/time; names come from the query
+  // cache, which is persisted, so this works offline too.
+  const lookups = lookupsFromCache(qc);
 
   const Section = ({ title, items }: { title: string; items: OutboxEntry[] }) => {
     if (items.length === 0) return null;
@@ -58,58 +62,70 @@ export function SyncQueuePage() {
         </div>
         <Card padding="p-0">
           <div>
-            {items.map((row) => (
-              <div
-                key={row.id}
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "center",
-                  padding: "10px 14px",
-                  borderTop: "1px solid var(--line)",
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    {methodPill(row.method)}
-                    <span className="mono small">{row.url}</span>
+            {items.map((row) => {
+              const label = eventLabel(row, lookups);
+              return (
+                <div
+                  key={row.id}
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                    padding: "10px 14px",
+                    borderTop: "1px solid var(--line)",
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      {methodPill(row.method)}
+                      {label ? (
+                        <>
+                          <span className="small" style={{ fontWeight: 500 }}>
+                            {label.client}
+                          </span>
+                          <span className="muted small">{label.when}</span>
+                        </>
+                      ) : (
+                        <span className="mono small">{row.url}</span>
+                      )}
+                    </div>
+                    <div className="muted small" style={{ marginTop: 2 }}>
+                      {format(row.ts, "d MMM yyyy, HH:mm:ss", { locale: ru })}
+                      {row.attempts > 0 && <> · попыток: {row.attempts}</>}
+                      {row.lastError && <> · {row.lastError}</>}
+                    </div>
                   </div>
-                  <div className="muted small" style={{ marginTop: 2 }}>
-                    {format(row.ts, "d MMM yyyy, HH:mm:ss", { locale: ru })}
-                    {row.attempts > 0 && <> · попыток: {row.attempts}</>}
-                    {row.lastError && <> · {row.lastError}</>}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {row.status === "failed" && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      icon={<RotateCcw size={14} />}
-                      onClick={async () => {
-                        await retry(row.id);
-                        await flush();
-                        qc.invalidateQueries({ queryKey: ["events"] });
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {row.status === "failed" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={<RotateCcw size={14} />}
+                        onClick={async () => {
+                          await retry(row.id);
+                          await flush();
+                          qc.invalidateQueries({ queryKey: ["events"] });
+                        }}
+                      >
+                        Повторить
+                      </Button>
+                    )}
+                    <IconButton
+                      small
+                      danger
+                      aria-label="Удалить из очереди"
+                      onClick={() => {
+                        if (confirm("Удалить эту операцию из очереди?")) {
+                          void ack(row.id);
+                        }
                       }}
                     >
-                      Повторить
-                    </Button>
-                  )}
-                  <IconButton
-                    small
-                    danger
-                    aria-label="Удалить из очереди"
-                    onClick={() => {
-                      if (confirm("Удалить эту операцию из очереди?")) {
-                        void ack(row.id);
-                      }
-                    }}
-                  >
-                    <Trash2 size={14} />
-                  </IconButton>
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>

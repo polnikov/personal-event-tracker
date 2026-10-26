@@ -52,14 +52,17 @@ export function SettingsPage() {
     outbox.failed > 0 ? `!${outbox.failed}` : outbox.pending > 0 ? String(outbox.pending) : null;
 
   return (
-    <div className="page">
+    <div className="page settings-page">
       <div className="page-head">
         <div>
           <h1 className="h1">Настройки</h1>
         </div>
       </div>
 
+      {/* On phones this bar is pinned above the bottom navbar (CSS), within
+          thumb reach; the DOM order keeps it above the content on desktop. */}
       <Tabs<SettingsTab>
+        className="settings-tabs"
         value={active}
         onChange={(v) => navigate(`/settings/${v}`)}
         options={[

@@ -6,8 +6,7 @@ import { db } from "@/lib/db";
 import { enqueue } from "@/lib/outbox";
 import { SyncQueuePage } from "./SyncQueue";
 
-function renderPage() {
-  const qc = new QueryClient();
+function renderPage(qc = new QueryClient()) {
   return render(
     <QueryClientProvider client={qc}>
       <SyncQueuePage />
@@ -39,5 +38,21 @@ describe("SyncQueuePage", () => {
     });
     expect(screen.getByText("/events")).toBeInTheDocument();
     expect(screen.getByText(/Ожидают отправки/)).toBeInTheDocument();
+  });
+
+  it("shows a queued event as client and time instead of its url", async () => {
+    const qc = new QueryClient();
+    qc.setQueryData(["clients", ""], [{ id: 7, full_name: "Иванов Иван" }]);
+    await enqueue({
+      method: "PUT",
+      url: "/events/1855",
+      body: { client_id: 7, start_at: "2026-09-15T13:00:00", duration_minutes: 60 },
+    });
+    renderPage(qc);
+    await waitFor(() => {
+      expect(screen.getByText("Иванов Иван")).toBeInTheDocument();
+    });
+    expect(screen.getByText("15 сент. 2026, 13:00–14:00")).toBeInTheDocument();
+    expect(screen.queryByText("/events/1855")).toBeNull();
   });
 });
