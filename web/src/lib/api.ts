@@ -297,6 +297,7 @@ export const events = {
     tax: number;
     royalty: number;
     is_cash: boolean;
+    is_legal: boolean;
   }) => request<EventItem>("/events", { method: "POST", body: JSON.stringify(payload) }),
   update: (
     id: number,
@@ -313,6 +314,7 @@ export const events = {
       tax: number;
       royalty: number;
       is_cash: boolean;
+      is_legal: boolean;
     },
   ) => request<EventItem>(`/events/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
   remove: (id: number) => request<{ ok: true }>(`/events/${id}`, { method: "DELETE" }),
@@ -343,13 +345,27 @@ export const dashboard = {
 
 // ---------- Reports ----------
 
+/** Report "only events with X" toggles; off flags are left out of the query. */
+export interface ReportFlagFilters {
+  royalty_only?: boolean;
+  tax_only?: boolean;
+  subscription_only?: boolean;
+  cash_only?: boolean;
+  legal_only?: boolean;
+}
+
 export const reports = {
-  fetch: (params: { year: number; month: number; category_id?: number }) =>
+  fetch: (params: { year: number; month: number; category_id?: number } & ReportFlagFilters) =>
     request<ReportResponse>(
       `/reports${buildQuery({
         year: params.year,
         month: params.month,
         category_id: params.category_id,
+        royalty_only: params.royalty_only || undefined,
+        tax_only: params.tax_only || undefined,
+        subscription_only: params.subscription_only || undefined,
+        cash_only: params.cash_only || undefined,
+        legal_only: params.legal_only || undefined,
       })}`,
     ),
   years: () => request<{ years: number[] }>("/reports/years"),

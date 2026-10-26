@@ -170,6 +170,8 @@ class Event(Base):
 
     # Paid through the club's till (касса) instead of straight to the coach.
     is_cash: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Paid by a legal entity (ЮЛ) rather than a private person.
+    is_legal: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Snapshot of where the event lives in Google after a successful sync.

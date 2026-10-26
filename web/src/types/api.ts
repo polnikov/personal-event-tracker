@@ -119,6 +119,8 @@ export interface EventItem {
   royalty: string;
   /** Paid through the club's till instead of straight to the coach. */
   is_cash: boolean;
+  /** Paid by a legal entity (ЮЛ) rather than a private person. */
+  is_legal: boolean;
   notes: string | null;
   subcategory: EventSubcategoryRef;
   client: EventClientRef | null;

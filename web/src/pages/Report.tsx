@@ -7,6 +7,7 @@ import {
   Card,
   Select,
   Tabs,
+  Toggle,
 } from "@/components/design";
 import { Echart, PRESSED_LABEL_BOX, pressedFill, type EChartsOption } from "@/components/echart";
 import { PctChangePill } from "@/components/PctChangePill";
@@ -35,20 +36,36 @@ export function ReportPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [categoryId, setCategoryId] = useState<string>("");
+  // "Only events with X" toggles, same meaning as on the Events page.
+  const [royaltyOnly, setRoyaltyOnly] = useState(false);
+  const [taxOnly, setTaxOnly] = useState(false);
+  const [subscriptionOnly, setSubscriptionOnly] = useState(false);
+  const [cashOnly, setCashOnly] = useState(false);
+  const [legalOnly, setLegalOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Кнопка «Очистить» активна, если выбрана категория ИЛИ месяц/год не текущие.
-  // Сброс возвращает год, месяц и категорию к значениям по умолчанию.
+  // Кнопка «Очистить» активна, если выбрана категория, включён любой тоггл
+  // ИЛИ месяц/год не текущие. Сброс возвращает всё к значениям по умолчанию.
   const todayYear = today.getFullYear();
   const todayMonth = today.getMonth() + 1;
   const activeFilterCount =
     (categoryId ? 1 : 0) +
     (year !== todayYear ? 1 : 0) +
-    (month !== todayMonth ? 1 : 0);
+    (month !== todayMonth ? 1 : 0) +
+    (royaltyOnly ? 1 : 0) +
+    (taxOnly ? 1 : 0) +
+    (subscriptionOnly ? 1 : 0) +
+    (cashOnly ? 1 : 0) +
+    (legalOnly ? 1 : 0);
   const clearAllFilters = () => {
     setYear(todayYear);
     setMonth(todayMonth);
     setCategoryId("");
+    setRoyaltyOnly(false);
+    setTaxOnly(false);
+    setSubscriptionOnly(false);
+    setCashOnly(false);
+    setLegalOnly(false);
   };
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: () => categoriesApi.list() });
@@ -59,13 +76,21 @@ export function ReportPage() {
     staleTime: 60_000,
   });
 
+  const flagFilters = {
+    royalty_only: royaltyOnly,
+    tax_only: taxOnly,
+    subscription_only: subscriptionOnly,
+    cash_only: cashOnly,
+    legal_only: legalOnly,
+  };
   const data = useQuery({
-    queryKey: ["report", { year, month, categoryId }],
+    queryKey: ["report", { year, month, categoryId, ...flagFilters }],
     queryFn: () =>
       reportsApi.fetch({
         year,
         month,
         category_id: categoryId ? Number(categoryId) : undefined,
+        ...flagFilters,
       }),
   });
 
@@ -671,6 +696,21 @@ export function ReportPage() {
                   />
                 </div>
               )}
+              <div className="events-filter-toggles report-filter-toggles">
+                <Toggle checked={royaltyOnly} onChange={setRoyaltyOnly} label="Роялти" />
+                <Toggle checked={taxOnly} onChange={setTaxOnly} label="Налог" />
+                <Toggle
+                  checked={subscriptionOnly}
+                  onChange={setSubscriptionOnly}
+                  label="Абонемент"
+                />
+                {/* Same split as the Events page: one row on desktop, Касса +
+                    ЮЛ on a second row on phones. */}
+                <div className="events-filter-toggle-break">
+                  <Toggle checked={cashOnly} onChange={setCashOnly} label="Касса" />
+                  <Toggle checked={legalOnly} onChange={setLegalOnly} label="ЮЛ" />
+                </div>
+              </div>
             </div>
           </div>
         </div>

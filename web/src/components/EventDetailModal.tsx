@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Copy, History, Pencil, Trash2 } from "lucide-react";
-import { Coins, HandCoins, SealPercent } from "@phosphor-icons/react";
+import { Briefcase, Coins, HandCoins, SealPercent } from "@phosphor-icons/react";
 import { Button, Modal } from "@/components/design";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { EventFormModal } from "@/pages/EventForm";
@@ -71,6 +71,7 @@ export function EventDetailModal({
         // Update replaces every field, so the flag has to ride along or a
         // reschedule would silently clear it.
         is_cash: ev.is_cash,
+        is_legal: ev.is_legal,
       });
     },
     onSuccess: () => {
@@ -125,7 +126,8 @@ export function EventDetailModal({
 
   const taxPct = ev ? parseFloat(ev.tax) || 0 : 0;
   const royaltyPct = ev ? parseFloat(ev.royalty) || 0 : 0;
-  const hasFlags = taxPct > 0 || royaltyPct > 0 || Boolean(ev?.is_cash);
+  const hasFlags =
+    taxPct > 0 || royaltyPct > 0 || Boolean(ev?.is_cash) || Boolean(ev?.is_legal);
 
   // Edit / copy hand off to the shared event form, layered over this modal.
   if (form) {
@@ -280,6 +282,16 @@ export function EventDetailModal({
                       >
                         <title>Касса</title>
                       </Coins>
+                    )}
+                    {ev.is_legal && (
+                      <Briefcase
+                        className="cd2-flag"
+                        size={16}
+                        weight="duotone"
+                        aria-label="ЮЛ"
+                      >
+                        <title>ЮЛ</title>
+                      </Briefcase>
                     )}
                   </span>
                 )}

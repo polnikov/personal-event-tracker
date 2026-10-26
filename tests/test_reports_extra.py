@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from .helpers import make_category, make_subcategory
+from .helpers import make_category, make_client_record, make_subcategory
 
 
 def _sub(auth_client, name="Сплит", cat_name="Тренировки"):
@@ -78,3 +78,59 @@ def test_monthly_by_category_series(auth_client):
     net = series["ЕдинственнаяКат"]["net"]
     assert len(net) == 12
     assert net[5] == 100.0  # June, 100/h * 60min, no tax
+
+
+def _june_hours(auth_client, **params):
+    report = auth_client.get(
+        "/api/reports", params={"year": 2026, "month": 6, **params}
+    ).json()
+    return sum(s["hours"] for s in report["by_subcategory"]), report
+
+
+def test_report_flag_filters(auth_client):
+    sub = _sub(auth_client)
+    cl = make_client_record(auth_client)
+    package = auth_client.post(
+        f"/api/clients/{cl['id']}/subscriptions",
+        json={"subcategory_id": sub["id"], "lessons_total": "10", "price_per_lesson": "100.00"},
+    ).json()
+    # One 1-hour event per flag, plus a plain one, so hours == event count.
+    _event(auth_client, sub["id"], "2026-06-01T10:00:00")
+    _event(auth_client, sub["id"], "2026-06-02T10:00:00", royalty="10")
+    _event(auth_client, sub["id"], "2026-06-03T10:00:00", tax="6")
+    _event(
+        auth_client, sub["id"], "2026-06-04T10:00:00",
+        client_id=cl["id"], subscription_id=package["id"],
+    )
+    _event(auth_client, sub["id"], "2026-06-05T10:00:00", is_cash=True)
+    _event(auth_client, sub["id"], "2026-06-06T10:00:00", is_legal=True)
+    _event(auth_client, sub["id"], "2026-06-07T10:00:00", is_cash=True, is_legal=True)
+
+    assert _june_hours(auth_client)[0] == 7
+    assert _june_hours(auth_client, royalty_only=True)[0] == 1
+    assert _june_hours(auth_client, tax_only=True)[0] == 1
+    assert _june_hours(auth_client, subscription_only=True)[0] == 1
+    assert _june_hours(auth_client, cash_only=True)[0] == 2
+    assert _june_hours(auth_client, legal_only=True)[0] == 2
+    # Toggles combine with AND.
+    assert _june_hours(auth_client, cash_only=True, legal_only=True)[0] == 1
+    assert _june_hours(auth_client, royalty_only=True, legal_only=True)[0] == 0
+
+    _, report = _june_hours(auth_client, legal_only=True)
+    assert sum(m["hours"] for m in report["monthly"]) == 2
+    assert sum(sum(row) for row in report["weekday_month"]) == 2
+
+
+def test_report_flag_filters_apply_to_previous_period(auth_client):
+    sub = _sub(auth_client)
+    _event(auth_client, sub["id"], "2026-05-10T10:00:00", is_legal=True)
+    _event(auth_client, sub["id"], "2026-05-11T10:00:00")
+    _event(auth_client, sub["id"], "2025-03-01T10:00:00", is_legal=True)
+    _event(auth_client, sub["id"], "2025-03-02T10:00:00")
+
+    _, report = _june_hours(auth_client, legal_only=True)
+    assert report["prev_subcategory_hours_total"] == 1
+    assert report["prev_monthly_hours_total"] == 1
+    _, report = _june_hours(auth_client)
+    assert report["prev_subcategory_hours_total"] == 2
+    assert report["prev_monthly_hours_total"] == 2

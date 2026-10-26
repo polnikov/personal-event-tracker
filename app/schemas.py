@@ -227,6 +227,7 @@ class EventRead(BaseModel):
     tax: Decimal = Decimal(0)
     royalty: Decimal = Decimal(0)
     is_cash: bool = False
+    is_legal: bool = False
     notes: str | None
     subcategory: EventSubcategory
     client: EventClient | None = None
@@ -254,6 +255,7 @@ class EventCreate(BaseModel):
     tax: Decimal = Field(default=Decimal(0), ge=0, le=100)
     royalty: Decimal = Field(default=Decimal(0), ge=0, le=100)
     is_cash: bool = False
+    is_legal: bool = False
 
 
 class EventUpdate(BaseModel):
@@ -269,6 +271,7 @@ class EventUpdate(BaseModel):
     tax: Decimal = Field(default=Decimal(0), ge=0, le=100)
     royalty: Decimal = Field(default=Decimal(0), ge=0, le=100)
     is_cash: bool = False
+    is_legal: bool = False
 
 
 class EventListResponse(BaseModel):

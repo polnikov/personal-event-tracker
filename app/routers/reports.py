@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, Query
@@ -35,11 +36,24 @@ def _subcat_ids_for_category(db: Session, category_id: int) -> list[int]:
     ]
 
 
+@dataclass(frozen=True)
+class _FlagFilters:
+    """Report filter toggles, each meaning "only events with X". Every one
+    that is on narrows the set; they combine with AND, like on the Events page."""
+
+    royalty: bool = False
+    tax: bool = False
+    subscription: bool = False
+    cash: bool = False
+    legal: bool = False
+
+
 def _query_events(
     db: Session,
     start: datetime,
     end: datetime,
     category_id: int | None,
+    flags: _FlagFilters = _FlagFilters(),
 ) -> list[Event]:
     stmt = (
         select(Event)
@@ -53,6 +67,16 @@ def _query_events(
     if category_id:
         sub_ids = _subcat_ids_for_category(db, category_id)
         stmt = stmt.where(Event.subcategory_id.in_(sub_ids or [-1]))
+    if flags.royalty:
+        stmt = stmt.where(Event.royalty > 0)
+    if flags.tax:
+        stmt = stmt.where(Event.tax > 0)
+    if flags.subscription:
+        stmt = stmt.where(Event.subscription_id.is_not(None))
+    if flags.cash:
+        stmt = stmt.where(Event.is_cash.is_(True))
+    if flags.legal:
+        stmt = stmt.where(Event.is_legal.is_(True))
     return db.execute(stmt).scalars().all()
 
 
@@ -70,6 +94,11 @@ def report(
     year: int = Query(...),
     month: int = Query(..., ge=1, le=12),
     category_id: int | None = Query(None),
+    royalty_only: bool = Query(False),
+    tax_only: bool = Query(False),
+    subscription_only: bool = Query(False),
+    cash_only: bool = Query(False),
+    legal_only: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     period_start = datetime(year, month, 1)
@@ -81,8 +110,15 @@ def report(
     year_start = datetime(year, 1, 1)
     year_end = datetime(year + 1, 1, 1)
 
-    period_events = _query_events(db, period_start, period_end, category_id)
-    year_events = _query_events(db, year_start, year_end, category_id)
+    flags = _FlagFilters(
+        royalty=royalty_only,
+        tax=tax_only,
+        subscription=subscription_only,
+        cash=cash_only,
+        legal=legal_only,
+    )
+    period_events = _query_events(db, period_start, period_end, category_id, flags)
+    year_events = _query_events(db, year_start, year_end, category_id, flags)
 
     # By-subcategory aggregation (period filtered)
     by_sub: dict[int, dict] = {}
@@ -191,8 +227,8 @@ def report(
 
     # ── Previous-period totals for the % delta pills on the cards ──
     # Net = total_cost × (1 − tax − royalty), summed across all events in the
-    # comparison window. Same category filter as the current view so the
-    # comparison stays apples-to-apples.
+    # comparison window. Same category and flag filters as the current view so
+    # the comparison stays apples-to-apples.
     def _sum_net(events: list[Event]) -> float:
         total = Decimal(0)
         for ev in events:
@@ -202,7 +238,7 @@ def report(
         return float(total)
 
     prev_year_events = _query_events(
-        db, datetime(year - 1, 1, 1), datetime(year, 1, 1), category_id
+        db, datetime(year - 1, 1, 1), datetime(year, 1, 1), category_id, flags
     )
     prev_monthly_net_total = _sum_net(prev_year_events)
     prev_monthly_hours_total = round(
@@ -218,7 +254,7 @@ def report(
             prev_period_start.year, prev_period_start.month + 1, 1
         )
     prev_period_events = _query_events(
-        db, prev_period_start, prev_period_end, category_id
+        db, prev_period_start, prev_period_end, category_id, flags
     )
     prev_subcategory_net_total = _sum_net(prev_period_events)
     prev_subcategory_hours_total = round(

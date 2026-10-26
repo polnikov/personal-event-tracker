@@ -52,6 +52,8 @@ const schema = z.object({
   royalty: z.coerce.number().min(0).max(100),
   /** Paid through the club's till instead of straight to the coach. */
   is_cash: z.boolean(),
+  /** Paid by a legal entity (ЮЛ) rather than a private person. */
+  is_legal: z.boolean(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -180,6 +182,7 @@ export function EventForm({
         tax: parseFloat(e.tax) || 0,
         royalty: parseFloat(e.royalty) || 0,
         is_cash: e.is_cash,
+        is_legal: e.is_legal,
       };
     }
     if (sourceForCopy.data) {
@@ -204,6 +207,7 @@ export function EventForm({
         tax: parseFloat(e.tax) || 0,
         royalty: parseFloat(e.royalty) || 0,
         is_cash: e.is_cash,
+        is_legal: e.is_legal,
       };
     }
     return {
@@ -219,6 +223,7 @@ export function EventForm({
       tax: 0,
       royalty: 0,
       is_cash: false,
+      is_legal: false,
     };
   }, [existing.data, sourceForCopy.data, prefillClient, prefillStart, nowLocal]);
 
@@ -273,6 +278,7 @@ export function EventForm({
         tax: taxEnabled ? values.tax : 0,
         royalty: royaltyEnabled ? values.royalty : 0,
         is_cash: values.is_cash,
+        is_legal: values.is_legal,
       }),
   });
 
@@ -291,6 +297,7 @@ export function EventForm({
         tax: taxEnabled ? values.tax : 0,
         royalty: royaltyEnabled ? values.royalty : 0,
         is_cash: values.is_cash,
+        is_legal: values.is_legal,
       }),
   });
 
@@ -338,16 +345,25 @@ export function EventForm({
   const taxValue = form.watch("tax");
   const royaltyValue = form.watch("royalty");
   const isCashValue = form.watch("is_cash");
+  const isLegalValue = form.watch("is_legal");
   const defaultTax = pctOr(appSettings.data?.default_tax, 6);
   const defaultRoyalty = pctOr(appSettings.data?.default_royalty, 10);
-  // One control, two slots: next to the price on phones (where the tax and
-  // royalty pair already fills its row), third column of that row otherwise.
-  const cashToggle = (
-    <Toggle
-      checked={isCashValue}
-      onChange={(next) => form.setValue("is_cash", next)}
-      label="Касса"
-    />
+  // One pair of controls, two slots: next to the price on phones (where the
+  // tax and royalty pair already fills its row), third column of that row
+  // otherwise. ЮЛ sits right of Касса in both.
+  const cashLegalToggles = (
+    <>
+      <Toggle
+        checked={isCashValue}
+        onChange={(next) => form.setValue("is_cash", next)}
+        label="Касса"
+      />
+      <Toggle
+        checked={isLegalValue}
+        onChange={(next) => form.setValue("is_legal", next)}
+        label="ЮЛ"
+      />
+    </>
   );
 
   // Packages the selected client can spend on the selected subcategory.
@@ -545,7 +561,7 @@ export function EventForm({
               disabled={!!selectedSub}
               {...form.register("price_per_hour")}
             />
-            {isMobile && cashToggle}
+            {isMobile && cashLegalToggles}
           </div>
           {selectedSub && <span className="muted small">Цена из абонемента</span>}
         </Field>
@@ -658,7 +674,7 @@ export function EventForm({
             )}
           </div>
 
-          {!isMobile && <div className="field">{cashToggle}</div>}
+          {!isMobile && <div className="field cash-legal-field">{cashLegalToggles}</div>}
         </div>
 
         <div className="form-grid-2 event-sum-club-row">

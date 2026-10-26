@@ -167,6 +167,50 @@ def test_create_event_with_is_cash(auth_client):
     assert r.json()["is_cash"] is True
 
 
+def test_is_legal_defaults_false_and_round_trips(auth_client):
+    sub = _setup_subcategory(auth_client)
+    base = {
+        "subcategory_id": sub["id"],
+        "start_at": "2026-09-03T09:00:00",
+        "duration_minutes": 60,
+        "price_per_hour": "100.00",
+    }
+    created = auth_client.post("/api/events", json=base).json()
+    assert created["is_legal"] is False
+
+    eid = created["id"]
+    upd = auth_client.put(
+        f"/api/events/{eid}",
+        json={**base, "recalculate_price": False, "is_legal": True},
+    )
+    assert upd.status_code == 200, upd.text
+    assert upd.json()["is_legal"] is True
+    # Independent of the Касса flag.
+    assert upd.json()["is_cash"] is False
+    assert auth_client.get(f"/api/events/{eid}").json()["is_legal"] is True
+
+    cleared = auth_client.put(
+        f"/api/events/{eid}", json={**base, "recalculate_price": False}
+    )
+    assert cleared.json()["is_legal"] is False
+
+
+def test_create_event_with_is_legal(auth_client):
+    sub = _setup_subcategory(auth_client)
+    r = auth_client.post(
+        "/api/events",
+        json={
+            "subcategory_id": sub["id"],
+            "start_at": "2026-09-04T09:00:00",
+            "duration_minutes": 60,
+            "price_per_hour": "100.00",
+            "is_legal": True,
+        },
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["is_legal"] is True
+
+
 def test_event_requires_auth(client):
     r = client.post("/api/events", json={"subcategory_id": 1, "start_at": "2026-01-01T00:00:00", "duration_minutes": 60})
     assert r.status_code == 401

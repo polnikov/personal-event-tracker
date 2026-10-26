@@ -37,6 +37,7 @@ def event_to_schema(
         tax=e.tax,
         royalty=e.royalty,
         is_cash=e.is_cash,
+        is_legal=e.is_legal,
         notes=e.notes,
         subcategory=EventSubcategory(
             id=sub.id,
