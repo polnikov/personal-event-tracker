@@ -77,34 +77,42 @@ export function pressedFill(hex: string, vertical = false) {
   };
 }
 
-/** Vertical bar fill anchored at the zero baseline: a pale base at value 0
- *  that grows more saturated with the value (vs the period max), so the
- *  gradient reads as one field rising from 0. */
-export function incomeBarFill(value: number, max: number, hex = "#7BB661") {
-  const f = max > 0 ? value / max : 0;
+/** Green of the income bars and lines. */
+export const INCOME_GREEN = "#7BB661";
+
+/** Monthly bar look shared with Часы по месяцам: pressed-in gradient across
+ *  the bar's width and a rounded top. */
+export function monthlyBarStyle(hex: string) {
   return {
-    type: "linear" as const,
-    x: 0, y: 1, x2: 0, y2: 0, // start at the bar base (value 0)
-    colorStops: [
-      { offset: 0, color: shade(hex, 1.32) }, // base @ 0 — pale
-      { offset: 1, color: shade(hex, 1.32 - 0.4 * f) }, // top — saturated by value
-    ],
+    color: pressedFill(hex, true),
+    borderRadius: [12, 12, 0, 0] as [number, number, number, number],
   };
 }
 
-/** Data-label box styled to read as gently pressed into the card: a recessed
- *  off-white fill with a darker rim and no raising drop shadow. Spread into a
- *  chart label alongside its own position/font/formatter. */
-export const PRESSED_LABEL_BOX = {
-  backgroundColor: "#F1EFE9",
-  borderColor: "#E2DFD6",
-  borderWidth: 1,
-  borderRadius: 6,
-  padding: [4, 6, 4, 6] as [number, number, number, number],
-  shadowColor: "rgba(42, 42, 46, 0.06)",
-  shadowBlur: 2,
-  shadowOffsetY: 0,
-};
+/** Bar total printed vertically, the way Доход по дням prints its totals:
+ *  plain text (no pill) reading bottom to top. Anchored at the text's start,
+ *  so the gap above the bar stays the same however long the number is. Needs
+ *  about 64px of grid.top for six-digit sums. */
+export function verticalBarLabel(isMobile: boolean, formatter: (p: unknown) => string) {
+  return {
+    show: true,
+    position: "top" as const,
+    rotate: 90,
+    align: "left" as const,
+    verticalAlign: "middle" as const,
+    distance: 8,
+    color: "#2A2A2E",
+    fontFamily: "JetBrains Mono, ui-monospace, monospace",
+    fontFeatureSettings: "'ss01'",
+    fontSize: isMobile ? 11 : 12,
+    lineHeight: isMobile ? 11 : 12,
+    fontWeight: 400,
+    formatter,
+  };
+}
+
+/** Whole rubles with ru-RU grouping, as on the daily chart: 195 600. */
+export const fmtBarTotal = (v: number) => Math.round(v).toLocaleString("ru-RU");
 
 export function Echart({
   option,

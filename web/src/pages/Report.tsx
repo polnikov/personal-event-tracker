@@ -9,7 +9,13 @@ import {
   Tabs,
   Toggle,
 } from "@/components/design";
-import { Echart, PRESSED_LABEL_BOX, pressedFill, type EChartsOption } from "@/components/echart";
+import {
+  Echart,
+  fmtBarTotal,
+  pressedFill,
+  verticalBarLabel,
+  type EChartsOption,
+} from "@/components/echart";
 import { PctChangePill } from "@/components/PctChangePill";
 import { categories as categoriesApi, reports as reportsApi } from "@/lib/api";
 import { visibleCategories } from "@/lib/catVisibility";
@@ -277,8 +283,6 @@ export function ReportPage() {
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data.data) return null;
     const labels = MONTH_ABBR;
-    const fmtCompact = (v: number) =>
-      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(v);
 
     const netSeries = data.data.monthly.map((m) => Math.round(m.net));
     const taxSeries = data.data.monthly.map((m) => Math.round(m.tax_amount));
@@ -341,31 +345,18 @@ export function ReportPage() {
       stack: "income",
       barMaxWidth: 28,
       silent: true,
-      // Zero months carry no label so the pressed-in pill doesn't render empty.
+      // Zero months carry no label, so nothing stands on the baseline.
       data: totalSeries.map((t) => (t > 0 ? 0 : { value: 0, label: { show: false } })),
       itemStyle: { color: "transparent" },
-      label: {
-        show: true,
-        position: "top" as const,
-        distance: 10,
-        align: "center" as const,
-        verticalAlign: "bottom" as const,
-        color: "#2A2A2E",
-        fontFamily: "JetBrains Mono, ui-monospace, monospace",
-        fontFeatureSettings: "'ss01'",
-        fontSize: isMobile ? 11 : 12,
-        lineHeight: isMobile ? 11 : 12,
-        fontWeight: 550,
-        ...PRESSED_LABEL_BOX,
-        formatter: (p: unknown) => {
-          const t = totalSeries[(p as { dataIndex: number }).dataIndex];
-          return t > 0 ? fmtCompact(t) : "";
-        },
-      },
+      label: verticalBarLabel(isMobile, (p) => {
+        const t = totalSeries[(p as { dataIndex: number }).dataIndex];
+        return t > 0 ? fmtBarTotal(t) : "";
+      }),
     };
 
     return {
-      grid: { top: 25, right: 0, bottom: 5, left: 0, containLabel: true },
+      // Tall top inset: the vertical totals stand above the highest bar.
+      grid: { top: 64, right: 0, bottom: 5, left: 0, containLabel: true },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -810,7 +801,7 @@ export function ReportPage() {
           </div>
         </div>
         {monthlyOption && (yearTotal.net > 0 || yearTotal.tax > 0) ? (
-          <Echart option={monthlyOption} height={300} />
+          <Echart option={monthlyOption} height={330} />
         ) : (
           <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
         )}

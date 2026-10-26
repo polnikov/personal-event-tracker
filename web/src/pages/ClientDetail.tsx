@@ -20,8 +20,10 @@ import type { EventItem, Subscription } from "@/types/api";
 import {
   Echart,
   ECHART_BASE_TEXT,
-  incomeBarFill,
-  PRESSED_LABEL_BOX,
+  INCOME_GREEN,
+  fmtBarTotal,
+  monthlyBarStyle,
+  verticalBarLabel,
   type EChartsOption,
 } from "@/components/echart";
 import { AppIcon } from "@/components/phosphor";
@@ -314,11 +316,9 @@ export function ClientDetailPage() {
       "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
       "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
     ];
-    const fmtCompact = (v: number) =>
-      v >= 1000 ? `${Math.round(v / 100) / 10}k` : String(Math.round(v));
-    const maxMonthly = Math.max(0, ...monthly.data.values);
     return {
-      grid: { top: 32, right: 0, bottom: 28, left: 0 },
+      // Tall top inset: the vertical totals stand above the highest bar.
+      grid: { top: 64, right: 0, bottom: 28, left: 0 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -359,32 +359,13 @@ export function ClientDetailPage() {
         {
           type: "bar" as const,
           barMaxWidth: 28,
+          itemStyle: monthlyBarStyle(INCOME_GREEN),
           data: monthly.data.values.map((v) =>
-            v > 0
-              ? {
-                  value: v,
-                  itemStyle: {
-                    color: incomeBarFill(v, maxMonthly),
-                    borderRadius: [12, 12, 0, 0] as [number, number, number, number],
-                  },
-                }
-              : { value: v, label: { show: false } },
+            v > 0 ? v : { value: v, label: { show: false } },
           ),
-          label: {
-            show: true,
-            position: "top",
-            distance: 10,
-            align: "center",
-            verticalAlign: "bottom",
-            color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'ss01'",
-            fontSize: isMobile ? 11 : 12,
-            lineHeight: isMobile ? 11 : 12,
-            fontWeight: 550,
-            ...PRESSED_LABEL_BOX,
-            formatter: (p: unknown) => fmtCompact((p as { value: number }).value),
-          },
+          label: verticalBarLabel(isMobile, (p) =>
+            fmtBarTotal((p as { value: number }).value),
+          ),
         },
       ],
     };
@@ -722,7 +703,7 @@ export function ClientDetailPage() {
                   {monthly.isLoading ? (
                     <div className="muted small" style={{ marginTop: 16 }}>Загрузка…</div>
                   ) : monthlyOption && monthly.data && monthly.data.values.some((v) => v > 0) ? (
-                    <Echart option={monthlyOption} height={240} />
+                    <Echart option={monthlyOption} height={270} />
                   ) : (
                     <div className="muted small" style={{ marginTop: 16 }}>Нет данных за {year}</div>
                   )}
