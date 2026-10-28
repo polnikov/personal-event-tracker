@@ -20,7 +20,7 @@ function methodPill(method: string) {
         borderRadius: 6,
         fontFamily: "JetBrains Mono, ui-monospace, monospace",
         fontSize: 10.5,
-        background: "var(--surface-2, #f3efe7)",
+        background: "var(--surface)",
         color: "var(--ink-2)",
       }}
     >

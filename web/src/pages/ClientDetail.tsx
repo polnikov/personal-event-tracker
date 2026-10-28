@@ -18,6 +18,10 @@ import {
 } from "@/components/design";
 import type { EventItem, Subscription } from "@/types/api";
 import {
+  CHART_GAP,
+  CHART_INK,
+  CHART_LINE,
+  CHART_TOOLTIP,
   Echart,
   ECHART_BASE_TEXT,
   INCOME_GREEN,
@@ -322,12 +326,7 @@ export function ClientDetailPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        ...CHART_TOOLTIP,
         formatter: (params: unknown) => {
           const items = params as Array<{ name: string; value: number; dataIndex: number }>;
           if (!items.length || !items[0].value) return "";
@@ -342,7 +341,7 @@ export function ClientDetailPage() {
         type: "category",
         data: labels,
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 11,
@@ -352,7 +351,7 @@ export function ClientDetailPage() {
         type: "value",
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        splitLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { show: false },
       },
       series: [
@@ -406,14 +405,14 @@ export function ClientDetailPage() {
         min: 0,
         max: Math.max(maxCount, 1),
         calculable: false,
-        inRange: { color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"] },
+        inRange: { color: ["rgba(143, 227, 176, 0.05)", "rgba(143, 227, 176, 0.5)"] },
       },
       xAxis: {
         type: "category",
         data: xData,
         splitArea: { show: false },
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
       },
       yAxis: {
@@ -421,7 +420,7 @@ export function ClientDetailPage() {
         data: yData,
         splitArea: { show: false },
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
       },
       series: [
@@ -430,7 +429,7 @@ export function ClientDetailPage() {
           data: cells,
           label: {
             show: true,
-            color: "#2A2A2E",
+            color: CHART_INK,
             fontFamily: "JetBrains Mono, ui-monospace, monospace",
             fontFeatureSettings: "'ss01'",
             fontSize: 11,
@@ -439,9 +438,9 @@ export function ClientDetailPage() {
               return v > 0 ? String(v) : "";
             },
           },
-          itemStyle: { borderColor: "#FFFFFF", borderWidth: 2, borderRadius: 4 },
+          itemStyle: { borderColor: CHART_GAP, borderWidth: 2, borderRadius: 4 },
           emphasis: {
-            itemStyle: { shadowBlur: 8, shadowColor: "rgba(42, 42, 46, 0.15)" },
+            itemStyle: { shadowBlur: 8, shadowColor: "rgba(0, 0, 0, 0.35)" },
           },
         },
       ],

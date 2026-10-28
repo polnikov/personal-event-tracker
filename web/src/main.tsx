@@ -11,9 +11,9 @@ import { startSyncDaemon } from "@/lib/syncDaemon";
 // our own origin so a strict server CSP (style-src 'self') no longer blocks
 // the stylesheet — and the fonts work offline too.
 //
-// Inter is loaded via @font-face in index.css from the vendored official
-// InterVariable.woff2: it's the only build that keeps the ss01 "Open digits"
-// feature (@fontsource subsets it away). JetBrains Mono stays on @fontsource.
+// Onest (variable, Latin + Cyrillic) and JetBrains Mono both come from
+// @fontsource.
+import "@fontsource-variable/onest";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "./index.css";

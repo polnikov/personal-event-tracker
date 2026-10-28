@@ -86,9 +86,9 @@ export function initials(name: string): string {
     .toUpperCase();
 }
 
-// Stable soft-pastel background derived from a string
+// Stable muted tint derived from a string, dark enough for white initials
 export function stringToColor(s: string): string {
-  const palette = ["#E8E2D5", "#DDE5D5", "#D8E0E5", "#E5D8DC", "#E0D5E5", "#E5DDD5", "#D5E5E0"];
+  const palette = ["#4B4466", "#3F5A55", "#3E4F6B", "#5B4358", "#4F4767", "#5A4C42", "#3D5B5A"];
   let hash = 0;
   for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash);
   return palette[Math.abs(hash) % palette.length];

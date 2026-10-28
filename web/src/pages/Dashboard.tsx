@@ -13,6 +13,10 @@ import {
 } from "@/components/design";
 import type { EventItem } from "@/types/api";
 import {
+  CHART_GAP,
+  CHART_INK,
+  CHART_LINE,
+  CHART_TOOLTIP,
   Echart,
   ECHART_BASE_TEXT,
   ECHART_MONO_TEXT,
@@ -27,7 +31,7 @@ import { categories as categoriesApi, dashboard as dashboardApi, events as event
 import { EventFormModal } from "@/pages/EventForm";
 import { EventDetailModal } from "@/components/EventDetailModal";
 import { PctChangePill } from "@/components/PctChangePill";
-import { fmt } from "@/lib/format";
+import { fmt, pluralize } from "@/lib/format";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
@@ -73,6 +77,11 @@ function groupUpcomingByDay(events: EventItem[]): UpcomingDayGroup[] {
   // of an upcoming-events feed.
   groups.sort((a, b) => a.key.localeCompare(b.key));
   return groups;
+}
+
+/** 245000 -> "245K": the donut centre has room for a short total only. */
+function fmtThousands(v: number): string {
+  return `${(v / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })}K`;
 }
 
 function capitalize(s: string): string {
@@ -138,7 +147,7 @@ export function DashboardPage() {
         : {
             silent: true,
             label: { show: false },
-            itemStyle: { color: "#EEF4EA" },
+            itemStyle: { color: "rgba(255, 255, 255, 0.06)" },
             // On a bar series markArea snaps to the tick coords, so the same
             // index on both ends covers exactly one category band.
             data: [[{ xAxis: todayIdx }, { xAxis: todayIdx }]],
@@ -149,12 +158,7 @@ export function DashboardPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        ...CHART_TOOLTIP,
         valueFormatter: (v: unknown) => RUB(typeof v === "number" ? v : 0),
         formatter: (params: unknown) => {
           const items = params as Array<{
@@ -179,7 +183,7 @@ export function DashboardPage() {
                 `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${it.color}"></span><span style="flex:1">${it.seriesName}</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(it.value)}</span></div>`,
             )
             .join("");
-          return `<div style="font-weight:600;font-size:13px">${dateLabel}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${RUB(total)}</span></div>`;
+          return `<div style="font-weight:600;font-size:13px">${dateLabel}</div>${rows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.14);display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${RUB(total)}</span></div>`;
         },
       },
       legend: {
@@ -195,7 +199,7 @@ export function DashboardPage() {
         type: "category",
         data: xLabels,
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
@@ -210,13 +214,13 @@ export function DashboardPage() {
           },
           rich: {
             today: {
-              color: "#FAFAF7",
-              backgroundColor: "#2A2A2E",
+              color: "#1B2140",
+              backgroundColor: "#FFFFFF",
               borderRadius: 999,
               padding: [3, 5, 2, 5],
               fontSize: 10.5,
               fontWeight: 600,
-              fontFamily: "Inter, system-ui, sans-serif",
+              fontFamily: "Onest Variable, system-ui, sans-serif",
             },
           },
         },
@@ -225,7 +229,7 @@ export function DashboardPage() {
         type: "value",
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        splitLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { show: false },
       },
       series: dailySeries.map((s, srsIdx) => ({
@@ -258,7 +262,7 @@ export function DashboardPage() {
                 // plus an extra gap so the rotated pill sits clearly above
                 // the bar, centered on the column axis.
                 distance: 32,
-                color: "#2A2A2E",
+                color: CHART_INK,
                 fontFamily: "JetBrains Mono, ui-monospace, monospace",
                 fontFeatureSettings: "'ss01'",
                 fontSize: isMobile ? 11 : 12,
@@ -276,78 +280,34 @@ export function DashboardPage() {
 
   const pieOption: EChartsOption | null = useMemo(() => {
     if (!data || data.by_category.length === 0) return null;
-    // Sum per category — shown in the legend (the slices now carry only %).
-    const catValue = new Map(
-      data.by_category.map((c) => [c.name, parseFloat(c.cost) || 0]),
-    );
+    // Thin ring: the sums, shares and hours live in the legend under it.
     return {
       tooltip: {
         trigger: "item",
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        ...CHART_TOOLTIP,
         formatter: (p: unknown) => {
           const item = p as { name: string; value: number; percent: number; color: string };
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${item.color}"></span><span style="font-weight:500">${item.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${RUB(item.value)} · ${item.percent.toFixed(1)}%</div>`;
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${item.color}"></span><span style="font-weight:500">${item.name}</span></div><div style="margin-top:4px;font-size:12px">${RUB(item.value)} · ${item.percent.toFixed(1)}%</div>`;
         },
-      },
-      legend: {
-        orient: "horizontal",
-        bottom: 0,
-        left: "center",
-        textStyle: { ...ECHART_BASE_TEXT, fontSize: 12 },
-        itemWidth: 10,
-        itemHeight: 10,
-        itemGap: 14,
-        icon: "circle",
-        // Category sum moved here from the slice labels.
-        formatter: (name: string) => `${name} · ${RUB(catValue.get(name) ?? 0)}`,
       },
       series: [
         {
           name: "По категориям",
           type: "pie" as const,
-          radius: isMobile ? ["30%", "70%"] : ["35%", "70%"],
-          center: ["50%", "40%"],
+          radius: ["66%", "88%"],
           padAngle: 2,
-          avoidLabelOverlap: true,
-          itemStyle: { borderRadius: 6, borderColor: "#FFFFFF", borderWidth: 2 },
-          label: {
-            show: true,
-            position: "inside",
-            color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'ss01'",
-            fontSize: isMobile ? 12 : 12.5,
-            fontWeight: 600,
-            // Percent only, no backing pill.
-            formatter: (p: unknown) => `${(p as { percent: number }).percent.toFixed(0)}%`,
-          },
-          labelLine: {
-            show: true,
-            length: isMobile ? 8 : 10,
-            length2: isMobile ? 4 : 10,
-            smooth: true,
-            lineStyle: { color: "#DFDCD3" },
-          },
-          labelLayout: { hideOverlap: false },
-          emphasis: {
-            scale: true,
-            scaleSize: 6,
-            itemStyle: { shadowBlur: 12, shadowColor: "rgba(42,42,46,0.15)" },
-          },
+          itemStyle: { borderRadius: 4 },
+          label: { show: false },
+          emphasis: { scale: true, scaleSize: 3 },
           data: data.by_category.map((c) => ({
             name: c.name,
             value: parseFloat(c.cost) || 0,
-            itemStyle: { color: c.color || "#807A72" },
+            itemStyle: { color: c.color || "#8A8FA8" },
           })),
         },
       ],
     };
-  }, [data, isMobile]);
+  }, [data]);
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
     if (!data) return null;
@@ -360,12 +320,7 @@ export function DashboardPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        ...CHART_TOOLTIP,
         formatter: (params: unknown) => {
           const items = params as Array<{ name: string; value: number; dataIndex: number }>;
           if (!items.length || !items[0].value) return "";
@@ -379,7 +334,7 @@ export function DashboardPage() {
         type: "category",
         data: labels,
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 11,
@@ -389,7 +344,7 @@ export function DashboardPage() {
         type: "value",
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        splitLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { show: false },
       },
       series: [
@@ -437,13 +392,8 @@ export function DashboardPage() {
         trigger: "axis",
         // Narrow screens: keep the box inside the canvas.
         confine: true,
-        axisPointer: { type: "line", lineStyle: { color: "#DFDCD3" } },
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: "backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);",
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        axisPointer: { type: "line", lineStyle: { color: "rgba(255, 255, 255, 0.3)" } },
+        ...CHART_TOOLTIP,
         formatter: (params: unknown) => {
           const items = params as Array<{ dataIndex: number; value: number }>;
           if (!items.length) return "";
@@ -460,7 +410,7 @@ export function DashboardPage() {
         data: hist.dates,
         boundaryGap: false,
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 10.5,
@@ -473,7 +423,7 @@ export function DashboardPage() {
         boundaryGap: [0, "8%"],
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        splitLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { ...ECHART_MONO_TEXT, fontSize: 10.5, formatter: fmtCompact },
       },
       dataZoom: [
@@ -495,19 +445,19 @@ export function DashboardPage() {
           type: "slider" as const,
           height: isMobile ? 28 : 24,
           bottom: 6,
-          borderColor: "#ECEAE3",
-          backgroundColor: "#FAFAF7",
-          fillerColor: "rgba(123, 182, 97, 0.14)",
+          borderColor: CHART_LINE,
+          backgroundColor: "rgba(255, 255, 255, 0.03)",
+          fillerColor: "rgba(143, 227, 176, 0.14)",
           dataBackground: {
-            lineStyle: { color: "#CFE0C4" },
-            areaStyle: { color: "#EAF1E5" },
+            lineStyle: { color: "rgba(255, 255, 255, 0.25)" },
+            areaStyle: { color: "rgba(255, 255, 255, 0.06)" },
           },
           selectedDataBackground: {
             lineStyle: { color: INCOME_GREEN },
-            areaStyle: { color: "#D6E6CC" },
+            areaStyle: { color: "rgba(143, 227, 176, 0.22)" },
           },
-          handleStyle: { color: "#FFFFFF", borderColor: "#C9C4B8" },
-          moveHandleStyle: { color: "#DFDCD3" },
+          handleStyle: { color: "#FFFFFF", borderColor: "rgba(255, 255, 255, 0.5)" },
+          moveHandleStyle: { color: "rgba(255, 255, 255, 0.25)" },
           // Touch needs grips a finger can actually land on; the thin desktop
           // handles are unhittable on a phone.
           handleSize: isMobile ? "150%" : "120%",
@@ -535,8 +485,8 @@ export function DashboardPage() {
               type: "linear" as const,
               x: 0, y: 0, x2: 0, y2: 1,
               colorStops: [
-                { offset: 0, color: "rgba(123, 182, 97, 0.45)" },
-                { offset: 1, color: "rgba(123, 182, 97, 0.02)" },
+                { offset: 0, color: "rgba(143, 227, 176, 0.4)" },
+                { offset: 1, color: "rgba(143, 227, 176, 0.02)" },
               ],
             },
           },
@@ -698,7 +648,42 @@ export function DashboardPage() {
                 </div>
               </div>
               {pieOption ? (
-                <Echart option={pieOption} height={380} />
+                <>
+                  <div className="cat-donut">
+                    <Echart option={pieOption} height={220} />
+                    <div className="cat-donut-center">
+                      <span className="muted small">
+                        {data.total_count}{" "}
+                        {pluralize(data.total_count, "событие", "события", "событий")}
+                      </span>
+                      <b>{fmtThousands(parseFloat(data.total_cost) || 0)} ₽</b>
+                    </div>
+                  </div>
+                  <div className="cat-share-list">
+                    {data.by_category.map((c) => {
+                      const cost = parseFloat(c.cost) || 0;
+                      const total = parseFloat(data.total_cost) || 0;
+                      const share = total > 0 ? (cost / total) * 100 : 0;
+                      return (
+                        <div key={c.name} className="cat-share-row">
+                          <span className="cat-share-name">
+                            <i style={{ background: c.color }} />
+                            {c.name}
+                          </span>
+                          <span className="cat-share-value mono">{fmt.money(cost)} ₽</span>
+                          <span className="cat-share-meta">
+                            {Math.round(share)}% · {c.count}{" "}
+                            {pluralize(c.count, "событие", "события", "событий")} ·{" "}
+                            {(c.minutes / 60).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч
+                          </span>
+                          <span className="cat-share-bar">
+                            <span style={{ width: `${share}%`, background: c.color }} />
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               ) : (
                 <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
               )}

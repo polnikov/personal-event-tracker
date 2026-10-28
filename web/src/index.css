@@ -2,77 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Self-hosted official InterVariable — the full font that still carries the
-   OpenType stylistic features (ss01 "Open digits", the cv character variants).
-   The @fontsource Inter builds strip those features during subsetting, so ss01
-   there was a silent no-op; only this upstream build actually renders the
-   alternate digits. One variable file covers Latin + Cyrillic + the 100–900
-   weight axis (~352 KB). */
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('./fonts/InterVariable.woff2') format('woff2');
-}
-
 /* ============================================================
-   Design system — modern minimal
-   Inter + JetBrains Mono · warm off-white · soft sage accent
+   Design system: glass (my-music)
+   Onest + JetBrains Mono · frosted dark glass · soft pink accent
    ============================================================ */
 
 :root {
-  --bg: #FAFAF7;
-  --bg-2: #F2F1EC;
-  --surface: #FFFFFF;
-  --ink: #2A2A2E;        /* graphite — softer than near-black */
-  --ink-2: #44444A;
-  --muted: #807A72;
-  --line: #ECEAE3;
-  --line-2: #DFDCD3;
+  color-scheme: dark;
 
-  --accent: oklch(0.62 0.13 145);
-  --accent-soft: oklch(0.93 0.04 145);
-  --accent-ink: oklch(0.32 0.08 145);
-  --danger: oklch(0.62 0.14 27);          /* softer red */
-  --danger-soft: oklch(0.96 0.03 27);     /* gentle pink wash */
+  /* Window fill: dark navy wash over a cool gradient with a warm glow. */
+  --window-fill:
+    linear-gradient(rgb(24 30 52 / 0.86), rgb(24 30 52 / 0.86)),
+    radial-gradient(70% 65% at 80% 92%, #C08A63 0%, transparent 70%),
+    radial-gradient(60% 55% at 10% 100%, #20263F 0%, transparent 72%),
+    linear-gradient(165deg, #33466E 0%, #56678C 38%, #7C7890 64%, #5C4F66 100%);
 
-  --pos: oklch(0.62 0.13 145);
-  --neg: oklch(0.62 0.14 27);
+  --bg: #262B43;                          /* opaque base under the glass */
+  --bg-2: rgb(255 255 255 / 0.06);        /* hover wash */
+  --surface: rgb(255 255 255 / 0.08);     /* cards */
+  --popover: #2A3050;                     /* opaque floating layers */
+  --field: rgb(255 255 255 / 0.066);      /* inputs, selects, chips */
+  --input: rgb(255 255 255 / 0.22);       /* field border */
+  --card-ring: rgb(255 255 255 / 0.1);    /* thin card frame */
+  --ink: #FFFFFF;
+  --ink-2: rgb(255 255 255 / 0.88);
+  --muted: rgb(255 255 255 / 0.76);
+  --line: rgb(255 255 255 / 0.1);
+  --line-2: rgb(255 255 255 / 0.14);
+
+  --accent: #F5B3CD;
+  --accent-soft: color-mix(in oklch, #F5B3CD 16%, transparent);
+  --accent-ink: #F5B3CD;
+  --accent-fg: #1C1C21;                   /* text on an accent fill */
+  --primary-fg: #1B2140;                  /* text on a white fill */
+  --danger: oklch(0.78 0.14 22);
+  --danger-soft: color-mix(in oklch, oklch(0.78 0.14 22) 18%, transparent);
+
+  --pos: #8FE3B0;
+  --neg: oklch(0.78 0.14 22);
 
   --tg: #229ED9;          /* Telegram brand blue */
 
-  --r-sm: 8px;
-  --r-md: 12px;
-  --r-lg: 16px;
-  --r-xl: 22px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 16px;
 
-  --shadow-1: 0 1px 2px rgba(42,42,46,0.04), 0 1px 3px rgba(42,42,46,0.04);
-  --shadow-2: 0 1px 2px rgba(42,42,46,0.04), 0 4px 12px rgba(42,42,46,0.06), 0 12px 32px -8px rgba(42,42,46,0.08);
-  --shadow-3: 0 2px 6px rgba(42,42,46,0.05), 0 12px 32px -8px rgba(42,42,46,0.10), 0 24px 56px -16px rgba(42,42,46,0.10);
-  --shadow-hover: 0 2px 4px rgba(42,42,46,0.05), 0 8px 24px -4px rgba(42,42,46,0.10), 0 20px 44px -12px rgba(42,42,46,0.12);
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.10);
+  --shadow-2: 0 1px 2px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.14), 0 12px 32px -8px rgba(0,0,0,0.20);
+  --shadow-3: 0 2px 6px rgba(0,0,0,0.16), 0 12px 32px -8px rgba(0,0,0,0.30), 0 24px 56px -16px rgba(0,0,0,0.30);
+  --shadow-hover: 0 2px 4px rgba(0,0,0,0.14), 0 8px 24px -4px rgba(0,0,0,0.22), 0 20px 44px -12px rgba(0,0,0,0.26);
 
   /* Transitions.dev "smooth out" easing — shared by the accordion-expand
      dropdowns and the modal open/close scale. */
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans: 'Onest Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Inter OpenType features applied project-wide: ss01 (Open digits — alternate
-     3 4 6 9 glyphs) + tnum (tabular figures for column-aligned numbers).
-     Add 'cv11' here for the single-story a if that letterform is wanted too. */
-  --font-feature-sans: 'ss01', 'tnum';
-  /* JetBrains Mono: tabular figures only (ss01/cv11 would alter mono glyphs). */
+  /* Tabular figures so numbers line up in columns. */
+  --font-feature-sans: 'tnum';
   --font-feature-mono: 'tnum';
 }
 
 @layer base {
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
+  html { background-color: var(--bg); }
   body {
     font-family: var(--font-sans);
-    background: var(--bg);
+    background: var(--window-fill) fixed;
+    min-height: 100vh;
     color: var(--ink);
     font-feature-settings: var(--font-feature-sans);
     -webkit-font-smoothing: antialiased;
@@ -122,7 +122,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: var(--bg);
+  background: transparent;
   z-index: 60;
 }
 
@@ -183,7 +183,7 @@
     bottom: calc(82px + env(safe-area-inset-bottom));
     z-index: 59;
     background:
-      linear-gradient(#DFDCD32E, #DFDCD32E),
+      linear-gradient(var(--surface), var(--surface)),
       color-mix(in oklab, var(--bg) 88%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
@@ -251,7 +251,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(42, 42, 46, 0.36);
+    background: rgb(12 14 26 / 0.45);
     backdrop-filter: blur(6px);
     z-index: 80;
     opacity: 0;
@@ -623,7 +623,7 @@
   background: var(--danger-soft);
   color: var(--danger);
 }
-.btn-danger:hover { background: oklch(0.92 0.06 27); }
+.btn-danger:hover { background: color-mix(in oklch, var(--danger) 28%, transparent); }
 
 .icon-btn {
   width: 32px;
@@ -696,7 +696,7 @@
 .input:focus, .textarea:focus {
   background: var(--surface);
   border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(42,42,46,0.06);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .textarea { resize: vertical; min-height: 64px; }
 
@@ -711,7 +711,7 @@
 .reschedule-form .input,
 .reschedule-form .datepicker-trigger {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 .event-form .input:focus,
 .event-form .textarea:focus,
@@ -721,7 +721,7 @@
 .client-form .textarea:focus,
 .reschedule-form .input:focus {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.16),
-    0 0 0 3px rgba(42, 42, 46, 0.06);
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .event-form .datepicker-trigger:focus-visible,
 .reschedule-form .datepicker-trigger:focus-visible {
@@ -732,7 +732,7 @@
 .event-form .chip,
 .event-form .event-sum-box {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 /* Inactive toggle track reads as a pressed groove; the active (filled)
    track keeps its default look. Smaller blur to fit the 20px track, and the
@@ -745,7 +745,7 @@
 .event-form .toggle-input:not(:checked):focus-visible + .toggle-track,
 .events-filter-toggles .toggle-input:not(:checked):focus-visible + .toggle-track {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22),
-    0 0 0 3px rgba(42, 42, 46, 0.15);
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 /* Round color picker */
@@ -925,7 +925,7 @@ input[type="number"] { -moz-appearance: textfield; }
   outline: none;
   background: var(--surface);
   border-color: var(--ink);
-  box-shadow: 0 0 0 3px rgba(42, 42, 46, 0.06);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .select-trigger[data-placeholder] .select-value { color: var(--muted); }
 .select-trigger[data-disabled] { opacity: 0.55; cursor: not-allowed; }
@@ -1037,7 +1037,7 @@ input[type="number"] { -moz-appearance: textfield; }
   border-radius: 4px;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--accent-fg);
 }
 .select-check[data-on] { background: var(--accent); border-color: var(--accent); }
 .select-item-label {
@@ -1333,7 +1333,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .rdp-day-selected .rdp-day {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-fg);
   font-weight: 600;
 }
 .rdp-day-selected .rdp-day:hover { background: var(--accent); }
@@ -1546,7 +1546,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .toggle-input:checked + .toggle-track { background: var(--ink); }
 .toggle-input:checked + .toggle-track .toggle-thumb { transform: translateX(14px); }
 .toggle-input:focus-visible + .toggle-track {
-  box-shadow: 0 0 0 3px rgba(42, 42, 46, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 .toggle-label {
   font-size: 13px;
@@ -1598,7 +1598,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .recalc-check:focus-visible {
   outline: none;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22),
-    0 0 0 3px rgba(42, 42, 46, 0.12);
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .filter-row { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 12px; }
@@ -1774,7 +1774,7 @@ input[type="number"] { -moz-appearance: textfield; }
 /* Report — карточка фильтров полупрозрачная с frosted-glass эффектом
    (особенно заметно на мобильном, где она sticky'ится поверх графиков). */
 .card.report-filters {
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--surface);
   backdrop-filter: blur(8px);
 }
 
@@ -1899,7 +1899,7 @@ input[type="number"] { -moz-appearance: textfield; }
   letter-spacing: -0.01em;
   /* Debossed: the colored disc reads as gently pressed into the card. */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 .cat-dot {
   display: inline-block;
@@ -2157,7 +2157,7 @@ input[type="number"] { -moz-appearance: textfield; }
   user-select: none;
   /* Debossed: same pressed-in treatment as the avatar disc. */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 .events-row-date-badge-day {
   font-size: 16px;
@@ -2340,7 +2340,7 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-shrink: 0;
   /* Debossed: the green client chip reads as gently pressed in. */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 .events-row-client:hover {
   background: color-mix(in oklab, var(--accent-soft) 80%, var(--accent));
@@ -2624,7 +2624,7 @@ input[type="number"] { -moz-appearance: textfield; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #DFDCD32E;
+  background: var(--surface);
   border-radius: 19px;
   padding: 3px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.14);
@@ -2816,7 +2816,7 @@ input[type="number"] { -moz-appearance: textfield; }
   gap: 1px;
   padding: 4px 7px;
   border-radius: 6px;
-  background: color-mix(in oklab, var(--cat) 14%, white);
+  background: color-mix(in oklab, var(--cat) 22%, transparent);
   border-left: 2px solid var(--cat);
   cursor: pointer;
   pointer-events: auto;
@@ -2825,9 +2825,9 @@ input[type="number"] { -moz-appearance: textfield; }
   transition: background 0.12s;
   /* Debossed: the event card reads as gently pressed into the day cell. */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
-.cal-event:hover { background: color-mix(in oklab, var(--cat) 22%, white); }
+.cal-event:hover { background: color-mix(in oklab, var(--cat) 32%, transparent); }
 .cal-event-name {
   font-weight: 500;
   color: var(--ink);
@@ -2903,7 +2903,7 @@ input[type="number"] { -moz-appearance: textfield; }
   /* Beige tabs track; the active tab floats as a white pill inset from the
      track edges via this padding. No overflow:hidden so the corner badge can
      stick out above and past. */
-  background: #DFDCD32E;
+  background: var(--surface);
   border-radius: 19px;
   padding: 3px;
   gap: 0;
@@ -3036,7 +3036,7 @@ input[type="number"] { -moz-appearance: textfield; }
   padding: 0 5px;
   border-radius: 999px;
   background: var(--accent);
-  color: #FFFFFF;
+  color: var(--accent-fg);
   font-size: 10.5px;
   font-weight: 600;
   font-feature-settings: var(--font-feature-sans);
@@ -3125,7 +3125,7 @@ input[type="number"] { -moz-appearance: textfield; }
   /* No vertical dividers in the header row — day/number cells flow without
      separators (the body day columns keep their .week-time-col border-left). */
 }
-.week-time-dh.today { background: oklch(0.99 0.01 145); }
+.week-time-dh.today { background: rgb(255 255 255 / 0.05); }
 .week-time-body {
   position: relative;
 }
@@ -3161,7 +3161,7 @@ input[type="number"] { -moz-appearance: textfield; }
   border-left: 1px solid var(--line);
   cursor: pointer; /* клик по пустому слоту → создать событие */
 }
-.week-time-col.today { background: oklch(0.99 0.01 145); }
+.week-time-col.today { background: rgb(255 255 255 / 0.05); }
 /* In-flow row per hour — provides the horizontal separators inside a day
    column (events overlay these via position:absolute).
    pointer-events:none пропускает тапы/клики сквозь фон к самой колонке — иначе на
@@ -3198,7 +3198,7 @@ input[type="number"] { -moz-appearance: textfield; }
   position: absolute;
   left: 4px;
   right: 4px;
-  background: color-mix(in oklab, var(--cat) 14%, white);
+  background: color-mix(in oklab, var(--cat) 22%, transparent);
   border-left: 3px solid var(--cat);
   border-radius: 6px;
   padding: 4px 6px;
@@ -3208,10 +3208,10 @@ input[type="number"] { -moz-appearance: textfield; }
   z-index: 1;
   /* Debossed: the event card reads as gently pressed into the day column. */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 .week-time-event:hover {
-  background: color-mix(in oklab, var(--cat) 22%, white);
+  background: color-mix(in oklab, var(--cat) 32%, transparent);
   z-index: 2;
 }
 .week-time-ev-time {
@@ -3256,7 +3256,7 @@ input[type="number"] { -moz-appearance: textfield; }
   flex-direction: column;
 }
 .week-col:first-child { border-left: 0; }
-.week-col.today { background: oklch(0.99 0.01 145); }
+.week-col.today { background: rgb(255 255 255 / 0.05); }
 .week-head {
   padding: 12px 12px 10px;
   border-bottom: 1px solid var(--line);
@@ -3294,14 +3294,14 @@ input[type="number"] { -moz-appearance: textfield; }
   min-height: 120px;
 }
 .week-event {
-  background: color-mix(in oklab, var(--cat) 14%, white);
+  background: color-mix(in oklab, var(--cat) 22%, transparent);
   border-left: 3px solid var(--cat);
   border-radius: 6px;
   padding: 6px 8px;
   cursor: pointer;
   transition: background 0.12s;
 }
-.week-event:hover { background: color-mix(in oklab, var(--cat) 22%, white); }
+.week-event:hover { background: color-mix(in oklab, var(--cat) 32%, transparent); }
 .week-event-time { font-size: 11px; color: var(--ink-2); }
 .week-event-name { font-size: 12.5px; font-weight: 500; margin-top: 1px; }
 .week-event-sub { font-size: 11px; }
@@ -3323,7 +3323,7 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: rgba(255, 255, 255, 0.55) !important;
+  background: var(--surface) !important;
   backdrop-filter: blur(8px);
   border: 1px solid var(--line);
   /* Tighter bottom than the .p-6 padding (defined earlier, so this wins). */
@@ -3466,7 +3466,7 @@ input[type="number"] { -moz-appearance: textfield; }
   margin-bottom: 18px;
   /* Debossed: same pressed-in treatment as the avatar disc. */
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.28);
+    0 0 0 0 transparent;
 }
 /* Keeps a long package chip from blowing the 1fr column out. */
 .client-detail-stats > * { min-width: 0; }
@@ -3702,7 +3702,7 @@ input[type="number"] { -moz-appearance: textfield; }
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(42, 42, 46, 0.32);
+  background: rgb(12 14 26 / 0.5);
   backdrop-filter: blur(6px);
   z-index: 100;
 }
@@ -3713,7 +3713,7 @@ input[type="number"] { -moz-appearance: textfield; }
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgb(42 48 80 / 0.94);
   backdrop-filter: blur(8px);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-3);
@@ -3791,7 +3791,7 @@ input[type="number"] { -moz-appearance: textfield; }
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--cat) 65%, #1a1a1a);
+  color: color-mix(in srgb, var(--cat) 55%, #fff);
 }
 .cd2-tag-text {
   overflow: hidden;
@@ -3809,7 +3809,7 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: var(--surface);
   border-radius: 14px;
   padding: 16px 18px;
   box-shadow:
@@ -4049,7 +4049,7 @@ a.cd2-name:hover {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: var(--bg);
+  background: transparent;
   padding: 24px;
 }
 .login-card {
@@ -4357,3 +4357,113 @@ a.cd2-name:hover {
     margin-top: 0;
   }
 }
+
+/* ============================================================
+   Glass theme (my-music): nav, cards, fields, floating layers,
+   count badges. Kept last so it wins over the light-theme rules.
+   ============================================================ */
+
+/* Active nav item is filled with the accent, like the my-music sidebar. */
+.nav-item:hover { background: rgb(255 255 255 / 0.1); }
+.nav-item.active { background: var(--accent); color: var(--accent-fg); font-weight: 600; box-shadow: none; }
+.nav-item.active .nav-icon { color: var(--accent-fg); }
+
+/* Cards: translucent fill and a thin frame instead of a drop shadow. */
+.card { box-shadow: inset 0 0 0 1px var(--card-ring); }
+.card-hover:hover { box-shadow: inset 0 0 0 1px var(--line-2), var(--shadow-hover); }
+
+.btn-primary { color: var(--primary-fg); }
+.btn-secondary { background: rgb(255 255 255 / 0.1); box-shadow: none; }
+.btn-secondary:hover { background: rgb(255 255 255 / 0.15); }
+.client-detail-action--edit.btn-secondary,
+.btn-outline.btn-secondary { background: transparent; border-color: var(--input); }
+
+/* Fields sit on a faint wash with a light border. */
+.input, .textarea, .select-trigger, .datepicker-trigger, .rdp-dropdown-root, .events-filter-clear {
+  background: var(--field);
+  border-color: var(--input);
+}
+.input:hover, .textarea:hover, .select-trigger:hover { border-color: rgb(255 255 255 / 0.32); }
+.input:focus, .textarea:focus,
+.select-trigger:focus-visible, .select-trigger[data-state="open"] { background: var(--field); border-color: var(--accent); }
+.input-wrap.has-icon .input { background: var(--field); }
+.chip { background: var(--field); border-color: var(--input); }
+.icon-grid, .client-card-note, .client-detail-stats { background: var(--field); }
+.cal-cell.out { background: rgb(0 0 0 / 0.12); }
+
+/* Floating layers need an opaque fill above the glass. */
+.select-content, .searchable-select-list, .popover-content, .color-picker-pop, .mobile-sheet {
+  background: var(--popover);
+  border-color: var(--line-2);
+}
+.modal-content { box-shadow: inset 0 0 0 1px var(--line-2), var(--shadow-3); }
+.week-time-corner, .week-time-hour { background: var(--bg); }
+
+/* Toggle: white track when on, as the my-music switch. */
+.toggle-track { background: rgb(255 255 255 / 0.176); }
+.toggle-thumb { background: var(--ink); box-shadow: none; }
+.toggle-input:checked + .toggle-track { background: var(--ink); }
+.toggle-input:checked + .toggle-track .toggle-thumb { background: var(--primary-fg); }
+
+/* Segmented tabs: translucent track with a frame, lighter active pill. */
+.view-switcher { box-shadow: inset 0 0 0 1px var(--line-2); border-radius: var(--r-md); }
+.view-switch-pill { background: rgb(255 255 255 / 0.16); box-shadow: none; border-radius: 7px; }
+.view-switch-btn, .view-switch-btn:first-child, .view-switch-btn:last-child { border-radius: 7px; }
+
+/* Count badges: the my-music CountBadge, tinted by the text around it. */
+.day-group-count-badge, .events-filters-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, currentColor 15%, transparent);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: none;
+  vertical-align: middle;
+}
+.day-group-count-badge { color: var(--ink-2); }
+.events-filters-count { color: var(--accent); }
+.tab-badge { border-radius: var(--r-sm); box-shadow: none; }
+
+/* Period deltas: growth stays green, decline red. */
+.card-head-pct { box-shadow: none; }
+.card-head-pct.up { background: color-mix(in oklab, var(--pos) 16%, transparent); color: var(--pos); }
+
+@media (max-width: 800px) {
+  .card.report-filters { background: rgb(42 48 80 / 0.88); backdrop-filter: blur(14px); }
+}
+@media (max-width: 768px) {
+  .mobile-sheet { box-shadow: inset 0 1px 0 var(--line-2); }
+}
+
+/* Dashboard, income by category: thin ring with the total inside and the
+   per-category legend centred underneath. */
+.cat-donut { position: relative; width: 220px; max-width: 100%; margin: 4px auto 0; }
+.cat-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.cat-donut-center b { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.cat-share-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px 32px; margin-top: 18px; }
+.cat-share-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; align-items: baseline; width: 220px; }
+.cat-share-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+.cat-share-name i { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.cat-share-value { font-size: 13px; text-align: right; }
+.cat-share-meta { grid-column: 1 / -1; padding-left: 16px; font-size: 12px; color: var(--muted); }
+.cat-share-bar { grid-column: 1 / -1; height: 4px; margin-top: 4px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.cat-share-bar > span { display: block; height: 100%; border-radius: 999px; }
+
+/* Category legend centred under a chart (Report subcategory bars). */
+.chart-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.chart-legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend-item i { width: 10px; height: 10px; border-radius: 3px; }

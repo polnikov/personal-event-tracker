@@ -1,4 +1,5 @@
 import type { EChartsOption } from "echarts";
+import { CHART_GAP, CHART_INK, CHART_LINE } from "@/components/echart";
 
 export const MONTH_ABBR = [
   "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
@@ -9,8 +10,8 @@ const DOW_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const HOUR_LABELS = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
 
 const AXIS_TEXT = {
-  fontFamily: "Inter, system-ui, sans-serif",
-  color: "#807A72",
+  fontFamily: "Onest Variable, system-ui, sans-serif",
+  color: "rgba(255, 255, 255, 0.7)",
 };
 
 /**
@@ -56,7 +57,7 @@ function buildHeatmap(
       max: Math.max(maxValue, 1),
       calculable: false,
       inRange: {
-        color: ["rgba(123, 182, 97, 0.04)", "rgb(123, 182, 97)"],
+        color: ["rgba(143, 227, 176, 0.05)", "rgba(143, 227, 176, 0.5)"],
       },
     },
     xAxis: {
@@ -64,7 +65,7 @@ function buildHeatmap(
       data: xData,
       splitArea: { show: false },
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#ECEAE3" } },
+      axisLine: { lineStyle: { color: CHART_LINE } },
       axisLabel: { ...AXIS_TEXT, fontSize: 11 },
     },
     yAxis: {
@@ -72,7 +73,7 @@ function buildHeatmap(
       data: yData,
       splitArea: { show: false },
       axisTick: { show: false },
-      axisLine: { lineStyle: { color: "#ECEAE3" } },
+      axisLine: { lineStyle: { color: CHART_LINE } },
       axisLabel: { ...AXIS_TEXT, fontSize: 11 },
     },
     series: [
@@ -81,7 +82,7 @@ function buildHeatmap(
         data: cells,
         label: {
           show: true,
-          color: "#2A2A2E",
+          color: CHART_INK,
           fontFamily: "JetBrains Mono, ui-monospace, monospace",
           fontFeatureSettings: "'tnum'",
           fontSize: 11,
@@ -94,14 +95,14 @@ function buildHeatmap(
           },
         },
         itemStyle: {
-          borderColor: "#FFFFFF",
+          borderColor: CHART_GAP,
           borderWidth: 2,
           borderRadius: 4,
         },
         emphasis: {
           itemStyle: {
             shadowBlur: 8,
-            shadowColor: "rgba(42, 42, 46, 0.15)",
+            shadowColor: "rgba(0, 0, 0, 0.35)",
           },
         },
       },

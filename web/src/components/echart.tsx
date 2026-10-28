@@ -35,14 +35,30 @@ export type { EChartsOption };
 // monospace tick/value labels, and a Y axis flush with the card title
 // (achieved via `inside: true` + tiny grid.left, see `yAxisFlushLeft`).
 export const ECHART_BASE_TEXT = {
-  fontFamily: "Inter, system-ui, sans-serif",
-  color: "#807A72",
+  fontFamily: "Onest Variable, system-ui, sans-serif",
+  color: "rgba(255, 255, 255, 0.7)",
 };
 
 export const ECHART_MONO_TEXT = {
   fontFamily: "JetBrains Mono, ui-monospace, monospace",
   fontFeatureSettings: "'tnum'",
-  color: "#807A72",
+  color: "rgba(255, 255, 255, 0.7)",
+};
+
+/** Glass theme colors for charts: hairlines, value text, the card fill used
+ *  as the gap between pie slices and heatmap cells. */
+export const CHART_LINE = "rgba(255, 255, 255, 0.1)";
+export const CHART_INK = "#FFFFFF";
+export const CHART_GAP = "#2B314D";
+
+/** Shared tooltip: an opaque glass panel like the app's popovers. */
+export const CHART_TOOLTIP = {
+  backgroundColor: "rgba(42, 48, 80, 0.97)",
+  borderColor: "rgba(255, 255, 255, 0.14)",
+  borderWidth: 1,
+  borderRadius: 14,
+  textStyle: { color: "#FFFFFF", fontFamily: "Onest Variable, system-ui, sans-serif" },
+  extraCssText: "box-shadow: 0 12px 32px -8px rgba(0,0,0,0.55);",
 };
 
 /** Default left grid inset for charts where Y labels sit flush with the
@@ -78,7 +94,7 @@ export function pressedFill(hex: string, vertical = false) {
 }
 
 /** Green of the income bars and lines. */
-export const INCOME_GREEN = "#7BB661";
+export const INCOME_GREEN = "#8FE3B0";
 
 /** Monthly bar look shared with Часы по месяцам: pressed-in gradient across
  *  the bar's width and a rounded top. */
@@ -101,7 +117,7 @@ export function verticalBarLabel(isMobile: boolean, formatter: (p: unknown) => s
     align: "left" as const,
     verticalAlign: "middle" as const,
     distance: 8,
-    color: "#2A2A2E",
+    color: CHART_INK,
     fontFamily: "JetBrains Mono, ui-monospace, monospace",
     fontFeatureSettings: "'ss01'",
     fontSize: isMobile ? 11 : 12,

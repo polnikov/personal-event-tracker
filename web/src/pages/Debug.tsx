@@ -123,9 +123,9 @@ const OP_ICON: Record<GoogleOutboxRow["op"], typeof Plus> = {
 };
 
 const OP_COLOR: Record<GoogleOutboxRow["op"], { bg: string; fg: string }> = {
-  create: { bg: "rgba(123, 182, 97, 0.18)", fg: "#3F7A2A" },
-  update: { bg: "rgba(217, 168, 108, 0.22)", fg: "#8C5A1F" },
-  delete: { bg: "rgba(220, 38, 38, 0.14)", fg: "#B91C1C" },
+  create: { bg: "rgba(143, 227, 176, 0.16)", fg: "#8FE3B0" },
+  update: { bg: "rgba(246, 207, 122, 0.16)", fg: "#F6CF7A" },
+  delete: { bg: "rgba(242, 149, 141, 0.18)", fg: "#F2958D" },
 };
 
 function OutboxRow({
@@ -172,7 +172,7 @@ function OutboxRow({
     fontWeight: 600,
     fontFeatureSettings: "'tnum'",
     background: failed ? "var(--danger)" : "var(--bg-2)",
-    color: failed ? "#fff" : "var(--ink-2)",
+    color: failed ? "var(--accent-fg)" : "var(--ink-2)",
   };
 
   // Keep the panel mounted through its accordion-collapse animation.

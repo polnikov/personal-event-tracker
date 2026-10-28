@@ -42,8 +42,8 @@ export default defineConfig({
         name: "PET",
         short_name: "PET",
         description: "Личный трекер событий",
-        theme_color: "#FAFAF7",
-        background_color: "#FAFAF7",
+        theme_color: "#262B43",
+        background_color: "#262B43",
         display: "standalone",
         start_url: "/",
         icons: [
@@ -91,8 +91,8 @@ export default defineConfig({
           },
           // Fonts. Vite emits them under /assets with a content hash, but the
           // default Workbox globPatterns (js/css/html/ico/png/svg) skip woff
-          // files, so before this rule every load re-fetched ~350 KB of
-          // InterVariable from the network — and a slow link turned that into
+          // files, so before this rule every load re-fetched the web fonts
+          // from the network, and a slow link turned that into
           // NS_ERROR_NET_TIMEOUT. CacheFirst instead of precache on purpose:
           // a failed precache request aborts the whole SW install, a failed
           // runtime fetch only misses the cache.

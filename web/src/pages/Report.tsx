@@ -10,7 +10,11 @@ import {
   Toggle,
 } from "@/components/design";
 import {
+  CHART_INK,
+  CHART_LINE,
+  CHART_TOOLTIP,
   Echart,
+  INCOME_GREEN,
   fmtBarTotal,
   pressedFill,
   verticalBarLabel,
@@ -25,16 +29,85 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 
 const RUB = (v: number) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 0 })} ₽`;
 
-const SUBCAT_PALETTE = [
-  "#7BB661", "#D9A86C", "#6E8FB8", "#C26B6B", "#A855F7",
-  "#EC4899", "#0EA5E9", "#F1416C", "#FACA15", "#5E6278",
-  "#00BFA5", "#7239EA",
-];
-
 const ECHART_BASE_TEXT = {
-  fontFamily: "Inter, system-ui, sans-serif",
-  color: "#807A72",
+  fontFamily: "Onest Variable, system-ui, sans-serif",
+  color: "rgba(255, 255, 255, 0.7)",
 };
+
+interface SubcatBar {
+  name: string;
+  category_name: string;
+  color: string;
+  value: number;
+}
+
+/** Horizontal bars per subcategory: category color on a faint track, the
+ *  value at the bar's tip, the share in the tooltip. */
+function subcatBarOption(
+  rows: SubcatBar[],
+  fmtValue: (v: number) => string,
+  isMobile: boolean,
+): EChartsOption {
+  const total = rows.reduce((s, r) => s + r.value, 0);
+  return {
+    grid: { top: 8, right: 88, bottom: 0, left: 8, containLabel: true },
+    tooltip: {
+      trigger: "item",
+      ...CHART_TOOLTIP,
+      formatter: (p: unknown) => {
+        const it = p as { value: number; dataIndex: number };
+        const row = rows[it.dataIndex];
+        const pct = total > 0 ? (it.value / total) * 100 : 0;
+        return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${row.color}"></span><span style="font-weight:500">${row.name}</span></div><div style="margin-top:4px;font-size:12px">${row.category_name} · ${fmtValue(it.value)} · ${pct.toFixed(1)}%</div>`;
+      },
+    },
+    xAxis: { type: "value", show: false, splitLine: { show: false } },
+    yAxis: {
+      type: "category",
+      inverse: true,
+      data: rows.map((r) => r.name),
+      axisTick: { show: false },
+      axisLine: { show: false },
+      axisLabel: { ...ECHART_BASE_TEXT, color: "rgba(255, 255, 255, 0.85)", fontSize: 12 },
+    },
+    series: [
+      {
+        type: "bar" as const,
+        barMaxWidth: 16,
+        barCategoryGap: "38%",
+        showBackground: true,
+        backgroundStyle: { color: "rgba(255, 255, 255, 0.04)", borderRadius: 4 },
+        label: {
+          show: true,
+          position: "right",
+          distance: 8,
+          color: ECHART_BASE_TEXT.color,
+          fontFamily: "JetBrains Mono, ui-monospace, monospace",
+          fontSize: isMobile ? 11 : 12,
+          formatter: (p: unknown) => fmtValue((p as { value: number }).value),
+        },
+        data: rows.map((r) => ({
+          value: r.value,
+          itemStyle: { color: r.color, borderRadius: [0, 4, 4, 0] },
+        })),
+      },
+    ],
+  };
+}
+
+/** Category legend centred under a chart. */
+function ChartLegend({ items }: { items: { name: string; color: string }[] }) {
+  return (
+    <div className="chart-legend">
+      {items.map((it) => (
+        <span key={it.name} className="chart-legend-item">
+          <i style={{ background: it.color }} />
+          {it.name}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function ReportPage() {
   const isMobile = useIsMobile();
@@ -143,141 +216,43 @@ export function ReportPage() {
   }, [year, month]);
 
   // Per-subcategory color assignment shared across charts.
+  // Each bar wears its category's color; the legend under the chart names them.
   const subcatColored = useMemo(() => {
     if (!data.data) return [];
-    return data.data.by_subcategory.map((s, i) => ({
+    return data.data.by_subcategory.map((s) => ({
       ...s,
-      color: SUBCAT_PALETTE[i % SUBCAT_PALETTE.length],
+      color: s.category_color || "#8A8FA8",
     }));
   }, [data.data]);
+
+  const subcatLegend = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const s of subcatColored) {
+      if (!seen.has(s.category_name)) seen.set(s.category_name, s.color);
+    }
+    return Array.from(seen, ([name, color]) => ({ name, color }));
+  }, [subcatColored]);
 
   const hoursBar: EChartsOption | null = useMemo(() => {
     const items = subcatColored.filter((s) => s.hours > 0);
     if (items.length === 0) return null;
     const sorted = [...items].sort((a, b) => b.hours - a.hours);
-    const total = sorted.reduce((s, x) => s + x.hours, 0);
-    return {
-      grid: { top: 8, right: 110, bottom: 0, left: 4, containLabel: true },
-      tooltip: {
-        trigger: "item",
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
-        formatter: (p: unknown) => {
-          const it = p as { name: string; value: number; dataIndex: number };
-          const dot = sorted[it.dataIndex]?.color ?? "#807A72";
-          const pct = total > 0 ? (it.value / total) * 100 : 0;
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${dot}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч · ${pct.toFixed(1)}%</div>`;
-        },
-      },
-      xAxis: { type: "value", show: false, splitLine: { show: false } },
-      yAxis: {
-        type: "category",
-        data: sorted.map((s) => s.name),
-        axisTick: { show: false },
-        axisLine: { show: false },
-        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 12 },
-      },
-      series: [
-        {
-          name: "Часы",
-          type: "bar" as const,
-          barMaxWidth: 18,
-          itemStyle: { borderRadius: 8 },
-          label: {
-            show: true,
-            position: "right",
-            distance: 8,
-            align: "left",
-            verticalAlign: "middle",
-            color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'ss01'",
-            fontSize: isMobile ? 11 : 12,
-            lineHeight: isMobile ? 11 : 12,
-            fontWeight: 400,
-            formatter: (p: unknown) => {
-              const it = p as { value: number };
-              const hours = it.value.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
-              const pct = total > 0 ? (it.value / total) * 100 : 0;
-              return `${hours} ч · ${pct.toFixed(0)}%`;
-            },
-          },
-          data: sorted.map((s) => ({
-            value: Number(s.hours.toFixed(2)),
-            itemStyle: { color: pressedFill(s.color) },
-          })),
-        },
-      ],
-    };
+    return subcatBarOption(
+      sorted.map((s) => ({ ...s, value: Number(s.hours.toFixed(2)) })),
+      (v) => `${v.toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч`,
+      isMobile,
+    );
   }, [subcatColored, isMobile]);
 
   const netBar: EChartsOption | null = useMemo(() => {
     const items = subcatColored.filter((s) => s.net > 0);
     if (items.length === 0) return null;
     const sorted = [...items].sort((a, b) => b.net - a.net);
-    const total = sorted.reduce((s, x) => s + x.net, 0);
-    return {
-      grid: { top: 8, right: 110, bottom: 0, left: 4, containLabel: true },
-      tooltip: {
-        trigger: "item",
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
-        formatter: (p: unknown) => {
-          const it = p as { name: string; value: number; dataIndex: number };
-          const dot = sorted[it.dataIndex]?.color ?? "#807A72";
-          const pct = total > 0 ? (it.value / total) * 100 : 0;
-          return `<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="display:inline-block;width:10px;height:10px;border-radius:999px;background:${dot}"></span><span style="font-weight:500">${it.name}</span></div><div style="margin-top:4px;font-size:12px;font-feature-settings:'ss01'">${RUB(it.value)} · ${pct.toFixed(1)}%</div>`;
-        },
-      },
-      xAxis: { type: "value", show: false, splitLine: { show: false } },
-      yAxis: {
-        type: "category",
-        data: sorted.map((s) => s.name),
-        axisTick: { show: false },
-        axisLine: { show: false },
-        axisLabel: { ...ECHART_BASE_TEXT, fontSize: 12 },
-      },
-      series: [
-        {
-          name: "Чистый доход",
-          type: "bar" as const,
-          barMaxWidth: 18,
-          itemStyle: { borderRadius: 8 },
-          label: {
-            show: true,
-            position: "right",
-            distance: 8,
-            align: "left",
-            verticalAlign: "middle",
-            color: "#2A2A2E",
-            fontFamily: "JetBrains Mono, ui-monospace, monospace",
-            fontFeatureSettings: "'ss01'",
-            fontSize: isMobile ? 11 : 12,
-            lineHeight: isMobile ? 11 : 12,
-            fontWeight: 400,
-            formatter: (p: unknown) => {
-              const it = p as { value: number };
-              const v = it.value;
-              const formattedValue = Math.round(v).toLocaleString('ru-RU');
-              const pct = total > 0 ? (v / total) * 100 : 0;
-              return `${formattedValue} ₽ · ${pct.toFixed(0)}%`;
-            }
-          },
-          data: sorted.map((s) => ({
-            value: Math.round(s.net),
-            itemStyle: { color: pressedFill(s.color) },
-          })),
-        },
-      ],
-    };
+    return subcatBarOption(
+      sorted.map((s) => ({ ...s, value: Math.round(s.net) })),
+      RUB,
+      isMobile,
+    );
   }, [subcatColored, isMobile]);
 
   const monthlyOption: EChartsOption | null = useMemo(() => {
@@ -293,9 +268,9 @@ export function ReportPage() {
     // filtered, monthly_by_category already holds just that one.
     const cats = data.data.monthly_by_category ?? [];
 
-    const netColor = "oklch(0.62 0.13 145)";
+    const netColor = INCOME_GREEN;
     // Match the tax segment's colour (#DC2626) so the tooltip swatch agrees.
-    const taxColor = "#DC2626";
+    const taxColor = "#F2958D";
 
     // Per month, the topmost non-zero stacking segment (tax sits above the
     // categories) — only that one gets the rounded top so the stack reads as
@@ -319,7 +294,7 @@ export function ReportPage() {
       data: c.net.map((v, m) => ({
         value: Math.round(v || 0),
         itemStyle: {
-          color: pressedFill(c.color || "#807A72", true),
+          color: pressedFill(c.color || "#8A8FA8", true),
           borderRadius: i === topIdx[m] ? roundedTop : flat,
         },
       })),
@@ -360,12 +335,7 @@ export function ReportPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        ...CHART_TOOLTIP,
         formatter: (params: unknown) => {
           const items = params as Array<{ dataIndex: number }>;
           if (!items.length) return "";
@@ -381,7 +351,7 @@ export function ReportPage() {
           const catRows = cats
             .map((c) => ({
               name: c.name,
-              color: c.color || "#807A72",
+              color: c.color || "#8A8FA8",
               val: Math.round(c.net[idx] || 0),
             }))
             .filter((c) => c.val)
@@ -392,14 +362,14 @@ export function ReportPage() {
             )
             .join("");
           const catBlock = catRows
-            ? `${catRows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3"></div>`
+            ? `${catRows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.14)"></div>`
             : "";
           return (
             `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label} ${year}</div>` +
             catBlock +
             `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${netColor}"></span><span style="flex:1">Чистыми</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(net)}</span></div>` +
             `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-top:2px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${taxColor}"></span><span style="flex:1">Налог</span><span style="font-weight:500;font-feature-settings:'ss01'">${RUB(tax)}</span></div>` +
-            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3;display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${RUB(total)}</span></div>`
+            `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.14);display:flex;justify-content:space-between;font-size:12px"><span>Итого</span><span style="font-weight:600;font-feature-settings:'ss01'">${RUB(total)}</span></div>`
           );
         },
       },
@@ -407,7 +377,7 @@ export function ReportPage() {
         type: "category",
         data: labels,
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: {
           ...ECHART_BASE_TEXT,
           fontSize: 11,
@@ -417,7 +387,7 @@ export function ReportPage() {
         type: "value",
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        splitLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { show: false },
       },
       series: [...catSeries, taxBar, totalCap],
@@ -454,7 +424,7 @@ export function ReportPage() {
       data: c.hours.map((h, m) => ({
         value: Number((h || 0).toFixed(2)),
         itemStyle: {
-          color: pressedFill(c.color || "#807A72", true),
+          color: pressedFill(c.color || "#8A8FA8", true),
           borderRadius: i === topIdx[m] ? [12, 12, 0, 0] : [0, 0, 0, 0],
         },
       })),
@@ -473,7 +443,7 @@ export function ReportPage() {
         show: true,
         position: "top" as const,
         distance: 6,
-        color: "#2A2A2E",
+        color: CHART_INK,
         fontFamily: "JetBrains Mono, ui-monospace, monospace",
         fontFeatureSettings: "'ss01'",
         fontSize: isMobile ? 10 : 11,
@@ -488,12 +458,7 @@ export function ReportPage() {
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: "rgba(255, 255, 255, 0.6)",
-        extraCssText: 'backdrop-filter: blur(8px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);',
-        borderRadius: 16,
-        borderColor: "#ECEAE3",
-        borderWidth: 1,
-        textStyle: { color: "#2A2A2E", fontFamily: "Inter, system-ui" },
+        ...CHART_TOOLTIP,
         formatter: (params: unknown) => {
           const items = params as Array<{ dataIndex: number }>;
           if (!items.length) return "";
@@ -505,7 +470,7 @@ export function ReportPage() {
           const catRows = cats
             .map((c) => ({
               name: c.name,
-              color: c.color || "#807A72",
+              color: c.color || "#8A8FA8",
               val: c.hours?.[idx] || 0,
             }))
             .filter((c) => c.val > 0)
@@ -516,7 +481,7 @@ export function ReportPage() {
             )
             .join("");
           const catBlock = catRows
-            ? `${catRows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid #ECEAE3"></div>`
+            ? `${catRows}<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.14)"></div>`
             : "";
           return (
             `<div style="font-weight:600;font-size:13px;text-transform:capitalize">${label} ${year}</div>` +
@@ -529,14 +494,14 @@ export function ReportPage() {
         type: "category",
         data: MONTH_ABBR,
         axisTick: { show: false },
-        axisLine: { lineStyle: { color: "#ECEAE3" } },
+        axisLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { ...ECHART_BASE_TEXT, fontSize: 11 },
       },
       yAxis: {
         type: "value",
         axisLine: { show: false },
         axisTick: { show: false },
-        splitLine: { lineStyle: { color: "#ECEAE3" } },
+        splitLine: { lineStyle: { color: CHART_LINE } },
         axisLabel: { show: false },
       },
       series: [...catSeries, totalCap],
@@ -738,7 +703,10 @@ export function ReportPage() {
             )}
           </div>
           {hoursBar ? (
-            <Echart option={hoursBar} height={barChartHeight(hoursRowCount)} />
+            <>
+              <Echart option={hoursBar} height={barChartHeight(hoursRowCount)} />
+              <ChartLegend items={subcatLegend} />
+            </>
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}
@@ -768,7 +736,10 @@ export function ReportPage() {
             )}
           </div>
           {netBar ? (
-            <Echart option={netBar} height={barChartHeight(netRowCount)} />
+            <>
+              <Echart option={netBar} height={barChartHeight(netRowCount)} />
+              <ChartLegend items={subcatLegend} />
+            </>
           ) : (
             <div className="muted small" style={{ marginTop: 16 }}>Нет данных</div>
           )}

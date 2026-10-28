@@ -105,7 +105,7 @@ describe("stringToColor", () => {
   });
 
   it("always returns a value from the palette", () => {
-    const palette = ["#E8E2D5", "#DDE5D5", "#D8E0E5", "#E5D8DC", "#E0D5E5", "#E5DDD5", "#D5E5E0"];
+    const palette = ["#4B4466", "#3F5A55", "#3E4F6B", "#5B4358", "#4F4767", "#5A4C42", "#3D5B5A"];
     for (const s of ["a", "bb", "ccc", "тест", "x y z"]) {
       expect(palette).toContain(stringToColor(s));
     }
