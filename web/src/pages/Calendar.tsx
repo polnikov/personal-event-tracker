@@ -76,7 +76,6 @@ export function CalendarPage() {
   const [formModal, setFormModal] = useState<
     | { kind: "new"; prefillStart?: string }
     | { kind: "edit"; eventId: number }
-    | { kind: "copy"; copyId: number }
     | null
   >(null);
 
@@ -434,11 +433,9 @@ export function CalendarPage() {
       <EventFormModal
         open={formModal !== null}
         eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
-        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
         prefillStart={formModal?.kind === "new" ? formModal.prefillStart : undefined}
         onClose={() => setFormModal(null)}
         onSaved={() => setFormModal(null)}
-        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
       />
     </div>
   );

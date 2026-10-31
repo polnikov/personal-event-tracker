@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addMinutes, format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { ChevronDown, Copy, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import { ChatCircleDots } from "@phosphor-icons/react";
 import {
   Button,
@@ -84,11 +84,8 @@ interface EventFormProps {
   prefillStart?: string;
   /** Called when the user cancels. */
   onCancel: () => void;
-  /** Called after a successful create / update / delete. */
+  /** Called after a successful create / update. */
   onSaved: () => void;
-  /** Optional handler for the "Copy" action; falls back to opening a
-   *  fresh form in copy mode via onSaved-style navigation if not provided. */
-  onCopy?: (id: number) => void;
 }
 
 /** Note stored on the picked package. A span (not a div) because the
@@ -113,7 +110,6 @@ export function EventForm({
   prefillStart,
   onCancel,
   onSaved,
-  onCopy,
 }: EventFormProps) {
   const isEdit = eventId !== undefined;
   const qc = useQueryClient();
@@ -259,6 +255,15 @@ export function EventForm({
     }
   }, [existing.data, sourceForCopy.data]);
 
+  // Opening the Примечания accordion drops the caret straight into the note,
+  // so a tap on the header is enough to start typing. Waits for
+  // `notesMounted` (useDelayedUnmount flips it one render after `notesOpen`)
+  // so the textarea is already in the DOM when we focus it.
+  useEffect(() => {
+    if (!notesOpen || !notesMounted) return;
+    form.setFocus("notes", { shouldSelect: false });
+  }, [notesOpen, notesMounted, form]);
+
   // datetime-local already gives us "yyyy-MM-ddTHH:mm" in local time;
   // pass it through as a naive ISO string so the backend stores exactly what the
   // user typed (no UTC shift).
@@ -300,8 +305,6 @@ export function EventForm({
         is_legal: values.is_legal,
       }),
   });
-
-  const remove = useMutation({ mutationFn: () => eventsApi.remove(eventId!) });
 
   const invalidateAfterEventMutation = () => {
     qc.invalidateQueries({ queryKey: ["events"] });
@@ -799,44 +802,6 @@ export function EventForm({
           <Button type="button" variant="danger" onClick={onCancel}>
             Отмена
           </Button>
-          {isEdit && eventId !== undefined && (
-            <>
-              <Button
-                type="button"
-                variant="secondary"
-                className="btn-outline"
-                icon={<Copy size={14} />}
-                onClick={() => onCopy?.(eventId)}
-              >
-                Копировать
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                icon={<Trash2 size={14} />}
-                onClick={() => {
-                  if (confirm("Удалить событие?")) {
-                    remove.mutate(undefined, {
-                      onSuccess: () => {
-                        invalidateAfterEventMutation();
-                        onSaved();
-                      },
-                      onError: (err: Error) => {
-                        if (err instanceof OfflineQueuedError) {
-                          invalidateAfterEventMutation();
-                          onSaved();
-                          return;
-                        }
-                        setError(err.message);
-                      },
-                    });
-                  }
-                }}
-              >
-                Удалить
-              </Button>
-            </>
-          )}
           <Button type="submit" disabled={create.isPending || update.isPending}>
             {isEdit ? "Сохранить" : "Создать"}
           </Button>
@@ -880,7 +845,6 @@ export function EventFormPage() {
           prefillClient={prefillClient ?? undefined}
           onCancel={() => nav(-1)}
           onSaved={() => nav("/events")}
-          onCopy={(srcId) => nav(`/events/new?copy=${srcId}`)}
         />
       </Card>
     </div>
@@ -896,7 +860,6 @@ export function EventFormModal({
   prefillStart,
   onClose,
   onSaved,
-  onCopy,
 }: {
   open: boolean;
   eventId?: number;
@@ -905,7 +868,6 @@ export function EventFormModal({
   prefillStart?: string;
   onClose: () => void;
   onSaved: () => void;
-  onCopy?: (id: number) => void;
 }) {
   const title = eventId !== undefined ? "Редактирование события" : "Новое событие";
   return (
@@ -922,7 +884,6 @@ export function EventFormModal({
         prefillStart={prefillStart}
         onCancel={onClose}
         onSaved={onSaved}
-        onCopy={onCopy}
       />
     </Modal>
   );

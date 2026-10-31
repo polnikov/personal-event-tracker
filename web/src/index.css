@@ -1447,8 +1447,8 @@ input[type="number"] { -moz-appearance: textfield; }
 .form { display: flex; flex-direction: column; gap: 16px; }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 @media (max-width: 700px) { .form-grid-2 { grid-template-columns: 1fr; } }
-/* Налог | Роялти | Касса + ЮЛ. On phones the row drops back to two columns
-   (mobile block below) and Касса + ЮЛ move next to the price. */
+/* Налог | Роялти | Касса + ЮЛ. On phones Касса + ЮЛ move next to the price
+   and the row keeps just the two toggle columns (mobile block below). */
 .form-grid-2.tax-royalty-row { grid-template-columns: 1fr 1fr 1fr; }
 /* Doubled class: .field (declared below) would otherwise win the direction. */
 .field.cash-legal-field {
@@ -1457,9 +1457,10 @@ input[type="number"] { -moz-appearance: textfield; }
   align-items: flex-start;
   gap: 10px 20px;
 }
-/* Price input with the Касса and ЮЛ toggles beside it (phones only). The
-   input gives up width so both toggles stay on the line: it starts at its
-   desktop 12rem and shrinks, the toggles never do. */
+/* Price input with the Касса and ЮЛ toggles beside it (phones only). There
+   the input takes the flexible first column and the toggles keep their
+   fixed tracks — see the mobile block, which mirrors these tracks on the
+   Налог / Роялти row so Роялти lands exactly under Касса. */
 .price-cash-row { display: flex; align-items: center; gap: 14px; }
 .price-cash-row > .input-wrap { flex: 0 1 12rem; min-width: 0; }
 .price-cash-row .input { min-width: 0; }
@@ -4095,8 +4096,23 @@ a.cd2-name:hover {
     align-items: center;
     font-size: 14px;
   }
-  /* Keep Налог + Роялти on a single row on phones. */
-  .form-grid-2.tax-royalty-row { grid-template-columns: 1fr 1fr; }
+  /* Keep Налог + Роялти on a single row on phones. Касса + ЮЛ ride next to
+     the price, and Роялти has to sit directly under Касса. The two rows are
+     independent grids, so they only line up when their column templates
+     match exactly: the price row's tracks decide where Касса starts, and
+     Роялти then starts at the same x in the row below. Hence the fixed
+     toggle tracks — their widths are just enough for the Касса/Роялти and
+     ЮЛ labels. */
+  :root { --cash-col: 6rem; --legal-col: 4rem; }
+  .price-cash-row,
+  .form-grid-2.tax-royalty-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--cash-col) var(--legal-col);
+    column-gap: 14px;
+  }
+  /* Роялти's % input + amount line wrap instead of overflowing its track. */
+  .form-grid-2.tax-royalty-row .accordion-inner > div { flex-wrap: wrap; }
+  .form-grid-2.tax-royalty-row .input-wrap { min-width: 0; }
 
   /* Page heads breathe better */
   .page-head { gap: 10px; }

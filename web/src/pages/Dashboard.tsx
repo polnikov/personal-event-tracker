@@ -93,7 +93,6 @@ export function DashboardPage() {
   const [formModal, setFormModal] = useState<
     | { kind: "new" }
     | { kind: "edit"; eventId: number }
-    | { kind: "copy"; copyId: number }
     | null
   >(null);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -737,10 +736,8 @@ export function DashboardPage() {
       <EventFormModal
         open={formModal !== null}
         eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
-        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
         onClose={() => setFormModal(null)}
         onSaved={() => setFormModal(null)}
-        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
       />
       {detailId !== null && (
         <EventDetailModal eventId={detailId} onClose={() => setDetailId(null)} />

@@ -257,7 +257,6 @@ export function ClientDetailPage() {
   const [formModal, setFormModal] = useState<
     | { kind: "new"; prefillClient?: string }
     | { kind: "edit"; eventId: number }
-    | { kind: "copy"; copyId: number }
     | null
   >(null);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -728,11 +727,9 @@ export function ClientDetailPage() {
       <EventFormModal
         open={formModal !== null}
         eventId={formModal?.kind === "edit" ? formModal.eventId : undefined}
-        copyId={formModal?.kind === "copy" ? formModal.copyId : undefined}
         prefillClient={formModal?.kind === "new" ? formModal.prefillClient : undefined}
         onClose={() => setFormModal(null)}
         onSaved={() => setFormModal(null)}
-        onCopy={(srcId) => setFormModal({ kind: "copy", copyId: srcId })}
       />
       {detailId !== null && (
         <EventDetailModal eventId={detailId} onClose={() => setDetailId(null)} />

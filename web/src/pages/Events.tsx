@@ -129,11 +129,10 @@ export function EventsPage() {
   const [dateTo, setDateTo] = useState<string>("");
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // Modal state: { eventId } for edit, { copyId } for duplicate, "new" for create.
+  // Modal state: { eventId } for edit, "new" for create.
   const [modal, setModal] = useState<
     | { kind: "new"; prefillClient?: string }
     | { kind: "edit"; eventId: number }
-    | { kind: "copy"; copyId: number }
     | null
   >(null);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -610,11 +609,9 @@ export function EventsPage() {
       <EventFormModal
         open={modal !== null}
         eventId={modal?.kind === "edit" ? modal.eventId : undefined}
-        copyId={modal?.kind === "copy" ? modal.copyId : undefined}
         prefillClient={modal?.kind === "new" ? modal.prefillClient : undefined}
         onClose={() => setModal(null)}
         onSaved={() => setModal(null)}
-        onCopy={(srcId) => setModal({ kind: "copy", copyId: srcId })}
       />
       {detailId !== null && (
         <EventDetailModal eventId={detailId} onClose={() => setDetailId(null)} />

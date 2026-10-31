@@ -144,7 +144,6 @@ export function EventDetailModal({
           setForm(null);
           onClose();
         }}
-        onCopy={() => setForm("copy")}
       />
     );
   }
