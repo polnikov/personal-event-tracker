@@ -4458,12 +4458,20 @@ a.cd2-name:hover {
 }
 
 /* Dashboard, income by category: thin ring with the total inside and the
-   per-category legend centred underneath. */
-.cat-donut { position: relative; width: 220px; max-width: 100%; margin: 4px auto 0; }
+   per-category legend centred underneath. z-index: 0 on the wrapper keeps
+   the child z-indices local so the chart (and its tooltip) can sit above
+   the centre label without escaping the card. */
+.cat-donut {
+  position: relative;
+  z-index: 0;
+  width: 220px;
+  max-width: 100%;
+  margin: 4px auto 0;
+}
+.cat-donut .echart-root { z-index: 1; }
 .cat-donut-center {
   position: absolute;
   inset: 0;
-  z-index: -1;
   display: flex;
   flex-direction: column;
   align-items: center;
