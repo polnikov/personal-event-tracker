@@ -51,9 +51,9 @@ export const CHART_LINE = "rgba(255, 255, 255, 0.1)";
 export const CHART_INK = "#FFFFFF";
 export const CHART_GAP = "#2B314D";
 
-/** Shared tooltip: an opaque glass panel like the app's popovers. */
+/** Shared tooltip: an opaque panel matching the app's popovers. */
 export const CHART_TOOLTIP = {
-  backgroundColor: "rgba(42, 48, 80, 0.97)",
+  backgroundColor: "#2A3050",
   borderColor: "rgba(255, 255, 255, 0.14)",
   borderWidth: 1,
   borderRadius: 14,
